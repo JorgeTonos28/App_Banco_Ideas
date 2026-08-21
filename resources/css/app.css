@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+
+@source '../../resources/views/**/*.blade.php';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-headline: 'Hanken Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --color-primary: #003e6f;
+    --color-primary-container: #005696;
+    --color-on-primary: #ffffff;
+    --color-on-primary-container: #a5cbff;
+    --color-primary-fixed: #d2e4ff;
+    --color-primary-fixed-dim: #a1c9ff;
+    --color-on-primary-fixed: #001c37;
+    --color-on-primary-fixed-variant: #004880;
+
+    --color-secondary: #7c5800;
+    --color-secondary-container: #feb700;
+    --color-on-secondary-container: #6b4b00;
+    --color-secondary-fixed: #ffdea8;
+    --color-secondary-fixed-dim: #ffba20;
+    --color-on-secondary-fixed: #271900;
+    --color-on-secondary-fixed-variant: #5e4200;
+
+    --color-tertiary: #231fb5;
+    --color-tertiary-container: #3e3fcc;
+    --color-on-tertiary-container: #c4c4ff;
+    --color-tertiary-fixed: #e1e0ff;
+    --color-tertiary-fixed-dim: #c0c1ff;
+    --color-on-tertiary-fixed: #07006c;
+    --color-on-tertiary-fixed-variant: #2f2ebe;
+
+    --color-surface: #f8f9ff;
+    --color-surface-dim: #cbdbf5;
+    --color-surface-bright: #f8f9ff;
+    --color-surface-container-lowest: #ffffff;
+    --color-surface-container-low: #eff4ff;
+    --color-surface-container: #e5eeff;
+    --color-surface-container-high: #dce9ff;
+    --color-surface-container-highest: #d3e4fe;
+    --color-on-surface: #0b1c30;
+    --color-on-surface-variant: #414750;
+
+    --color-outline: #727781;
+    --color-outline-variant: #c1c7d2;
+    --color-error: #ba1a1a;
+    --color-error-container: #ffdad6;
+    --color-on-error-container: #93000a;
+    --color-background: #f8f9ff;
+}
+
+/* Custom Utilities and Animations */
+@layer base {
+    body {
+        -webkit-tap-highlight-color: transparent;
+        font-family: var(--font-sans);
+        background-color: var(--color-background);
+        color: var(--color-on-surface);
+    }
+}
+
+.font-headline {
+    font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.font-mono-tech {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Custom scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    20%, 60% { transform: rotate(14deg); }
+    40%, 80% { transform: rotate(-14deg); }
+}
+
+.animate-wave {
+    animation: wave 2.5s ease-in-out infinite;
+}

@@ -1,0 +1,130 @@
+# INNOVATEP Ideas 💡
+### Banco Institucional de Ideas e Innovación para INFOTEP
+
+**INNOVATEP Ideas** es una plataforma web moderna y colaborativa diseñada para capturar, descubrir, valorar y seguir la evolución de propuestas de innovación generadas por los colaboradores del **Instituto Nacional de Formación Técnico Profesional (INFOTEP)** de la República Dominicana.
+
+La plataforma fomenta una cultura participativa bajo el principio:
+> **“Capturar una idea debe ser más fácil que olvidarla.”**
+
+---
+
+## 🌟 Características Principales
+
+### 1. Captura y Gestión de Ideas
+- **Publicación ágil y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, categoría, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos).
+- **Borradores y Estados**: Capacidad de guardar borradores privados o publicar directamente.
+- **Ciclo de Vida Evolutivo**: Seguimiento en tiempo real a través de las etapas:
+  `💡 Nueva` → `👀 En revisión` → `⭐ Priorizada` → `🧪 En desarrollo` → `🚀 Implementada` (con opciones de `⛔ Descartada` y `📦 Archivada`).
+- **Línea de tiempo**: Historial público con observaciones registradas por el equipo de innovación.
+
+### 2. Descubrimiento y Colaboración
+- **Explorador con Filtros Multifactor**: Búsqueda global, filtrado por categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
+- **Votación Comunitaria (1 a 5 Estrellas)**: Sistema de valoración interactivo donde los colaboradores califican el impacto potencial (con restricción de auto-voto para el autor).
+- **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".
+- **Guardar en Favoritas**: Marcadores personales para seguimiento rápido.
+
+### 3. Innovation Score & Leaderboard
+- **Algoritmo de Innovation Score (0-100)**: Fórmula ponderada que combina promedio de estrellas, volumen de votos, interacción comunitaria (vistas y comentarios) y vigencia temporal.
+- **Podio Top 3**: Reconocimiento visual con medallas de oro (🥇), plata (🥈) y bronce (🥉).
+- **Ranking Dinámico**: Filtros por periodos (*Esta semana*, *Este mes*, *Este año*, *Histórico*) y áreas.
+
+### 4. Perfil y Reconocimiento
+- **Insignias de Innovación**: Desbloqueo automático de reconocimientos como *Generador de ideas*, *Idea en tendencia*, *Idea implementada* y *Top Innovador*.
+- **Métricas Personales**: Seguimiento de contribuciones, votos recibidos y score de participación.
+
+### 5. Panel Administrativo (Panel de Innovación)
+- **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
+- **Gestión Avanzada**: Tabla interactiva con búsqueda, selección múltiple, cambio rápido de estado y panel lateral (*slide-over drawer*) para asignar responsables, fijar prioridad (`Baja`, `Media`, `Alta`, `Estratégica`), redactar observaciones internas y programar fechas de seguimiento.
+- **Taxonomía**: Administración de categorías y fusión de etiquetas duplicadas.
+- **Control de Usuarios**: Directorio institucional con asignación de roles (`Usuario` / `Administrador`) y activación/desactivación.
+
+---
+
+## 🛠️ Stack Tecnológico
+
+- **Backend**: [Laravel 11.x](https://laravel.com) / PHP 8.4+
+- **Base de Datos**: SQLite (por defecto para desarrollo inmediato) / MySQL / PostgreSQL
+- **Frontend**: Blade Components + [Tailwind CSS v4](https://tailwindcss.com) + [Alpine.js](https://alpinejs.dev)
+- **Tipografía**: Google Fonts (*Hanken Grotesk*, *Inter*, *JetBrains Mono*)
+- **Iconografía**: Google Material Symbols Outlined
+- **Build Tool**: [Vite](https://vitejs.dev)
+
+---
+
+## 🚀 Instalación y Despliegue Local
+
+### Requisitos Previos
+- PHP >= 8.2 con extensiones habilitadas (`pdo_sqlite`, `mbstring`, `openssl`, `fileinfo`, `gd` o `imagick`).
+- Composer >= 2.x
+- Node.js >= 18.x & npm
+
+### Pasos de Instalación
+
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/JorgeTonos28/App_Banco_Ideas.git
+   cd App_Banco_Ideas
+   ```
+
+2. **Instalar dependencias de PHP**:
+   ```bash
+   composer install
+   ```
+
+3. **Configurar variables de entorno**:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Ejecutar migraciones y datos de prueba (Seeders)**:
+   ```bash
+   touch database/database.sqlite
+   php artisan migrate:fresh --seed
+   php artisan storage:link
+   ```
+
+5. **Instalar y compilar assets frontend**:
+   ```bash
+   npm install
+   npm run build
+   ```
+   *(Para desarrollo en vivo con Hot Reload: `npm run dev`)*
+
+6. **Iniciar el servidor local**:
+   ```bash
+   php artisan serve
+   ```
+   Visita la aplicación en: `http://localhost:8000`
+
+---
+
+## 🔐 Cuentas de Demostración Preconfiguradas
+
+| Rol | Correo Electrónico | Contraseña | Cargo / Departamento |
+|---|---|---|---|
+| **Administrador** | `admin@infotep.gob.do` | `password123` | Director de Innovación y Desarrollo |
+| **Docente / Usuario** | `maria.gonzalez@infotep.gob.do` | `password123` | Coordinadora de Formación Virtual |
+| **Instructor Técnico** | `luis.morales@infotep.gob.do` | `password123` | Instructor Industrial (Regional Norte) |
+| **Especialista Procesos**| `laura.jimenez@infotep.gob.do` | `password123` | Logística y Operaciones (Regional Este) |
+| **Docente TI** | `francisco.reyes@infotep.gob.do` | `password123` | Tecnologías de la Información (Regional Sur) |
+
+---
+
+## 🛡️ Seguridad Implementada
+
+1. **Protección CSRF**: Tokens obligatorios en todas las peticiones POST, PUT y DELETE.
+2. **Políticas de Autorización (Policies & Gates)**:
+   - `IdeaPolicy`: Los usuarios solo pueden modificar o eliminar sus ideas si están en estado borrador o nueva.
+   - `AdminMiddleware`: Protección estricta en todas las rutas administrativas `/admin/*`.
+   - Control de auto-voto: Un creador no puede calificar su propia propuesta.
+3. **Validación y Sanitización**: Uso estricto de `FormRequest` con validación de tipo, longitud y formato.
+4. **Subida Segura de Archivos**: Validación de tipos MIME permitidos (`pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,zip`), límite de 10 MB y almacenamiento con nombres hash únicos.
+5. **Rate Limiting**: Throttling en login (`6/min`), votación (`30/min`) y comentarios (`15/min`).
+6. **Protección contra SQL Injection**: Consultas exclusivamente a través de Eloquent ORM con sentencias preparadas.
+
+---
+
+## 📄 Licencia
+
+Desarrollado para el ecosistema de innovación institucional de **INFOTEP**. Todos los derechos reservados.
