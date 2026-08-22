@@ -112,6 +112,33 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ---
 
+## 🚀 Despliegue en cPanel bajo `/banco`
+
+Para publicar la aplicación en `https://apps.innovatep.com/banco` sin exponer el código fuente, mantén Laravel fuera del Document Root:
+
+```text
+/home/innovatep/Portal_Apps/banco/                 # Aplicación Laravel privada
+/home/innovatep/apps.innovatep.com/                # Document Root del subdominio
+/home/innovatep/apps.innovatep.com/banco/          # Solo contenido de public/
+```
+
+El `.env` debe permanecer en la aplicación privada y utilizar:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://apps.innovatep.com/banco
+SESSION_PATH=/banco
+```
+
+El `index.php` público debe cargar `vendor/autoload.php` y `bootstrap/app.php` desde la ruta privada, y configurar esa carpeta pública mediante `$app->usePublicPath(__DIR__)`. El enlace `storage` público debe apuntar a `storage/app/public` de la aplicación privada.
+
+El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovatep.com/` a `https://innovatep.com/`; el `.htaccess` dentro de `/banco` debe conservar el front controller de Laravel. La ruta raíz de la aplicación redirige visitantes a `/banco/login` y usuarios autenticados a `/banco/mis-ideas`.
+
+En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
+
+---
+
 ## 🔐 Cuentas de Demostración Preconfiguradas
 
 | Rol | Correo Electrónico | Contraseña | Cargo / Departamento |
