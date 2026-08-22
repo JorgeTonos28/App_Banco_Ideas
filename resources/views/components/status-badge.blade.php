@@ -45,7 +45,7 @@ $config = match($status) {
 };
 @endphp
 
-<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono-tech font-bold uppercase tracking-wider {{ $config['classes'] }}">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono-tech font-bold uppercase tracking-wider whitespace-nowrap shrink-0 {{ $config['classes'] }}">
     <span class="material-symbols-outlined text-[13px]" style="font-variation-settings: 'FILL' 1;">{{ $config['icon'] }}</span>
     <span>{{ $config['label'] }}</span>
 </span>

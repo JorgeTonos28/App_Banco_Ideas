@@ -3,36 +3,65 @@
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminIdeaController;
+use App\Http\Controllers\Admin\AdminRegionalController;
 use App\Http\Controllers\Admin\AdminTagController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\MyIdeasController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
-// Authentication Routes
+// ==========================================
+// Authentication & 2FA Public Routes
+// ==========================================
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Global Search API
-Route::get('/api/search', [SearchController::class, 'globalSearch'])->name('api.search');
+// 2FA Challenge during Login
+Route::get('/login/2fa', [TwoFactorController::class, 'showChallenge'])->name('2fa.challenge');
+Route::post('/login/2fa', [TwoFactorController::class, 'verifyChallenge'])->name('2fa.verify')->middleware('throttle:6,1');
+Route::post('/login/2fa/reenviar', [TwoFactorController::class, 'resendEmailCode'])->name('2fa.resend')->middleware('throttle:3,1');
 
-// Public & Authenticated Core Routes
-Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/ideas', [IdeaController::class, 'index'])->name('ideas.index');
-Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
-Route::get('/ideas/{slug}', [IdeaController::class, 'show'])->name('ideas.show');
-Route::get('/perfil/{user?}', [ProfileController::class, 'show'])->name('profile.show');
+// Onboarding Invitation Public Activation Flow
+Route::get('/onboarding/activar/{token}', [OnboardingController::class, 'show'])->name('onboarding.accept');
+Route::post('/onboarding/activar/{token}', [OnboardingController::class, 'activate'])->name('onboarding.activate');
 
-// Authenticated Routes
+// ==========================================
+// Authenticated Platform Routes
+// ==========================================
 Route::middleware('auth')->group(function () {
+
+    // Mandatory Password Change for Temporary Passwords
+    Route::get('/cambiar-password-obligatorio', [ForcePasswordChangeController::class, 'show'])->name('password.force-change');
+    Route::post('/cambiar-password-obligatorio', [ForcePasswordChangeController::class, 'update'])->name('password.force-update');
+
+    // Global Search API
+    Route::get('/api/search', [SearchController::class, 'globalSearch'])->name('api.search');
+
+    // Core Platform Routes
+    // Root landing module: Mis Ideas
+    Route::get('/', [MyIdeasController::class, 'index'])->name('home');
+    Route::get('/mis-ideas', [MyIdeasController::class, 'index'])->name('my-ideas.index');
+
+    // Community / Innovation Feed
+    Route::get('/comunidad', [HomeController::class, 'index'])->name('community');
+
+    // Explore Ideas & Ranking
+    Route::get('/ideas', [IdeaController::class, 'index'])->name('ideas.index');
+    Route::get('/ranking', [RankingController::class, 'index'])->name('ranking.index');
+    Route::get('/ideas/{slug}', [IdeaController::class, 'show'])->name('ideas.show');
+    Route::get('/perfil/{user?}', [ProfileController::class, 'show'])->name('profile.show');
+
     // Idea Creation & Management
     Route::get('/nueva-idea', [IdeaController::class, 'create'])->name('ideas.create');
     Route::post('/ideas', [IdeaController::class, 'store'])->name('ideas.store');
@@ -49,19 +78,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/comentarios/{comment}/like', [CommentController::class, 'toggleLike'])->name('comments.like');
     Route::delete('/comentarios/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 
-    // Personal Ideas
-    Route::get('/mis-ideas', [MyIdeasController::class, 'index'])->name('my-ideas.index');
-
-    // Profile Settings
+    // Profile Settings & 2FA Management
     Route::get('/mi-perfil/editar', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/mi-perfil/seguridad', [TwoFactorController::class, 'showSecurity'])->name('profile.security');
+    Route::put('/mi-perfil/seguridad/password', [TwoFactorController::class, 'updatePassword'])->name('profile.security.password');
+    Route::post('/mi-perfil/seguridad/totp', [TwoFactorController::class, 'enableTotp'])->name('profile.security.totp');
+    Route::post('/mi-perfil/seguridad/email/solicitar', [TwoFactorController::class, 'enableEmail'])->name('profile.security.email.request');
+    Route::post('/mi-perfil/seguridad/email/confirmar', [TwoFactorController::class, 'confirmEmail'])->name('profile.security.email.confirm');
+    Route::post('/mi-perfil/seguridad/desactivar', [TwoFactorController::class, 'disable'])->name('profile.security.disable');
 
     // Notifications Center
     Route::get('/notificaciones', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notificaciones/leer-todas', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
 
-    // Administration Panel
+    // ==========================================
+    // Administration Panel (Admin Only)
+    // ==========================================
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
@@ -71,6 +105,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/ideas/{idea}', [AdminIdeaController::class, 'update'])->name('ideas.update');
         Route::post('/ideas/{idea}/destacar', [AdminIdeaController::class, 'toggleFeatured'])->name('ideas.feature');
         Route::post('/ideas/acciones-masivas', [AdminIdeaController::class, 'batchAction'])->name('ideas.batch');
+
+        // Regionals Administration
+        Route::get('/regionales', [AdminRegionalController::class, 'index'])->name('regionals.index');
+        Route::post('/regionales', [AdminRegionalController::class, 'store'])->name('regionals.store');
+        Route::put('/regionales/{regional}', [AdminRegionalController::class, 'update'])->name('regionals.update');
+        Route::post('/regionales/{regional}/estado', [AdminRegionalController::class, 'toggleStatus'])->name('regionals.status');
+        Route::delete('/regionales/{regional}', [AdminRegionalController::class, 'destroy'])->name('regionals.destroy');
 
         // Categories Administration
         Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('categories.index');
@@ -85,9 +126,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('/etiquetas/{tag}', [AdminTagController::class, 'destroy'])->name('tags.destroy');
         Route::post('/etiquetas/fusionar', [AdminTagController::class, 'merge'])->name('tags.merge');
 
-        // Users Administration
+        // Users & Invitations Administration
         Route::get('/usuarios', [AdminUserController::class, 'index'])->name('users.index');
+        Route::post('/usuarios', [AdminUserController::class, 'store'])->name('users.store');
+        Route::put('/usuarios/{user}', [AdminUserController::class, 'update'])->name('users.update');
+        Route::delete('/usuarios/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
         Route::put('/usuarios/{user}/rol', [AdminUserController::class, 'updateRole'])->name('users.role');
         Route::post('/usuarios/{user}/estado', [AdminUserController::class, 'toggleStatus'])->name('users.status');
+        Route::post('/usuarios/invitaciones/{invitation}/reenviar', [AdminUserController::class, 'resendInvitation'])->name('users.invitations.resend');
+        Route::delete('/usuarios/invitaciones/{invitation}', [AdminUserController::class, 'cancelInvitation'])->name('users.invitations.cancel');
     });
 });

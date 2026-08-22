@@ -6,7 +6,7 @@
 <div class="space-y-8">
 
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="space-y-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface flex items-center gap-2">
                 <span class="material-symbols-outlined text-primary text-3xl">admin_panel_settings</span>
@@ -15,12 +15,7 @@
             <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Métricas globales, seguimiento del flujo de ideas y gestión del banco</p>
         </div>
 
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.ideas.index') }}" 
-               class="px-4 py-2.5 bg-primary text-white font-headline font-bold text-xs rounded-xl shadow-xs hover:bg-primary-container transition-colors">
-                Gestionar Ideas
-            </a>
-        </div>
+        <x-admin-nav-tabs />
     </div>
 
     <!-- Core Metrics Row -->

@@ -12,31 +12,43 @@
 
     <!-- Navigation Menu -->
     <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto py-5 no-scrollbar">
-        <!-- Main Links -->
-        <a href="{{ route('home') }}" 
-           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('home') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('home') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">home</span>
-            <span>Inicio</span>
+        <!-- 1. Mis Ideas (Primer Módulo / Módulo Inicial) -->
+        <a href="{{ route('my-ideas.index') }}" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
+            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">folder_special</span>
+            <span>Mis Ideas</span>
         </a>
 
+        <!-- 2. Comunidad (Segundo Módulo / Feed de Innovación) -->
+        <a href="{{ route('community') }}" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('community') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
+            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('community') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">hub</span>
+            <span>Comunidad</span>
+        </a>
+
+        <!-- 3. Explorar Ideas -->
         <a href="{{ route('ideas.index') }}" 
            class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('ideas.index') || request()->routeIs('ideas.show') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
             <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('ideas.index') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">explore</span>
             <span>Explorar Ideas</span>
         </a>
 
+        <!-- 4. Ranking -->
         <a href="{{ route('ranking.index') }}" 
            class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('ranking.*') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
             <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('ranking.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">leaderboard</span>
             <span>Ranking</span>
         </a>
 
+        <!-- 5. Administración (Exclusivo Administradores) -->
         @auth
-        <a href="{{ route('my-ideas.index') }}" 
-           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('my-ideas.*') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('my-ideas.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">folder_special</span>
-            <span>Mis Ideas</span>
+        @if(auth()->user()->isAdmin())
+        <a href="{{ route('admin.dashboard') }}" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.*') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
+            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('admin.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">admin_panel_settings</span>
+            <span>Administración</span>
         </a>
+        @endif
         @endauth
 
         <!-- CTA: Nueva Idea -->
@@ -47,43 +59,6 @@
                 <span>Nueva Idea</span>
             </a>
         </div>
-
-        <!-- Admin Section -->
-        @if(auth()->check() && auth()->user()->isAdmin())
-        <div class="pt-5 pb-1 px-4">
-            <span class="font-mono-tech text-[11px] font-bold text-outline uppercase tracking-widest">Administración</span>
-        </div>
-
-        <a href="{{ route('admin.dashboard') }}" 
-           class="flex items-center px-4 py-2.5 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'bg-primary-fixed text-on-primary-fixed-variant font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl">analytics</span>
-            <span>Panel de Innovación</span>
-        </a>
-
-        <a href="{{ route('admin.ideas.index') }}" 
-           class="flex items-center px-4 py-2.5 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.ideas.*') ? 'bg-primary-fixed text-on-primary-fixed-variant font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl">tune</span>
-            <span>Gestión de Ideas</span>
-        </a>
-
-        <a href="{{ route('admin.users.index') }}" 
-           class="flex items-center px-4 py-2.5 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.users.*') ? 'bg-primary-fixed text-on-primary-fixed-variant font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl">group</span>
-            <span>Usuarios</span>
-        </a>
-
-        <a href="{{ route('admin.categories.index') }}" 
-           class="flex items-center px-4 py-2.5 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.categories.*') ? 'bg-primary-fixed text-on-primary-fixed-variant font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl">category</span>
-            <span>Categorías</span>
-        </a>
-
-        <a href="{{ route('admin.tags.index') }}" 
-           class="flex items-center px-4 py-2.5 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('admin.tags.*') ? 'bg-primary-fixed text-on-primary-fixed-variant font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
-            <span class="material-symbols-outlined text-xl">sell</span>
-            <span>Etiquetas</span>
-        </a>
-        @endif
     </nav>
 
     <!-- User Profile & Footer Area -->

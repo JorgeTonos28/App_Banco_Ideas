@@ -21,6 +21,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // 0. Create Official INFOTEP Regionals
+        $regionalsData = [
+            ['code' => 'ONA', 'name' => 'Oficina Nacional', 'order' => 1],
+            ['code' => 'DRM', 'name' => 'Regional Metropolitana', 'order' => 2],
+            ['code' => 'DRO', 'name' => 'Regional Oriental', 'order' => 3],
+            ['code' => 'DRV', 'name' => 'Regional Valdesia', 'order' => 4],
+            ['code' => 'DRCS', 'name' => 'Regional Cibao Sur', 'order' => 5],
+            ['code' => 'DRE', 'name' => 'Regional Este', 'order' => 6],
+            ['code' => 'DRCN', 'name' => 'Regional Norte', 'order' => 7],
+            ['code' => 'DRCNE', 'name' => 'Regional Nordeste', 'order' => 8],
+            ['code' => 'DRS', 'name' => 'Regional Sur', 'order' => 9],
+        ];
+
+        $regionals = [];
+        foreach ($regionalsData as $r) {
+            $regionals[$r['code']] = \App\Models\Regional::create($r);
+        }
+
         // 1. Create Users
         $admin = User::create([
             'name' => 'Carlos Mendoza',
@@ -29,7 +47,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
             'job_title' => 'Director de Innovación y Desarrollo',
             'department' => 'Dirección de Innovación',
-            'regional' => 'Oficina Nacional',
+            'regional' => 'ONA - Oficina Nacional',
+            'regional_id' => $regionals['ONA']->id,
             'avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Impulsando la transformación digital y metodológica en la formación técnico-profesional de la República Dominicana.',
             'is_active' => true,
@@ -42,7 +61,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'job_title' => 'Coordinadora de Formación Virtual',
             'department' => 'Formación Profesional',
-            'regional' => 'Regional Central',
+            'regional' => 'DRM - Regional Metropolitana',
+            'regional_id' => $regionals['DRM']->id,
             'avatar' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Apasionada por la educación híbrida y el aprendizaje colaborativo.',
             'is_active' => true,
@@ -55,7 +75,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'job_title' => 'Instructor Técnico Industrial',
             'department' => 'Talleres y Laboratorios',
-            'regional' => 'Regional Norte',
+            'regional' => 'DRCN - Regional Norte',
+            'regional_id' => $regionals['DRCN']->id,
             'avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Comprometido con la sostenibilidad y la modernización de los talleres técnicos.',
             'is_active' => true,
@@ -68,7 +89,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'job_title' => 'Especialista en Procesos y Logística',
             'department' => 'Operaciones',
-            'regional' => 'Regional Este',
+            'regional' => 'DRE - Regional Este',
+            'regional_id' => $regionals['DRE']->id,
             'avatar' => 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Optimizando flujos operativos y experiencia de entrega de servicios.',
             'is_active' => true,
@@ -81,7 +103,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'job_title' => 'Docente de Tecnologías de Información',
             'department' => 'Tecnología',
-            'regional' => 'Regional Sur',
+            'regional' => 'DRS - Regional Sur',
+            'regional_id' => $regionals['DRS']->id,
             'avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Promoviendo el software libre, ciberseguridad e inteligencia artificial.',
             'is_active' => true,
@@ -94,7 +117,8 @@ class DatabaseSeeder extends Seeder
             'role' => 'user',
             'job_title' => 'Analista de Talento Humano',
             'department' => 'Recursos Humanos',
-            'regional' => 'Oficina Nacional',
+            'regional' => 'ONA - Oficina Nacional',
+            'regional_id' => $regionals['ONA']->id,
             'avatar' => 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
             'bio' => 'Enfocada en el bienestar laboral y el desarrollo de competencias blandas.',
             'is_active' => true,

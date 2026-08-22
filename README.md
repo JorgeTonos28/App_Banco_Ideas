@@ -28,15 +28,28 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Podio Top 3**: Reconocimiento visual con medallas de oro (🥇), plata (🥈) y bronce (🥉).
 - **Ranking Dinámico**: Filtros por periodos (*Esta semana*, *Este mes*, *Este año*, *Histórico*) y áreas.
 
-### 4. Perfil y Reconocimiento
-- **Insignias de Innovación**: Desbloqueo automático de reconocimientos como *Generador de ideas*, *Idea en tendencia*, *Idea implementada* y *Top Innovador*.
-- **Métricas Personales**: Seguimiento de contribuciones, votos recibidos y score de participación.
+### 4. Gestión Personal, Seguridad y 2FA
+- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona sus propuestas publicadas, borradores, ideas implementadas y favoritas desde el primer momento.
+- **Comunidad (Feed de Innovación)**: Ecosistema colaborativo institucional con métricas en tiempo real, propuestas destacadas, tendencias y leaderboard.
+- **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
+- **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
+- **Autenticación en Dos Pasos (2FA)**:
+  - **App Autenticadora (TOTP/QR)**: Compatibilidad con Google Authenticator, Microsoft Authenticator y Authy mediante escaneo de código QR y generación de claves de respaldo.
+  - **Código por Correo (Email OTP)**: Códigos temporales de 6 dígitos enviados al correo institucional con expiración y rate limiting.
+  - **Desafío en Inicio de Sesión**: Protección reforzada al autenticarse en la plataforma.
+- **Onboarding e Invitaciones**: Activación de cuenta por correo con verificación y establecimiento personalizado de contraseña.
 
 ### 5. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
-- **Gestión Avanzada**: Tabla interactiva con búsqueda, selección múltiple, cambio rápido de estado y panel lateral (*slide-over drawer*) para asignar responsables, fijar prioridad (`Baja`, `Media`, `Alta`, `Estratégica`), redactar observaciones internas y programar fechas de seguimiento.
+- **Gestión Avanzada de Ideas**: Tabla interactiva con búsqueda, selección múltiple, cambio rápido de estado y panel lateral (*slide-over drawer*) para asignar responsables, fijar prioridad (`Baja`, `Media`, `Alta`, `Estratégica`), redactar observaciones internas y programar fechas de seguimiento.
+- **Control Integral de Usuarios y Onboarding**:
+  - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
+  - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.
+  - **Regla de Protección de Administrador Único**: Bloqueo estricto para impedir eliminar, desactivar o degradar al último administrador general activo.
+- **Gestión Configurable de Regionales INFOTEP**:
+  - Mantenimiento completo de direcciones regionales (`ONA - Oficina Nacional`, `DRM - Regional Metropolitana`, `DRO`, `DRV`, `DRCS`, `DRE`, `DRCN`, `DRCNE`, `DRS`).
+  - Creación de nuevas sedes, edición de nombres/códigos y alternancia de estados (habilitar / inhabilitar).
 - **Taxonomía**: Administración de categorías y fusión de etiquetas duplicadas.
-- **Control de Usuarios**: Directorio institucional con asignación de roles (`Usuario` / `Administrador`) y activación/desactivación.
 
 ---
 

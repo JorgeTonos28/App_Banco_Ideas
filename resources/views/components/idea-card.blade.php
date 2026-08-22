@@ -5,31 +5,33 @@
     <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary-container to-secondary-container opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
     <div>
-        <!-- Card Header: Category, Status & Badges -->
-        <div class="flex items-center justify-between gap-2 mb-3">
-            <div class="flex items-center gap-2">
-                @if($idea->category)
-                <a href="{{ route('ideas.index', ['categoria' => $idea->category->slug]) }}" 
-                   class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                    <span class="material-symbols-outlined text-sm">{{ $idea->category->icon }}</span>
-                    <span>{{ $idea->category->name }}</span>
-                </a>
-                @endif
+        <!-- Card Header: Category & Status Badges -->
+        <div class="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 mb-3">
+            @if($idea->category)
+            <a href="{{ route('ideas.index', ['categoria' => $idea->category->slug]) }}" 
+               class="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline bg-primary-fixed/40 px-2.5 py-0.5 rounded-full border border-primary/10 shrink-0">
+                <span class="material-symbols-outlined text-sm">{{ $idea->category->icon }}</span>
+                <span class="truncate max-w-[130px]">{{ $idea->category->name }}</span>
+            </a>
+            @else
+            <div></div>
+            @endif
 
+            <div class="flex flex-wrap items-center gap-1.5 ml-auto">
                 @if($idea->is_featured)
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200" title="Idea Destacada">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200 shrink-0" title="Idea Destacada">
                     <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">star</span>
                     <span>Destacada</span>
                 </span>
                 @elseif($idea->innovation_score >= 80)
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[10px] font-bold border border-orange-200" title="En Tendencia">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 text-[10px] font-bold border border-orange-200 shrink-0" title="En Tendencia">
                     <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
                     <span>Tendencia</span>
                 </span>
                 @endif
-            </div>
 
-            <x-status-badge :status="$idea->status" />
+                <x-status-badge :status="$idea->status" />
+            </div>
         </div>
 
         <!-- Idea Title -->

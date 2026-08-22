@@ -8,7 +8,8 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -102,7 +103,7 @@
                             <input id="email" 
                                    type="email" 
                                    name="email" 
-                                   value="{{ old('email', 'admin@infotep.gob.do') }}" 
+                                   value="{{ old('email', app()->environment('local') ? 'admin@infotep.gob.do' : '') }}" 
                                    required 
                                    autofocus 
                                    placeholder="usuario@infotep.gob.do"
@@ -120,7 +121,7 @@
                             <input id="password" 
                                    :type="showPass ? 'text' : 'password'" 
                                    name="password" 
-                                   value="password123"
+                                   @if(app()->environment('local')) value="password123" @endif
                                    required 
                                    placeholder="••••••••"
                                    class="w-full bg-surface-container-low text-on-surface text-sm rounded-xl py-3 pl-11 pr-11 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all">
@@ -148,9 +149,10 @@
                     </button>
                 </form>
 
-                <!-- Demo Access Helpers Box -->
+                @if(app()->environment('local'))
+                <!-- Demo Access Helpers Box (Solo visible en desarrollo local) -->
                 <div class="mt-8 pt-6 border-t border-surface-container-high/60 bg-surface-container-low/50 -mx-4 -mb-4 p-4 rounded-2xl">
-                    <p class="text-[11px] font-mono-tech text-outline uppercase font-bold tracking-wider mb-2 text-center">Cuentas de Demostración</p>
+                    <p class="text-[11px] font-mono-tech text-outline uppercase font-bold tracking-wider mb-2 text-center">Cuentas de Demostración (Modo Desarrollo)</p>
                     <div class="space-y-1.5 text-xs text-on-surface-variant">
                         <div class="flex items-center justify-between p-1.5 rounded-lg bg-surface-container-lowest">
                             <span><b>Admin:</b> admin@infotep.gob.do</span>
@@ -162,6 +164,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
     </div>

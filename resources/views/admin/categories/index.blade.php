@@ -6,18 +6,22 @@
 <div class="space-y-6" x-data="{ modalOpen: false, editMode: false, currentCat: { id: '', name: '', icon: 'lightbulb', color: '#003e6f', description: '' } }">
 
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Categorías del Banco de Ideas</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Organización y taxonomía para clasificar las propuestas institucionales</p>
+    <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Categorías del Banco de Ideas</h1>
+                <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Organización y taxonomía para clasificar las propuestas institucionales</p>
+            </div>
+
+            <button type="button" 
+                    @click="editMode = false; currentCat = { id: '', name: '', icon: 'lightbulb', color: '#003e6f', description: '' }; modalOpen = true;"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-headline font-bold text-xs rounded-xl shadow-xs hover:bg-primary-container">
+                <span class="material-symbols-outlined text-base">add</span>
+                <span>Nueva Categoría</span>
+            </button>
         </div>
 
-        <button type="button" 
-                @click="editMode = false; currentCat = { id: '', name: '', icon: 'lightbulb', color: '#003e6f', description: '' }; modalOpen = true;"
-                class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-headline font-bold text-xs rounded-xl shadow-xs hover:bg-primary-container">
-            <span class="material-symbols-outlined text-base">add</span>
-            <span>Nueva Categoría</span>
-        </button>
+        <x-admin-nav-tabs />
     </div>
 
     <!-- Categories Grid -->

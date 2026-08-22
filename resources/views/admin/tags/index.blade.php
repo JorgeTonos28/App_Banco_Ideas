@@ -6,24 +6,28 @@
 <div class="space-y-6" x-data="{ mergeModal: false, createModal: false, editModal: false, currentTag: { id: '', name: '' } }">
 
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Etiquetas y Palabras Clave</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Control de descriptores temáticos y consolidación de términos</p>
+    <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Etiquetas y Palabras Clave</h1>
+                <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Control de descriptores temáticos y consolidación de términos</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" 
+                        @click="mergeModal = true" 
+                        class="px-4 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface font-headline font-bold text-xs rounded-xl transition-colors">
+                    Fusionar Etiquetas
+                </button>
+                <button type="button" 
+                        @click="createModal = true" 
+                        class="px-4 py-2 bg-primary text-white font-headline font-bold text-xs rounded-xl shadow-xs hover:bg-primary-container transition-colors">
+                    + Nueva Etiqueta
+                </button>
+            </div>
         </div>
 
-        <div class="flex items-center gap-2">
-            <button type="button" 
-                    @click="mergeModal = true" 
-                    class="px-4 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface font-headline font-bold text-xs rounded-xl transition-colors">
-                Fusionar Etiquetas
-            </button>
-            <button type="button" 
-                    @click="createModal = true" 
-                    class="px-4 py-2 bg-primary text-white font-headline font-bold text-xs rounded-xl shadow-xs hover:bg-primary-container transition-colors">
-                + Nueva Etiqueta
-            </button>
-        </div>
+        <x-admin-nav-tabs />
     </div>
 
     <!-- Tags Table & Chips Grid -->

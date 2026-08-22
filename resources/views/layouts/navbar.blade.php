@@ -1,36 +1,43 @@
 <header class="sticky top-0 z-30 h-16 bg-surface/90 backdrop-blur-xl border-b border-surface-container-high/80 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-    <!-- Left: Mobile Brand & Search Trigger -->
-    <div class="flex items-center gap-4 flex-1 max-w-2xl">
+    <!-- Left: Mobile Brand & Desktop Search Trigger -->
+    <div class="flex items-center gap-2 sm:gap-4 flex-1 max-w-2xl min-w-0">
         <!-- Mobile Logo -->
-        <div class="flex md:hidden items-center gap-2">
+        <a href="{{ route('home') }}" class="flex md:hidden items-center gap-1.5 shrink-0">
             <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white shadow-sm">
                 <span class="material-symbols-outlined text-lg">lightbulb</span>
             </div>
-            <span class="font-headline font-bold text-lg text-primary">INNOVATEP</span>
-        </div>
+            <span class="font-headline font-bold text-base text-primary">INNOVATEP</span>
+        </a>
 
-        <!-- Global Search Input Button -->
+        <!-- Desktop Search Input Button (Hidden on mobile) -->
         <button @click="searchOpen = true" 
-                class="w-full max-w-lg flex items-center justify-between px-4 py-2 bg-surface-container-low/80 hover:bg-surface-container rounded-full text-sm text-on-surface-variant transition-all border border-surface-container-high shadow-xs group">
+                class="hidden sm:flex w-full max-w-lg items-center justify-between px-4 py-2 bg-surface-container-low/80 hover:bg-surface-container rounded-full text-sm text-on-surface-variant transition-all border border-surface-container-high shadow-xs group">
             <div class="flex items-center gap-2.5">
                 <span class="material-symbols-outlined text-lg text-outline group-hover:text-primary transition-colors">search</span>
                 <span class="text-xs sm:text-sm font-normal">Buscar ideas, personas o etiquetas...</span>
             </div>
-            <kbd class="hidden sm:inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono-tech bg-surface-container-lowest text-outline rounded border border-outline-variant/40 shadow-2xs">
+            <kbd class="inline-flex items-center gap-0.5 px-2 py-0.5 text-[10px] font-mono-tech bg-surface-container-lowest text-outline rounded border border-outline-variant/40 shadow-2xs">
                 Ctrl K
             </kbd>
         </button>
     </div>
 
     <!-- Right: Quick Actions & Profile -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <!-- Mobile Search Icon Button (Visible on mobile only) -->
+        <button @click="searchOpen = true" 
+                class="flex sm:hidden w-9 h-9 items-center justify-center rounded-full bg-surface-container-low text-on-surface-variant hover:text-primary border border-surface-container-high transition-colors"
+                title="Buscar">
+            <span class="material-symbols-outlined text-xl">search</span>
+        </button>
+
         @auth
         <!-- Notifications Bell Button -->
         <a href="{{ route('notifications.index') }}" 
-           class="relative w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors">
-            <span class="material-symbols-outlined text-2xl">notifications</span>
+           class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors">
+            <span class="material-symbols-outlined text-xl sm:text-2xl">notifications</span>
             @if(auth()->user()->unreadNotifications->count() > 0)
-            <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-secondary-container rounded-full ring-2 ring-surface"></span>
+            <span class="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2.5 h-2.5 bg-secondary-container rounded-full ring-2 ring-surface"></span>
             @endif
         </a>
 
@@ -75,7 +82,7 @@
                 <div class="border-t border-surface-container-high/60 my-1"></div>
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 px-4 py-2 text-xs font-medium text-primary hover:bg-surface-container-low">
                     <span class="material-symbols-outlined text-base">admin_panel_settings</span>
-                    <span>Panel Administrativo</span>
+                    <span>Panel de Administración</span>
                 </a>
                 @endif
 

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Inicio - INNOVATEP Ideas')
+@section('title', 'Comunidad - Feed de Innovación INNOVATEP')
 
 @section('content')
 <div class="space-y-8">

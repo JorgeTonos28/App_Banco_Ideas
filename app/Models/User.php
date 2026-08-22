@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
@@ -26,10 +26,18 @@ class User extends Authenticatable
         'job_title',
         'department',
         'regional',
+        'regional_id',
         'avatar',
         'bio',
         'is_active',
         'last_activity_at',
+        'must_change_password',
+        'two_factor_enabled',
+        'two_factor_type',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_code',
+        'two_factor_expires_at',
     ];
 
     /**
@@ -40,6 +48,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_code',
     ];
 
     /**
@@ -54,12 +64,21 @@ class User extends Authenticatable
             'last_activity_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_expires_at' => 'datetime',
+            'two_factor_recovery_codes' => 'array',
         ];
     }
 
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function regionalModel(): BelongsTo
+    {
+        return $this->belongsTo(Regional::class, 'regional_id');
     }
 
     public function ideas(): HasMany

@@ -15,11 +15,13 @@
 }">
 
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="space-y-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Gestión Administrativa de Ideas</h1>
             <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Control de ciclo de vida, moderación, asignación de responsables y seguimiento</p>
         </div>
+
+        <x-admin-nav-tabs />
     </div>
 
     <!-- Filters & Search Toolbar -->
