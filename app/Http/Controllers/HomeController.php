@@ -6,8 +6,8 @@ use App\Models\Category;
 use App\Models\Idea;
 use App\Models\IdeaRating;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class HomeController extends Controller
