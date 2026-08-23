@@ -140,4 +140,27 @@ class IdeaTagExplorerTest extends TestCase
         $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta1'));
         $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta2'));
     }
+
+    public function test_comma_separated_tags_are_split_and_saved_individually(): void
+    {
+        $payload = [
+            'title' => 'Gestión Automatizada con IA',
+            'description' => 'Descripción con múltiples etiquetas separadas por comas.',
+            'category_id' => $this->category->id,
+            'visibility' => 'public',
+            'tags' => ['Inteligencia Artificial, Robótica, Machine Learning', '#BigData, Ciberseguridad'],
+        ];
+
+        $response = $this->actingAs($this->user)->post(route('ideas.store'), $payload);
+
+        $response->assertRedirect();
+        $idea = Idea::where('title', 'Gestión Automatizada con IA')->first();
+        $this->assertNotNull($idea);
+        $this->assertCount(5, $idea->tags);
+        $this->assertTrue($idea->tags->contains('name', 'Inteligencia Artificial'));
+        $this->assertTrue($idea->tags->contains('name', 'Robótica'));
+        $this->assertTrue($idea->tags->contains('name', 'Machine Learning'));
+        $this->assertTrue($idea->tags->contains('name', 'BigData'));
+        $this->assertTrue($idea->tags->contains('name', 'Ciberseguridad'));
+    }
 }

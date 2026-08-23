@@ -116,21 +116,30 @@
         },
 
         addCustomTag(name) {
-            const clean = (name || this.tagInput || this.modalSearch || '').trim();
-            if (clean && !this.tagsList.includes(clean)) {
-                this.tagsList.push(clean);
-                if (!this.allTags.some(t => t.name.toLowerCase() === clean.toLowerCase())) {
-                    this.allTags.push({
-                        id: Date.now(),
-                        name: clean,
-                        slug: clean.toLowerCase().replace(/\s+/g, '-'),
-                        ideas_count: 0,
-                        category_ids: this.selectedCategoryId ? [parseInt(this.selectedCategoryId)] : []
-                    });
+            const raw = (name || this.tagInput || this.modalSearch || '').trim();
+            if (!raw) return;
+
+            const parts = raw.split(',')
+                .map(s => s.trim().replace(/^#+/, ''))
+                .filter(s => s.length > 0);
+
+            parts.forEach(clean => {
+                if (!this.tagsList.includes(clean)) {
+                    this.tagsList.push(clean);
+                    if (!this.allTags.some(t => (t.name || '').toLowerCase() === clean.toLowerCase())) {
+                        this.allTags.push({
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            name: clean,
+                            slug: clean.toLowerCase().replace(/\s+/g, '-'),
+                            ideas_count: 0,
+                            category_ids: this.selectedCategoryId ? [parseInt(this.selectedCategoryId)] : []
+                        });
+                    }
                 }
-                this.tagInput = '';
-                this.modalSearch = '';
-            }
+            });
+
+            this.tagInput = '';
+            this.modalSearch = '';
         }
      }">
 
@@ -255,7 +264,8 @@
                         <input type="text" 
                                x-model="tagInput" 
                                @keydown.enter.prevent="addCustomTag(tagInput)"
-                               placeholder="Escribe una etiqueta y presiona Enter o Agregar"
+                               @input="if (tagInput.includes(',')) { addCustomTag(tagInput); }"
+                               placeholder="Escribe etiquetas (puedes separar por comas: IA, Procesos, Digital) y presiona Enter"
                                class="flex-1 bg-surface-container-low text-on-surface text-xs rounded-xl py-2.5 px-3.5 border border-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary">
                         <button type="button" 
                                 @click="addCustomTag(tagInput)"
