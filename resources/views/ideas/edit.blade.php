@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6" 
      x-data="{ 
-        tagsList: {{ json_encode(old('tags', $selectedTags)) }}, 
+        tagsList: {{ json_encode(array_values(old('tags', $selectedTags ?? []))) }}, 
         tagInput: '',
         openTagModal: false,
         modalSearch: '',
@@ -13,10 +13,17 @@
         selectedCategoryFilter: null,
         selectedLetter: 'ALL',
         selectedCategoryId: '{{ old('category_id', $idea->category_id) }}',
-        titleText: '{{ old('title', $idea->title) }}',
-        descriptionText: '{{ old('description', $idea->description) }}',
-        allTags: {{ json_encode($allTags) }},
-        categories: {{ json_encode($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'icon' => $c->icon, 'color' => $c->color])) }},
+        titleText: '',
+        descriptionText: '',
+        allTags: {{ json_encode($allTags->values()) }},
+        categories: {{ json_encode($categories->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name, 'icon' => (string)($c->icon ?? 'folder'), 'color' => (string)($c->color ?? '#003e6f')])->values()) }},
+
+        init() {
+            if (this.$refs.titleInput) this.titleText = this.$refs.titleInput.value || '';
+            if (this.$refs.descriptionInput) this.descriptionText = this.$refs.descriptionInput.value || '';
+            const catEl = document.getElementById('category_id');
+            if (catEl && catEl.value) this.selectedCategoryId = catEl.value;
+        },
 
         toggleTag(tagName) {
             const index = this.tagsList.indexOf(tagName);
@@ -32,25 +39,25 @@
         },
 
         get filteredTags() {
-            let list = this.allTags;
-            if (this.modalSearch.trim().length > 0) {
+            let list = this.allTags || [];
+            if (this.modalSearch && this.modalSearch.trim().length > 0) {
                 const q = this.modalSearch.toLowerCase().trim();
                 return list.filter(t => t.name.toLowerCase().includes(q));
             }
             if (this.modalTab === 'categories') {
                 if (this.selectedCategoryFilter) {
-                    return list.filter(t => t.category_ids.includes(parseInt(this.selectedCategoryFilter)));
+                    return list.filter(t => t.category_ids && t.category_ids.includes(parseInt(this.selectedCategoryFilter)));
                 }
                 return list;
             }
             if (this.modalTab === 'popular') {
-                return [...list].sort((a, b) => b.ideas_count - a.ideas_count);
+                return [...list].sort((a, b) => (b.ideas_count || 0) - (a.ideas_count || 0));
             }
             if (this.modalTab === 'suggested') {
                 return this.suggestedTags;
             }
             if (this.selectedLetter !== 'ALL') {
-                return list.filter(t => t.name.toUpperCase().startsWith(this.selectedLetter));
+                return list.filter(t => t.name && t.name.toUpperCase().startsWith(this.selectedLetter));
             }
             return list;
         },
@@ -59,7 +66,7 @@
             const groups = {};
             const tags = this.filteredTags;
             tags.forEach(t => {
-                const letter = (t.name[0] || '#').toUpperCase();
+                const letter = (t.name && t.name[0] ? t.name[0] : '#').toUpperCase();
                 if (!groups[letter]) groups[letter] = [];
                 groups[letter].push(t);
             });
@@ -68,8 +75,8 @@
 
         get availableLetters() {
             const letters = new Set();
-            this.allTags.forEach(t => {
-                if (t.name) letters.add(t.name[0].toUpperCase());
+            (this.allTags || []).forEach(t => {
+                if (t.name && t.name[0]) letters.add(t.name[0].toUpperCase());
             });
             return Array.from(letters).sort();
         },
@@ -81,8 +88,8 @@
             // 1. By selected category
             if (this.selectedCategoryId) {
                 const catId = parseInt(this.selectedCategoryId);
-                this.allTags.forEach(t => {
-                    if (t.category_ids.includes(catId) && !seen.has(t.name)) {
+                (this.allTags || []).forEach(t => {
+                    if (t.category_ids && t.category_ids.includes(catId) && !seen.has(t.name)) {
                         seen.add(t.name);
                         suggestions.push(t);
                     }
@@ -92,8 +99,8 @@
             // 2. Text keyword match from title & description
             const text = ((this.titleText || '') + ' ' + (this.descriptionText || '')).toLowerCase();
             if (text.trim().length >= 3) {
-                this.allTags.forEach(t => {
-                    const tName = t.name.toLowerCase();
+                (this.allTags || []).forEach(t => {
+                    const tName = (t.name || '').toLowerCase();
                     if (tName.length >= 3 && text.includes(tName) && !seen.has(t.name)) {
                         seen.add(t.name);
                         suggestions.push(t);
@@ -109,7 +116,7 @@
         },
 
         addCustomTag(name) {
-            const clean = (name || this.tagInput || this.modalSearch).trim();
+            const clean = (name || this.tagInput || this.modalSearch || '').trim();
             if (clean && !this.tagsList.includes(clean)) {
                 this.tagsList.push(clean);
                 if (!this.allTags.some(t => t.name.toLowerCase() === clean.toLowerCase())) {
@@ -164,7 +171,8 @@
                 <input type="text" 
                        id="title" 
                        name="title" 
-                       x-model="titleText"
+                       x-ref="titleInput"
+                       @input="titleText = $event.target.value"
                        value="{{ old('title', $idea->title) }}" 
                        required 
                        class="w-full bg-surface-container-low text-on-surface text-sm sm:text-base rounded-2xl py-3 px-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
@@ -177,7 +185,8 @@
                 </label>
                 <textarea id="description" 
                           name="description" 
-                          x-model="descriptionText"
+                          x-ref="descriptionInput"
+                          @input="descriptionText = $event.target.value"
                           rows="5" 
                           required 
                           class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y">{{ old('description', $idea->description) }}</textarea>
@@ -202,11 +211,11 @@
                     </label>
                     <select id="category_id" 
                             name="category_id" 
-                            x-model="selectedCategoryId"
+                            @change="selectedCategoryId = $event.target.value"
                             required 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}" {{ old('category_id', $idea->category_id) == $cat->id ? 'selected' : '' }}>
+                        <option value="{{ $cat->id }}" {{ (string)old('category_id', $idea->category_id) === (string)$cat->id ? 'selected' : '' }}>
                             {{ $cat->name }}
                         </option>
                         @endforeach
