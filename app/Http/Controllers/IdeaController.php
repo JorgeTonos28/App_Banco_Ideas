@@ -105,10 +105,28 @@ class IdeaController extends Controller
      */
     public function create(): View
     {
-        $categories = Category::all();
-        $tags = Tag::all();
+        $categories = Category::orderBy('name')->get();
+        
+        $allTags = Tag::withCount('ideas')
+            ->with(['ideas' => function ($q) {
+                $q->select('ideas.id', 'ideas.category_id');
+            }])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                    'ideas_count' => (int) $tag->ideas_count,
+                    'category_ids' => $tag->ideas->pluck('category_id')->filter()->unique()->values()->all(),
+                ];
+            });
 
-        return view('ideas.create', compact('categories', 'tags'));
+        $popularTags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(8)->get();
+        $tags = $popularTags;
+
+        return view('ideas.create', compact('categories', 'allTags', 'popularTags', 'tags'));
     }
 
     /**
@@ -234,11 +252,29 @@ class IdeaController extends Controller
     {
         $this->authorize('update', $idea);
 
-        $categories = Category::all();
-        $tags = Tag::all();
+        $categories = Category::orderBy('name')->get();
+        
+        $allTags = Tag::withCount('ideas')
+            ->with(['ideas' => function ($q) {
+                $q->select('ideas.id', 'ideas.category_id');
+            }])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                    'ideas_count' => (int) $tag->ideas_count,
+                    'category_ids' => $tag->ideas->pluck('category_id')->filter()->unique()->values()->all(),
+                ];
+            });
+
+        $popularTags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(8)->get();
+        $tags = $popularTags;
         $selectedTags = $idea->tags->pluck('name')->toArray();
 
-        return view('ideas.edit', compact('idea', 'categories', 'tags', 'selectedTags'));
+        return view('ideas.edit', compact('idea', 'categories', 'allTags', 'popularTags', 'tags', 'selectedTags'));
     }
 
     /**
