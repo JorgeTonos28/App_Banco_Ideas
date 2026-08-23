@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Idea;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
@@ -45,10 +44,12 @@ class AdminDashboardController extends Controller
         $categoriesBreakdown = Category::withCount('ideas')->orderByDesc('ideas_count')->get();
 
         // 5. Active departments ranking
-        $departmentsRanking = User::select('department')
-            ->whereNotNull('department')
-            ->withCount('ideas')
-            ->groupBy('department')
+        $departmentsRanking = User::query()
+            ->select('users.department')
+            ->selectRaw('COUNT(ideas.id) AS ideas_count')
+            ->leftJoin('ideas', 'ideas.user_id', '=', 'users.id')
+            ->whereNotNull('users.department')
+            ->groupBy('users.department')
             ->orderByDesc('ideas_count')
             ->take(5)
             ->get();
