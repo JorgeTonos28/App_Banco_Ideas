@@ -69,7 +69,9 @@
                     </label>
                     <input type="text" 
                            name="code" 
-                           maxlength="10" 
+                           maxlength="10"
+                           required
+                           :disabled="useRecovery"
                            autofocus 
                            autocomplete="one-time-code"
                            placeholder="123456" 
@@ -82,6 +84,8 @@
                     </label>
                     <input type="text" 
                            name="code" 
+                           required
+                           :disabled="!useRecovery"
                            placeholder="ABCDE12345" 
                            class="w-full bg-surface-container-low text-center text-lg font-mono-tech font-bold uppercase rounded-2xl py-3 px-4 border border-surface-container-high focus:ring-2 focus:ring-primary/30 focus:border-primary">
                 </div>
