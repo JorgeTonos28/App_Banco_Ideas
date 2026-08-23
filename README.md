@@ -37,6 +37,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - **App Autenticadora (TOTP/QR)**: Compatibilidad con Google Authenticator, Microsoft Authenticator y Authy mediante escaneo de código QR y generación de claves de respaldo.
   - **Código por Correo (Email OTP)**: Códigos temporales de 6 dígitos enviados al correo institucional con expiración y rate limiting.
   - **Desafío en Inicio de Sesión**: Protección reforzada al autenticarse en la plataforma.
+  - **Códigos de Recuperación**: El desafío de acceso permite utilizar códigos de emergencia generados al activar 2FA.
 - **Onboarding e Invitaciones**: Activación de cuenta por correo con verificación y establecimiento personalizado de contraseña.
 
 ### 5. Panel Administrativo (Panel de Innovación)
