@@ -17,6 +17,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - 🏷️ **Por Categoría Oficial**: Clasificación de etiquetas vinculadas a cada categoría institucional.
   - 🔥 **Más Populares**: Ranking de etiquetas con mayor frecuencia de uso en ideas.
   - 💡 **Recomendadas para tu idea**: Detección dinámica y semántica de etiquetas afines según el texto redactado y la categoría seleccionada.
+- **Entrada Rápida y Múltiple (Separación por Comas)**: Soporte para ingresar múltiples etiquetas de una sola vez separadas por comas (ej.: `IA, Robótica, Talleres`), creando y agregando automáticamente los chips correspondientes tanto al escribir como al pegar texto.
 - **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
 - **Borradores y Estados**: Capacidad de guardar borradores privados o publicar directamente.
 - **Ciclo de Vida Evolutivo**: Seguimiento en tiempo real a través de las etapas:

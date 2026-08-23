@@ -147,20 +147,23 @@ class IdeaController extends Controller
                 'visibility' => $request->visibility,
             ]);
 
-            // Handle Tags (create if not exist)
+            // Handle Tags (create if not exist, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
-                foreach ($request->tags as $tagName) {
-                    $tagName = trim($tagName);
-                    if ($tagName !== '') {
-                        $tag = Tag::firstOrCreate(
-                            ['name' => $tagName],
-                            ['slug' => Str::slug($tagName)]
-                        );
-                        $tagIds[] = $tag->id;
+                foreach ($request->tags as $tagItem) {
+                    $exploded = explode(',', (string)$tagItem);
+                    foreach ($exploded as $rawName) {
+                        $tagName = trim(ltrim(trim($rawName), '#'));
+                        if ($tagName !== '') {
+                            $tag = Tag::firstOrCreate(
+                                ['name' => $tagName],
+                                ['slug' => Str::slug($tagName)]
+                            );
+                            $tagIds[] = $tag->id;
+                        }
                     }
                 }
-                $idea->tags()->sync($tagIds);
+                $idea->tags()->sync(array_values(array_unique($tagIds)));
             }
 
             // Handle Attachments
@@ -295,20 +298,23 @@ class IdeaController extends Controller
                 'visibility' => $request->visibility,
             ]);
 
-            // Sync Tags
+            // Sync Tags (create if not exist, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
-                foreach ($request->tags as $tagName) {
-                    $tagName = trim($tagName);
-                    if ($tagName !== '') {
-                        $tag = Tag::firstOrCreate(
-                            ['name' => $tagName],
-                            ['slug' => Str::slug($tagName)]
-                        );
-                        $tagIds[] = $tag->id;
+                foreach ($request->tags as $tagItem) {
+                    $exploded = explode(',', (string)$tagItem);
+                    foreach ($exploded as $rawName) {
+                        $tagName = trim(ltrim(trim($rawName), '#'));
+                        if ($tagName !== '') {
+                            $tag = Tag::firstOrCreate(
+                                ['name' => $tagName],
+                                ['slug' => Str::slug($tagName)]
+                            );
+                            $tagIds[] = $tag->id;
+                        }
                     }
                 }
-                $idea->tags()->sync($tagIds);
+                $idea->tags()->sync(array_values(array_unique($tagIds)));
             } else {
                 $idea->tags()->detach();
             }
