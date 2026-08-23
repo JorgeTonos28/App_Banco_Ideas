@@ -124,7 +124,7 @@ class Idea extends Model
     {
         if (!$user) return false;
         if ($user->isAdmin()) return true;
-        return $this->user_id === $user->id && in_array($this->status, ['nueva']) && $this->visibility === 'draft' || ($this->user_id === $user->id && $this->status === 'nueva');
+        return $this->user_id === $user->id && !in_array($this->status, ['implementada', 'descartada', 'archivada']);
     }
 
     public function isFavoritedBy(?User $user): bool
