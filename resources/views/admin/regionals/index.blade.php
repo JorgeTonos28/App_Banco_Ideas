@@ -142,7 +142,7 @@
             <h3 class="font-headline font-bold text-lg text-on-surface mb-1">Editar Regional INFOTEP</h3>
             <p class="text-xs text-on-surface-variant mb-4" x-text="'Modificar datos de ' + currentRegional.code"></p>
 
-            <form :action="'/admin/regionales/' + currentRegional.id" method="POST" class="space-y-4">
+            <form :action="'{{ url('/admin/regionales') }}/' + currentRegional.id" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
 

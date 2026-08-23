@@ -225,12 +225,12 @@
                             </button>
                         </div>
                         <div class="flex items-center gap-2">
-                            <a :href="'/ideas/' + (selectedIdea?.id || '') + '/editar'" 
+                            <a :href="'{{ url('/ideas') }}/' + (selectedIdea?.id || '') + '/editar'" 
                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold transition-colors">
                                 <span class="material-symbols-outlined text-sm">edit</span>
                                 <span>Editar Propuesta y Etiquetas</span>
                             </a>
-                            <a :href="'/ideas/' + (selectedIdea?.slug || selectedIdea?.id || '')" 
+                            <a :href="'{{ url('/ideas') }}/' + (selectedIdea?.slug || selectedIdea?.id || '')" 
                                target="_blank"
                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-colors">
                                 <span class="material-symbols-outlined text-sm">open_in_new</span>
@@ -240,7 +240,7 @@
                     </div>
 
                     <!-- Update Form -->
-                    <form :action="'/admin/ideas/' + (selectedIdea?.id || '')" method="POST" class="space-y-4">
+                    <form :action="'{{ url('/admin/ideas') }}/' + (selectedIdea?.id || '')" method="POST" class="space-y-4">
                         @csrf
                         @method('PUT')
 

@@ -365,7 +365,7 @@
             <h3 class="font-headline font-bold text-lg text-on-surface mb-1">Editar Colaborador</h3>
             <p class="text-xs text-on-surface-variant mb-5" x-text="'Actualizar datos de ' + currentUser.name"></p>
 
-            <form :action="'/admin/usuarios/' + currentUser.id" method="POST" class="space-y-4">
+            <form :action="'{{ url('/admin/usuarios') }}/' + currentUser.id" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
 
