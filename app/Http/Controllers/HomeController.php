@@ -6,11 +6,22 @@ use App\Models\Category;
 use App\Models\Idea;
 use App\Models\IdeaRating;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class HomeController extends Controller
 {
+    /**
+     * Resolve the application entry point for guests and authenticated users.
+     */
+    public function root(): RedirectResponse
+    {
+        return auth()->check()
+            ? redirect()->route('my-ideas.index')
+            : redirect()->route('login');
+    }
+
     public function index(Request $request): View
     {
         // 1. Overall Platform Stats

@@ -39,6 +39,10 @@ Route::post('/onboarding/activar/{token}', [OnboardingController::class, 'activa
 // ==========================================
 // Authenticated Platform Routes
 // ==========================================
+// Public application entry point: redirect guests to login and
+// authenticated users to their ideas dashboard.
+Route::get('/', [HomeController::class, 'root'])->name('home');
+
 Route::middleware('auth')->group(function () {
 
     // Mandatory Password Change for Temporary Passwords
@@ -50,7 +54,6 @@ Route::middleware('auth')->group(function () {
 
     // Core Platform Routes
     // Root landing module: Mis Ideas
-    Route::get('/', [MyIdeasController::class, 'index'])->name('home');
     Route::get('/mis-ideas', [MyIdeasController::class, 'index'])->name('my-ideas.index');
 
     // Community / Innovation Feed
