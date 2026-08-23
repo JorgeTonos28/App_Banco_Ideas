@@ -147,7 +147,7 @@ class IdeaController extends Controller
                 'visibility' => $request->visibility,
             ]);
 
-            // Handle Tags (create if not exist, support comma-separated items)
+            // Handle Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
                 foreach ($request->tags as $tagItem) {
@@ -155,10 +155,7 @@ class IdeaController extends Controller
                     foreach ($exploded as $rawName) {
                         $tagName = trim(ltrim(trim($rawName), '#'));
                         if ($tagName !== '') {
-                            $tag = Tag::firstOrCreate(
-                                ['name' => $tagName],
-                                ['slug' => Str::slug($tagName)]
-                            );
+                            $tag = Tag::findOrCreateNormalized($tagName);
                             $tagIds[] = $tag->id;
                         }
                     }
@@ -298,7 +295,7 @@ class IdeaController extends Controller
                 'visibility' => $request->visibility,
             ]);
 
-            // Sync Tags (create if not exist, support comma-separated items)
+            // Sync Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
                 foreach ($request->tags as $tagItem) {
@@ -306,10 +303,7 @@ class IdeaController extends Controller
                     foreach ($exploded as $rawName) {
                         $tagName = trim(ltrim(trim($rawName), '#'));
                         if ($tagName !== '') {
-                            $tag = Tag::firstOrCreate(
-                                ['name' => $tagName],
-                                ['slug' => Str::slug($tagName)]
-                            );
+                            $tag = Tag::findOrCreateNormalized($tagName);
                             $tagIds[] = $tag->id;
                         }
                     }

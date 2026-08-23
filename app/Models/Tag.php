@@ -30,4 +30,14 @@ class Tag extends Model
     {
         return $this->belongsToMany(Idea::class, 'idea_tag');
     }
+
+    public static function findOrCreateNormalized(string $name): self
+    {
+        return \App\Services\TagSimilarityService::findOrCreateNormalized($name);
+    }
+
+    public static function findSimilar(string $name, float $threshold = 0.70, int $limit = 5)
+    {
+        return \App\Services\TagSimilarityService::findSimilar($name, null, $threshold, $limit);
+    }
 }

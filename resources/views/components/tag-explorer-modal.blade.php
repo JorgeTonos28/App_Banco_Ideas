@@ -165,13 +165,39 @@
         <!-- Tags List Area (Scrollable Body) -->
         <div class="p-4 sm:p-6 overflow-y-auto max-h-[50vh] flex-1 space-y-6">
 
+            <!-- Similar Tags Suggestion in Search Mode (Fuzzy / Similarity) -->
+            <div x-show="modalSearch.length >= 2 && modalSimilarTags.length > 0" 
+                 class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                        <span class="material-symbols-outlined text-sm text-amber-600">compare_arrows</span>
+                        <span>Etiquetas similares ya existentes en la comunidad:</span>
+                    </div>
+                    <span class="text-[10px] font-mono-tech text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full font-bold">
+                        Recomendadas para evitar duplicados
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <template x-for="sim in modalSimilarTags" :key="sim.id">
+                        <button type="button" 
+                                @click="toggleTag(sim.name)" 
+                                :class="isTagSelected(sim.name) ? 'bg-primary text-white border-primary shadow-xs' : 'bg-surface-container-lowest hover:bg-amber-100 border-amber-300 text-on-surface'"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all group">
+                            <span class="font-mono-tech font-bold text-amber-800" x-text="'#' + sim.name"></span>
+                            <span class="px-1.5 py-0.5 rounded-md bg-amber-200 text-amber-900 text-[10px] font-mono-tech font-bold" x-text="sim.ideas_count + ' ideas'"></span>
+                            <span class="material-symbols-outlined text-xs text-primary" x-show="isTagSelected(sim.name)">check</span>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
             <!-- Empty Search State & Create Action -->
-            <div x-show="filteredTags.length === 0" class="text-center py-10 space-y-3">
+            <div x-show="filteredTags.length === 0" class="text-center py-8 space-y-3">
                 <div class="w-12 h-12 rounded-full bg-surface-container mx-auto flex items-center justify-center text-outline">
                     <span class="material-symbols-outlined text-2xl">search_off</span>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-on-surface">No se encontraron etiquetas existentes</p>
+                    <p class="text-sm font-semibold text-on-surface">No se encontraron etiquetas exactas</p>
                     <p class="text-xs text-on-surface-variant mt-1" x-show="modalSearch.length > 0">
                         ¿Deseas registrar "<span class="font-bold text-primary" x-text="modalSearch"></span>" como una nueva etiqueta?
                     </p>
