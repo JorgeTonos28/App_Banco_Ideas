@@ -106,13 +106,32 @@
 
         <!-- Tags List -->
         @if($idea->tags->isNotEmpty())
-        <div class="flex flex-wrap gap-2 pt-2">
+        <div class="flex flex-wrap items-center gap-2 pt-2">
             @foreach($idea->tags as $tag)
             <a href="{{ route('ideas.index', ['etiqueta' => $tag->slug]) }}" 
                class="px-3 py-1 rounded-lg bg-surface-container hover:bg-primary-fixed hover:text-primary text-on-surface-variant text-xs font-mono-tech transition-colors">
                 #{{ $tag->name }}
             </a>
             @endforeach
+
+            @auth
+            @if($idea->isEditableBy(auth()->user()))
+            <a href="{{ route('ideas.edit', $idea->id) }}" 
+               class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-high/60 hover:bg-primary hover:text-white text-on-surface-variant text-xs font-mono-tech transition-colors"
+               title="Editar las etiquetas de esta propuesta">
+                <span class="material-symbols-outlined text-xs">edit</span>
+                <span>Editar etiquetas</span>
+            </a>
+            @endif
+            @endauth
+        </div>
+        @elseif($idea->isEditableBy(auth()->user()))
+        <div class="pt-2">
+            <a href="{{ route('ideas.edit', $idea->id) }}" 
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary text-xs font-mono-tech font-bold transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span>
+                <span>Agregar etiquetas a tu propuesta</span>
+            </a>
         </div>
         @endif
     </div>

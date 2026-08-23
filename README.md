@@ -18,6 +18,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - 🔥 **Más Populares**: Ranking de etiquetas con mayor frecuencia de uso en ideas.
   - 💡 **Recomendadas para tu idea**: Detección dinámica y semántica de etiquetas afines según el texto redactado y la categoría seleccionada.
 - **Entrada Rápida y Múltiple (Separación por Comas)**: Soporte para ingresar múltiples etiquetas de una sola vez separadas por comas (ej.: `IA, Robótica, Talleres`), creando y agregando automáticamente los chips correspondientes tanto al escribir como al pegar texto.
+- **Edición In-situ de Etiquetas**: Capacidad de editar, renombrar o corregir cualquier etiqueta ya agregada a una idea directamente desde su chip interactivo (haciendo clic en el ícono de edición ✏️ o doble clic), con guardado instantáneo y revalidación de similitud.
 - **Motor Inteligente de Detección de Etiquetas Similares y Duplicadas**:
   - 🛡️ **Prevención Canónica de Duplicados**: Unificación automática de términos sin distinción de mayúsculas/minúsculas o tildes (ej.: `automatizacion` se asocia canónicamente con `Automatización`).
   - ⚡ **Detección de Similares en Tiempo Real (Fuzzy & Lematización en Español)**: Identifica variaciones de singular/plural (`Sensor` ↔ `Sensores`, `Capacitación` ↔ `Capacitaciones`) y errores tipográficos (`Inteligencia Artifical` ↔ `Inteligencia Artificial`).
