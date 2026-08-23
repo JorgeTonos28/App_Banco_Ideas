@@ -316,7 +316,7 @@
                         </button>
 
                         <!-- Delete Button -->
-                        <form :action="'/admin/etiquetas/' + tag.id" method="POST" :onsubmit="'return confirm(\'¿Eliminar etiqueta #' + tag.name.replace(/'/g, '\\\'') + '? Se desvinculará de las ideas asociadas.\');'" class="inline">
+                        <form :action="'{{ url('/admin/etiquetas') }}/' + tag.id" method="POST" :onsubmit="'return confirm(\'¿Eliminar etiqueta #' + tag.name.replace(/'/g, '\\\'') + '? Se desvinculará de las ideas asociadas.\');'" class="inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="text-outline hover:text-error p-1 rounded-lg hover:bg-error/10 transition-colors" title="Eliminar etiqueta">
@@ -411,7 +411,7 @@
                 </button>
             </div>
 
-            <form :action="'/admin/etiquetas/' + currentTag.id" method="POST" class="space-y-4">
+            <form :action="'{{ url('/admin/etiquetas') }}/' + currentTag.id" method="POST" class="space-y-4">
                 @csrf
                 @method('PUT')
                 

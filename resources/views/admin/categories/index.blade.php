@@ -66,7 +66,7 @@
         <div class="relative bg-surface-container-lowest rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-surface-container-high z-10">
             <h3 class="font-headline font-bold text-lg text-on-surface mb-4" x-text="editMode ? 'Editar Categoría' : 'Nueva Categoría'"></h3>
 
-            <form :action="editMode ? '/admin/categorias/' + currentCat.id : '{{ route('admin.categories.store') }}'" method="POST" class="space-y-4">
+            <form :action="editMode ? '{{ url('/admin/categorias') }}/' + currentCat.id : '{{ route('admin.categories.store') }}'" method="POST" class="space-y-4">
                 @csrf
                 <template x-if="editMode">
                     <input type="hidden" name="_method" value="PUT">
