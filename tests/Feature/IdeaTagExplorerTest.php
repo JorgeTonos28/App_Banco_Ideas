@@ -103,6 +103,39 @@ class IdeaTagExplorerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Explorador de Etiquetas');
+        $response->assertSee('Ver todas las etiquetas');
         $response->assertSee('E-learning');
+    }
+
+    public function test_user_can_update_existing_idea_tags(): void
+    {
+        $idea = Idea::create([
+            'user_id' => $this->user->id,
+            'category_id' => $this->category->id,
+            'title' => 'Idea en Evolución',
+            'summary' => 'Resumen',
+            'description' => 'Descripción inicial de la propuesta.',
+            'status' => 'en_revision',
+            'visibility' => 'public',
+        ]);
+
+        $initialTag = Tag::create(['name' => 'Inicial', 'slug' => 'inicial']);
+        $idea->tags()->attach($initialTag->id);
+
+        $payload = [
+            'title' => 'Idea en Evolución Actualizada',
+            'description' => 'Descripción mejorada con nuevas etiquetas.',
+            'category_id' => $this->category->id,
+            'visibility' => 'public',
+            'tags' => ['Inicial', 'NuevaEtiqueta1', 'NuevaEtiqueta2'],
+        ];
+
+        $response = $this->actingAs($this->user)->put(route('ideas.update', $idea->id), $payload);
+
+        $response->assertRedirect(route('ideas.show', $idea->slug));
+        $idea->refresh();
+        $this->assertCount(3, $idea->tags);
+        $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta1'));
+        $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta2'));
     }
 }

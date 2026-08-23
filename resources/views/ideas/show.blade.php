@@ -35,9 +35,10 @@
             <!-- Edit button for author/admin if editable -->
             @if($idea->isEditableBy(auth()->user()))
             <a href="{{ route('ideas.edit', $idea->id) }}" 
-               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface transition-colors">
+               class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-fixed hover:bg-primary hover:text-white text-primary text-xs font-bold transition-colors"
+               title="Editar idea y etiquetas">
                 <span class="material-symbols-outlined text-base">edit</span>
-                <span>Editar</span>
+                <span>Editar Propuesta</span>
             </a>
             @endif
             @endauth

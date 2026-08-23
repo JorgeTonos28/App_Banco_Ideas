@@ -214,14 +214,29 @@
 
                 <div class="space-y-6">
                     <!-- Drawer Header -->
-                    <div class="flex items-start justify-between border-b border-surface-container-high pb-4">
-                        <div>
-                            <span class="text-[10px] font-mono-tech uppercase font-bold text-outline">Gestión Administrativa</span>
-                            <h2 class="font-headline font-bold text-lg text-on-surface mt-0.5" x-text="selectedIdea?.title"></h2>
+                    <div class="border-b border-surface-container-high pb-4 space-y-3">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <span class="text-[10px] font-mono-tech uppercase font-bold text-outline">Gestión Administrativa</span>
+                                <h2 class="font-headline font-bold text-lg text-on-surface mt-0.5" x-text="selectedIdea?.title"></h2>
+                            </div>
+                            <button @click="drawerOpen = false" class="text-outline hover:text-on-surface p-1">
+                                <span class="material-symbols-outlined text-xl">close</span>
+                            </button>
                         </div>
-                        <button @click="drawerOpen = false" class="text-outline hover:text-on-surface p-1">
-                            <span class="material-symbols-outlined text-xl">close</span>
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <a :href="'/ideas/' + (selectedIdea?.id || '') + '/editar'" 
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold transition-colors">
+                                <span class="material-symbols-outlined text-sm">edit</span>
+                                <span>Editar Propuesta y Etiquetas</span>
+                            </a>
+                            <a :href="'/ideas/' + (selectedIdea?.slug || selectedIdea?.id || '')" 
+                               target="_blank"
+                               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-colors">
+                                <span class="material-symbols-outlined text-sm">open_in_new</span>
+                                <span>Ver Detalle</span>
+                            </a>
+                        </div>
                     </div>
 
                     <!-- Update Form -->

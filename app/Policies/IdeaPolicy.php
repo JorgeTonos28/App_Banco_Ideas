@@ -52,8 +52,8 @@ class IdeaPolicy
             return true;
         }
 
-        // Author can only update their own idea if it's in 'nueva' state or a draft
-        return $idea->user_id === $user->id && (in_array($idea->status, ['nueva']) || $idea->visibility === 'draft');
+        // Author can update their own idea if it's not implemented, discarded or archived
+        return $idea->user_id === $user->id && !in_array($idea->status, ['implementada', 'descartada', 'archivada']);
     }
 
     /**
