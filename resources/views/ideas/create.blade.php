@@ -15,6 +15,8 @@
         selectedCategoryId: '{{ old('category_id', '') }}',
         titleText: '',
         descriptionText: '',
+        editingTagIdx: null,
+        editingTagValue: '',
         allTags: {{ json_encode($allTags->values()) }},
         categories: {{ json_encode($categories->map(fn($c) => ['id' => (int)$c->id, 'name' => (string)$c->name, 'icon' => (string)($c->icon ?? 'folder'), 'color' => (string)($c->color ?? '#003e6f')])->values()) }},
 
@@ -137,6 +139,55 @@
 
         isTagSelected(tagName) {
             return this.tagsList.includes(tagName);
+        },
+
+        startEditTag(idx) {
+            this.editingTagIdx = idx;
+            this.editingTagValue = this.tagsList[idx];
+            this.$nextTick(() => {
+                const input = document.getElementById('editTagInput_' + idx);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            });
+        },
+
+        saveEditTag(idx) {
+            if (this.editingTagIdx === null) return;
+            const raw = (this.editingTagValue || '').trim();
+            if (!raw) {
+                this.tagsList.splice(idx, 1);
+                this.editingTagIdx = null;
+                return;
+            }
+            
+            const cleanNorm = this.normalizeString(raw);
+            const existing = (this.allTags || []).find(t => 
+                this.normalizeString(t.name) === cleanNorm || 
+                (t.slug && t.slug === cleanNorm.replace(/\s+/g, '-'))
+            );
+            const finalName = existing ? existing.name : raw.replace(/^#+/, '').trim();
+            
+            this.tagsList[idx] = finalName;
+            
+            if (!existing && !this.allTags.some(t => this.normalizeString(t.name) === cleanNorm)) {
+                this.allTags.push({
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    name: finalName,
+                    slug: cleanNorm.replace(/\s+/g, '-'),
+                    ideas_count: 0,
+                    category_ids: this.selectedCategoryId ? [parseInt(this.selectedCategoryId)] : []
+                });
+            }
+            
+            this.editingTagIdx = null;
+            this.editingTagValue = '';
+        },
+
+        cancelEditTag() {
+            this.editingTagIdx = null;
+            this.editingTagValue = '';
         },
 
         get filteredTags() {
@@ -382,7 +433,7 @@
                 </div>
             </div>
 
-            <!-- Tags Input with Chips, Real-time Similarity Detection & Modal Explorer -->
+            <!-- Tags Input with Chips, In-place Editing, Real-time Similarity Detection & Modal Explorer -->
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech">
@@ -445,17 +496,61 @@
                         </div>
                     </div>
 
-                    <!-- Selected Tags Chips List -->
-                    <div class="flex flex-wrap gap-2 pt-1 min-h-[32px]">
+                    <!-- Selected Tags Chips List with In-place Editing -->
+                    <div class="flex flex-wrap gap-2 pt-1 min-h-[32px] items-center">
                         <template x-for="(tag, idx) in tagsList" :key="idx">
-                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-primary-fixed text-on-primary-fixed-variant text-xs font-mono-tech">
-                                <span x-text="'#' + tag"></span>
-                                <input type="hidden" name="tags[]" :value="tag">
-                                <button type="button" @click="tagsList.splice(idx, 1)" class="hover:text-error">
-                                    <span class="material-symbols-outlined text-xs">close</span>
-                                </button>
-                            </span>
+                            <div class="relative">
+                                <!-- Normal Chip Mode -->
+                                <template x-if="editingTagIdx !== idx">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-fixed text-on-primary-fixed-variant text-xs font-mono-tech group transition-all hover:shadow-2xs">
+                                        <span x-text="'#' + tag" @dblclick="startEditTag(idx)" class="cursor-pointer select-none font-bold" title="Doble clic o clic en el lápiz para editar"></span>
+                                        <input type="hidden" name="tags[]" :value="tag">
+                                        
+                                        <!-- Edit Button -->
+                                        <button type="button" 
+                                                @click="startEditTag(idx)" 
+                                                class="text-on-primary-fixed-variant/60 hover:text-primary p-0.5 rounded transition-colors"
+                                                title="Editar esta etiqueta">
+                                            <span class="material-symbols-outlined text-[13px]">edit</span>
+                                        </button>
+                                        
+                                        <!-- Remove Button -->
+                                        <button type="button" 
+                                                @click="tagsList.splice(idx, 1)" 
+                                                class="text-on-primary-fixed-variant/60 hover:text-error p-0.5 rounded transition-colors"
+                                                title="Quitar etiqueta">
+                                            <span class="material-symbols-outlined text-[13px]">close</span>
+                                        </button>
+                                    </span>
+                                </template>
+
+                                <!-- Inline Editing Mode -->
+                                <template x-if="editingTagIdx === idx">
+                                    <div class="inline-flex items-center gap-1 p-1 bg-surface-container-lowest border-2 border-primary rounded-xl shadow-xs">
+                                        <span class="text-xs font-mono-tech text-primary font-bold pl-1.5">#</span>
+                                        <input type="text" 
+                                               x-model="editingTagValue" 
+                                               :id="'editTagInput_' + idx"
+                                               @keydown.enter.prevent="saveEditTag(idx)"
+                                               @keydown.escape.prevent="cancelEditTag()"
+                                               class="bg-transparent text-xs font-mono-tech font-bold text-on-surface py-0.5 px-1 border-none focus:outline-none w-28 sm:w-36">
+                                        <button type="button" 
+                                                @click="saveEditTag(idx)" 
+                                                class="p-1 bg-primary text-white rounded-lg hover:bg-primary-container transition-colors"
+                                                title="Guardar cambio">
+                                            <span class="material-symbols-outlined text-xs">check</span>
+                                        </button>
+                                        <button type="button" 
+                                                @click="cancelEditTag()" 
+                                                class="p-1 text-outline hover:text-on-surface rounded-lg transition-colors"
+                                                title="Cancelar">
+                                            <span class="material-symbols-outlined text-xs">close</span>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
                         </template>
+                        
                         <div x-show="tagsList.length === 0" class="text-xs text-outline italic py-1">
                             No has seleccionado ninguna etiqueta aún.
                         </div>
