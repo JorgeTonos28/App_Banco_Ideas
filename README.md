@@ -61,8 +61,11 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - **Regla de Protección de Administrador Único**: Bloqueo estricto para impedir eliminar, desactivar o degradar al último administrador general activo.
 - **Gestión Configurable de Regionales INFOTEP**:
   - Mantenimiento completo de direcciones regionales (`ONA - Oficina Nacional`, `DRM - Regional Metropolitana`, `DRO`, `DRV`, `DRCS`, `DRE`, `DRCN`, `DRCNE`, `DRS`).
-  - Creación de nuevas sedes, edición de nombres/códigos y alternancia de estados (habilitar / inhabilitar).
-- **Taxonomía**: Administración de categorías y fusión de etiquetas duplicadas.
+- **Taxonomía y Control Inteligente de Etiquetas**:
+  - 🔍 **Buscador Dinámico en Tiempo Real**: Filtrado reactivo instantáneo de etiquetas por nombre y conteo de ideas mientras se escribe.
+  - ✏️ **Edición y Corrección de Nombres**: Modificación de términos con normalización de caracteres y slugs.
+  - ⚡ **Fusión Inteligente Automática**: Si al corregir una etiqueta se asigna el nombre de una etiqueta ya existente, el sistema unifica automáticamente ambas etiquetas reasignando de manera segura todas las ideas vinculadas y eliminando la duplicada.
+  - 🔀 **Fusión Manual Asistida**: Selector visual para transferir propuestas entre descriptores y consolidar el catálogo.
 
 ---
 
