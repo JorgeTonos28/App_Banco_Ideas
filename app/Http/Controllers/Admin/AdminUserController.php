@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\UserInvitationMail;
 use App\Models\Regional;
 use App\Models\User;
 use App\Models\UserInvitation;
@@ -10,10 +11,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Throwable;
 
 class AdminUserController extends Controller
 {
@@ -84,6 +88,18 @@ class AdminUserController extends Controller
             $activationLink = route('onboarding.accept', $token);
             session()->flash('invitation_link', $activationLink);
 
+            try {
+                Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $activationLink));
+            } catch (Throwable $exception) {
+                Log::error('No se pudo enviar la invitación de onboarding.', [
+                    'invitation_id' => $invitation->id,
+                    'recipient' => $invitation->email,
+                    'exception' => $exception,
+                ]);
+
+                return redirect()->route('admin.users.index')->with('error', "La invitación fue creada, pero no se pudo enviar el correo a {$invitation->email}. Puedes copiar el enlace o intentar reenviarla.");
+            }
+
             return redirect()->route('admin.users.index')->with('success', "Invitación de onboarding enviada a {$validated['email']}.");
         }
 
@@ -133,6 +149,18 @@ class AdminUserController extends Controller
 
         $activationLink = route('onboarding.accept', $token);
         session()->flash('invitation_link', $activationLink);
+
+        try {
+            Mail::to($invitation->email)->send(new UserInvitationMail($invitation, $activationLink));
+        } catch (Throwable $exception) {
+            Log::error('No se pudo reenviar la invitación de onboarding.', [
+                'invitation_id' => $invitation->id,
+                'recipient' => $invitation->email,
+                'exception' => $exception,
+            ]);
+
+            return back()->with('error', "La invitación fue actualizada, pero no se pudo enviar el correo a {$invitation->email}. Puedes copiar el nuevo enlace e intentar nuevamente.");
+        }
 
         return back()->with('success', "Invitación reenviada a {$invitation->email}.");
     }
