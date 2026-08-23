@@ -25,6 +25,107 @@
             if (catEl && catEl.value) this.selectedCategoryId = catEl.value;
         },
 
+        normalizeString(str) {
+            if (!str) return '';
+            return str.toString().trim()
+                .toLowerCase()
+                .replace(/^#+/, '')
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[-_]/g, ' ')
+                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        },
+
+        stemSpanish(word) {
+            const norm = this.normalizeString(word);
+            if (norm.length <= 3) return norm;
+            if (norm.endsWith('ces') && norm.length > 4) {
+                return norm.slice(0, -3) + 'z';
+            }
+            if (norm.endsWith('es') && norm.length > 4) {
+                const base = norm.slice(0, -2);
+                const last = base.slice(-1);
+                if (['r', 'l', 'n', 'd', 'z', 'j', 'm'].includes(last)) return base;
+            }
+            if (norm.endsWith('s') && norm.length > 3) {
+                const base = norm.slice(0, -1);
+                const last = base.slice(-1);
+                if (['a', 'e', 'i', 'o', 'u'].includes(last)) return base;
+            }
+            return norm;
+        },
+
+        levenshtein(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        },
+
+        calculateSimilarity(t1, t2) {
+            const n1 = this.normalizeString(t1);
+            const n2 = this.normalizeString(t2);
+            if (!n1 || !n2) return 0;
+            if (n1 === n2) return 1.0;
+            
+            const s1 = this.stemSpanish(t1);
+            const s2 = this.stemSpanish(t2);
+            if (s1 === s2 && s1.length >= 3) return 0.95;
+
+            if (n1.length >= 4 && n2.length >= 4) {
+                if (n1.includes(n2) || n2.includes(n1)) {
+                    return Math.max(0.80, Math.min(n1.length, n2.length) / Math.max(n1.length, n2.length));
+                }
+            }
+
+            const maxLen = Math.max(n1.length, n2.length);
+            if (maxLen === 0) return 0;
+            const dist = this.levenshtein(n1, n2);
+            return Math.max(0, 1.0 - (dist / maxLen));
+        },
+
+        get detectedSimilarTags() {
+            const raw = (this.tagInput || '').trim();
+            if (raw.length < 2) return [];
+            
+            const targetNorm = this.normalizeString(raw);
+            const results = [];
+            
+            (this.allTags || []).forEach(t => {
+                const tName = t.name || '';
+                const tNorm = this.normalizeString(tName);
+                
+                if (this.tagsList.includes(tName)) return;
+                if (tNorm === targetNorm) return;
+
+                const sim = this.calculateSimilarity(raw, tName);
+                if (sim >= 0.68) {
+                    results.push({
+                        ...t,
+                        similarity: Math.round(sim * 100)
+                    });
+                }
+            });
+
+            return results.sort((a, b) => b.similarity - a.similarity).slice(0, 4);
+        },
+
         toggleTag(tagName) {
             const index = this.tagsList.indexOf(tagName);
             if (index === -1) {
@@ -42,7 +143,7 @@
             let list = this.allTags || [];
             if (this.modalSearch && this.modalSearch.trim().length > 0) {
                 const q = this.modalSearch.toLowerCase().trim();
-                return list.filter(t => t.name.toLowerCase().includes(q));
+                return list.filter(t => (t.name || '').toLowerCase().includes(q));
             }
             if (this.modalTab === 'categories') {
                 if (this.selectedCategoryFilter) {
@@ -60,6 +161,29 @@
                 return list.filter(t => t.name && t.name.toUpperCase().startsWith(this.selectedLetter));
             }
             return list;
+        },
+
+        get modalSimilarTags() {
+            const q = (this.modalSearch || '').trim();
+            if (q.length < 2) return [];
+            const qNorm = this.normalizeString(q);
+            const results = [];
+            
+            (this.allTags || []).forEach(t => {
+                const tName = t.name || '';
+                const tNorm = this.normalizeString(tName);
+                if (tNorm === qNorm) return;
+                if (tNorm.includes(qNorm)) return;
+
+                const sim = this.calculateSimilarity(q, tName);
+                if (sim >= 0.68) {
+                    results.push({
+                        ...t,
+                        similarity: Math.round(sim * 100)
+                    });
+                }
+            });
+            return results.sort((a, b) => b.similarity - a.similarity).slice(0, 6);
         },
 
         get alphabeticalGroups() {
@@ -124,13 +248,23 @@
                 .filter(s => s.length > 0);
 
             parts.forEach(clean => {
-                if (!this.tagsList.includes(clean)) {
-                    this.tagsList.push(clean);
-                    if (!this.allTags.some(t => (t.name || '').toLowerCase() === clean.toLowerCase())) {
+                const cleanNorm = this.normalizeString(clean);
+                
+                // Find existing canonical tag (casing/accent normalization)
+                const existing = (this.allTags || []).find(t => 
+                    this.normalizeString(t.name) === cleanNorm || 
+                    (t.slug && t.slug === cleanNorm.replace(/\s+/g, '-'))
+                );
+                
+                const finalName = existing ? existing.name : clean;
+
+                if (!this.tagsList.includes(finalName)) {
+                    this.tagsList.push(finalName);
+                    if (!existing && !this.allTags.some(t => this.normalizeString(t.name) === cleanNorm)) {
                         this.allTags.push({
                             id: Date.now() + Math.floor(Math.random() * 1000),
-                            name: clean,
-                            slug: clean.toLowerCase().replace(/\s+/g, '-'),
+                            name: finalName,
+                            slug: cleanNorm.replace(/\s+/g, '-'),
                             ideas_count: 0,
                             category_ids: this.selectedCategoryId ? [parseInt(this.selectedCategoryId)] : []
                         });
@@ -244,7 +378,7 @@
                 </div>
             </div>
 
-            <!-- Tags Input with Chips & Modal Explorer -->
+            <!-- Tags Input with Chips, Real-time Similarity Detection & Modal Explorer -->
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech">
@@ -272,6 +406,39 @@
                                 class="px-4 py-2.5 bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface rounded-xl transition-colors">
                             Agregar
                         </button>
+                    </div>
+
+                    <!-- Real-Time Similar Tags Detection Banner -->
+                    <div x-show="detectedSimilarTags.length > 0" 
+                         x-transition 
+                         class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
+                        <div class="flex items-center justify-between text-amber-800 font-semibold text-[11px]">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-sm text-amber-600">compare_arrows</span>
+                                <span>Detectamos etiquetas similares ya registradas:</span>
+                            </div>
+                            <span class="text-[10px] font-mono-tech text-amber-700 bg-amber-200/60 px-2 py-0.5 rounded-full font-bold">
+                                Evita duplicados
+                            </span>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-1.5 items-center">
+                            <template x-for="sim in detectedSimilarTags" :key="sim.id">
+                                <button type="button" 
+                                        @click="toggleTag(sim.name); tagInput = '';" 
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-lowest hover:bg-amber-100 border border-amber-300 text-on-surface text-xs font-mono-tech font-bold transition-all shadow-2xs group"
+                                        :title="'Coincidencia ' + sim.similarity + '%'">
+                                    <span class="text-amber-700">#<span x-text="sim.name"></span></span>
+                                    <span class="px-1.5 py-0.2 rounded-md bg-amber-200 text-amber-900 text-[10px]" x-text="sim.ideas_count + ' ideas'"></span>
+                                    <span class="material-symbols-outlined text-xs text-amber-700 group-hover:scale-110 transition-transform">check_circle</span>
+                                </button>
+                            </template>
+                            <button type="button" 
+                                    @click="addCustomTag(tagInput)" 
+                                    class="text-[11px] text-amber-800 underline hover:text-amber-950 font-medium pl-1">
+                                Mantener nueva de todos modos
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Selected Tags Chips List -->
