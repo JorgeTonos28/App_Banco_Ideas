@@ -131,6 +131,21 @@ APP_URL=https://apps.innovatep.com/banco
 SESSION_PATH=/banco
 ```
 
+Para enviar invitaciones desde una cuenta de correo de cPanel mediante SMTP seguro:
+
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=smtps
+MAIL_HOST=mail.innovatep.com
+MAIL_PORT=465
+MAIL_USERNAME=info@innovatep.com
+MAIL_PASSWORD="CONTRASEÑA_DE_LA_CUENTA_DE_CORREO"
+MAIL_FROM_ADDRESS=info@innovatep.com
+MAIL_FROM_NAME="INNOVATEP — INFOTEP"
+```
+
+En Laravel 13 se utiliza `MAIL_SCHEME`; no es necesario configurar `MAIL_ENCRYPTION`. Después de cambiar el `.env`, limpia la configuración con `php artisan optimize:clear`. Las invitaciones se envían de forma síncrona, por lo que este flujo no requiere un worker de colas adicional en cPanel.
+
 El `index.php` público debe cargar `vendor/autoload.php` y `bootstrap/app.php` desde la ruta privada, y configurar esa carpeta pública mediante `$app->usePublicPath(__DIR__)`. El enlace `storage` público debe apuntar a `storage/app/public` de la aplicación privada.
 
 El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovatep.com/` a `https://innovatep.com/`; el `.htaccess` dentro de `/banco` debe conservar el front controller de Laravel. La ruta raíz de la aplicación redirige visitantes a `/banco/login` y usuarios autenticados a `/banco/mis-ideas`.
