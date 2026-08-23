@@ -3,7 +3,129 @@
 @section('title', 'Compartir una Idea - INNOVATEP')
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6" x-data="{ tagsList: [], tagInput: '' }">
+<div class="max-w-3xl mx-auto space-y-6" 
+     x-data="{ 
+        tagsList: {{ json_encode(old('tags', [])) }}, 
+        tagInput: '',
+        openTagModal: false,
+        modalSearch: '',
+        modalTab: 'alphabetical',
+        selectedCategoryFilter: null,
+        selectedLetter: 'ALL',
+        selectedCategoryId: '{{ old('category_id', '') }}',
+        titleText: '{{ old('title', '') }}',
+        descriptionText: '{{ old('description', '') }}',
+        allTags: {{ json_encode($allTags) }},
+        categories: {{ json_encode($categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name, 'icon' => $c->icon, 'color' => $c->color])) }},
+
+        toggleTag(tagName) {
+            const index = this.tagsList.indexOf(tagName);
+            if (index === -1) {
+                this.tagsList.push(tagName);
+            } else {
+                this.tagsList.splice(index, 1);
+            }
+        },
+
+        isTagSelected(tagName) {
+            return this.tagsList.includes(tagName);
+        },
+
+        get filteredTags() {
+            let list = this.allTags;
+            if (this.modalSearch.trim().length > 0) {
+                const q = this.modalSearch.toLowerCase().trim();
+                return list.filter(t => t.name.toLowerCase().includes(q));
+            }
+            if (this.modalTab === 'categories') {
+                if (this.selectedCategoryFilter) {
+                    return list.filter(t => t.category_ids.includes(parseInt(this.selectedCategoryFilter)));
+                }
+                return list;
+            }
+            if (this.modalTab === 'popular') {
+                return [...list].sort((a, b) => b.ideas_count - a.ideas_count);
+            }
+            if (this.modalTab === 'suggested') {
+                return this.suggestedTags;
+            }
+            if (this.selectedLetter !== 'ALL') {
+                return list.filter(t => t.name.toUpperCase().startsWith(this.selectedLetter));
+            }
+            return list;
+        },
+
+        get alphabeticalGroups() {
+            const groups = {};
+            const tags = this.filteredTags;
+            tags.forEach(t => {
+                const letter = (t.name[0] || '#').toUpperCase();
+                if (!groups[letter]) groups[letter] = [];
+                groups[letter].push(t);
+            });
+            return groups;
+        },
+
+        get availableLetters() {
+            const letters = new Set();
+            this.allTags.forEach(t => {
+                if (t.name) letters.add(t.name[0].toUpperCase());
+            });
+            return Array.from(letters).sort();
+        },
+
+        get suggestedTags() {
+            const suggestions = [];
+            const seen = new Set();
+
+            // 1. By selected category
+            if (this.selectedCategoryId) {
+                const catId = parseInt(this.selectedCategoryId);
+                this.allTags.forEach(t => {
+                    if (t.category_ids.includes(catId) && !seen.has(t.name)) {
+                        seen.add(t.name);
+                        suggestions.push(t);
+                    }
+                });
+            }
+
+            // 2. Text keyword match from title & description
+            const text = ((this.titleText || '') + ' ' + (this.descriptionText || '')).toLowerCase();
+            if (text.trim().length >= 3) {
+                this.allTags.forEach(t => {
+                    const tName = t.name.toLowerCase();
+                    if (tName.length >= 3 && text.includes(tName) && !seen.has(t.name)) {
+                        seen.add(t.name);
+                        suggestions.push(t);
+                    }
+                });
+            }
+
+            return suggestions;
+        },
+
+        get dynamicSuggestionsNotSelected() {
+            return this.suggestedTags.filter(t => !this.tagsList.includes(t.name)).slice(0, 8);
+        },
+
+        addCustomTag(name) {
+            const clean = (name || this.tagInput || this.modalSearch).trim();
+            if (clean && !this.tagsList.includes(clean)) {
+                this.tagsList.push(clean);
+                if (!this.allTags.some(t => t.name.toLowerCase() === clean.toLowerCase())) {
+                    this.allTags.push({
+                        id: Date.now(),
+                        name: clean,
+                        slug: clean.toLowerCase().replace(/\s+/g, '-'),
+                        ideas_count: 0,
+                        category_ids: this.selectedCategoryId ? [parseInt(this.selectedCategoryId)] : []
+                    });
+                }
+                this.tagInput = '';
+                this.modalSearch = '';
+            }
+        }
+     }">
 
     <!-- Header Section -->
     <div class="text-center sm:text-left">
@@ -41,6 +163,7 @@
                 <input type="text" 
                        id="title" 
                        name="title" 
+                       x-model="titleText"
                        value="{{ old('title') }}" 
                        required 
                        placeholder="Ej.: Digitalizar el registro de mantenimiento de los talleres"
@@ -54,6 +177,7 @@
                 </label>
                 <textarea id="description" 
                           name="description" 
+                          x-model="descriptionText"
                           rows="5" 
                           required 
                           placeholder="¿Qué propones? ¿Cómo funcionaría en el día a día?"
@@ -80,6 +204,7 @@
                     </label>
                     <select id="category_id" 
                             name="category_id" 
+                            x-model="selectedCategoryId"
                             required 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         <option value="">Selecciona una categoría</option>
@@ -100,25 +225,35 @@
                             name="visibility" 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         <option value="public" {{ old('visibility', 'public') == 'public' ? 'selected' : '' }}>Visible para toda la comunidad</option>
-                        <option value="draft" {{ old('visibility') == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
+                        <option value="draft" {{ old('visibility', 'draft') == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Tags Input with Chips -->
+            <!-- Tags Input with Chips & Modal Explorer -->
             <div>
-                <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
-                    Etiquetas o Palabras Clave
-                </label>
-                <div class="space-y-2">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech">
+                        Etiquetas o Palabras Clave
+                    </label>
+                    <button type="button" 
+                            @click="openTagModal = true" 
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-headline font-bold text-xs transition-colors">
+                        <span class="material-symbols-outlined text-sm">explore</span>
+                        <span>Ver todas las etiquetas</span>
+                        <span class="px-1.5 py-0.2 rounded-full bg-primary text-white text-[10px] font-mono-tech font-bold" x-text="allTags.length"></span>
+                    </button>
+                </div>
+
+                <div class="space-y-2.5">
                     <div class="flex items-center gap-2">
                         <input type="text" 
                                x-model="tagInput" 
-                               @keydown.enter.prevent="if(tagInput.trim() && !tagsList.includes(tagInput.trim())) { tagsList.push(tagInput.trim()); tagInput = ''; }"
+                               @keydown.enter.prevent="addCustomTag(tagInput)"
                                placeholder="Escribe una etiqueta y presiona Enter o Agregar"
                                class="flex-1 bg-surface-container-low text-on-surface text-xs rounded-xl py-2.5 px-3.5 border border-surface-container-high focus:outline-none focus:ring-1 focus:ring-primary">
                         <button type="button" 
-                                @click="if(tagInput.trim() && !tagsList.includes(tagInput.trim())) { tagsList.push(tagInput.trim()); tagInput = ''; }"
+                                @click="addCustomTag(tagInput)"
                                 class="px-4 py-2.5 bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface rounded-xl transition-colors">
                             Agregar
                         </button>
@@ -135,12 +270,33 @@
                                 </button>
                             </span>
                         </template>
+                        <div x-show="tagsList.length === 0" class="text-xs text-outline italic py-1">
+                            No has seleccionado ninguna etiqueta aún.
+                        </div>
                     </div>
 
-                    <!-- Suggestions from DB -->
-                    <div class="flex flex-wrap gap-1.5 text-[11px] text-outline pt-1">
-                        <span>Sugerencias:</span>
-                        @foreach($tags->take(6) as $sugg)
+                    <!-- Dynamic Smart Suggestions based on text / category -->
+                    <div x-show="dynamicSuggestionsNotSelected.length > 0" class="pt-1.5 space-y-1.5 bg-surface-container-low/30 p-3 rounded-2xl border border-surface-container-high/60">
+                        <div class="flex items-center gap-1.5 text-[11px] font-semibold text-primary">
+                            <span class="material-symbols-outlined text-xs">auto_awesome</span>
+                            <span>Sugerencias detectadas para tu propuesta:</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <template x-for="sugg in dynamicSuggestionsNotSelected" :key="sugg.id">
+                                <button type="button" 
+                                        @click="toggleTag(sugg.name)" 
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-lowest hover:bg-primary-fixed border border-surface-container-high hover:border-primary text-[11px] text-on-surface hover:text-on-primary-fixed-variant transition-colors">
+                                    <span class="material-symbols-outlined text-[11px] text-primary">add</span>
+                                    <span class="font-mono-tech" x-text="'#' + sugg.name"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Suggestions from Popular Tags in DB -->
+                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] text-outline pt-1">
+                        <span>Populares:</span>
+                        @foreach($popularTags as $sugg)
                         <button type="button" 
                                 @click="if(!tagsList.includes('{{ $sugg->name }}')) tagsList.push('{{ $sugg->name }}')"
                                 class="underline hover:text-primary transition-colors">
@@ -187,6 +343,9 @@
 
         </form>
     </div>
+
+    <!-- Tag Explorer Modal Component -->
+    <x-tag-explorer-modal />
 
 </div>
 @endsection

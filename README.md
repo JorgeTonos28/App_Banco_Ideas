@@ -12,6 +12,12 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 1. Captura y Gestión de Ideas
 - **Publicación ágil y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, categoría, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos).
+- **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
+  - 🔤 **Alfabético (A - Z)**: Agrupadas por letra con selector de salto rápido.
+  - 🏷️ **Por Categoría Oficial**: Clasificación de etiquetas vinculadas a cada categoría institucional.
+  - 🔥 **Más Populares**: Ranking de etiquetas con mayor frecuencia de uso en ideas.
+  - 💡 **Recomendadas para tu idea**: Detección dinámica y semántica de etiquetas afines según el texto redactado y la categoría seleccionada.
+- **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
 - **Borradores y Estados**: Capacidad de guardar borradores privados o publicar directamente.
 - **Ciclo de Vida Evolutivo**: Seguimiento en tiempo real a través de las etapas:
   `💡 Nueva` → `👀 En revisión` → `⭐ Priorizada` → `🧪 En desarrollo` → `🚀 Implementada` (con opciones de `⛔ Descartada` y `📦 Archivada`).
@@ -152,6 +158,40 @@ El `index.php` público debe cargar `vendor/autoload.php` y `bootstrap/app.php` 
 El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovatep.com/` a `https://innovatep.com/`; el `.htaccess` dentro de `/banco` debe conservar el front controller de Laravel. La ruta raíz de la aplicación redirige visitantes a `/banco/login` y usuarios autenticados a `/banco/mis-ideas`.
 
 En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
+
+### Poblar Categorías Oficiales en Producción (vía Tinker)
+
+Para registrar la batería completa de categorías oficiales de innovación en un entorno de producción sin cargar datos de prueba, ejecuta `php artisan tinker` e ingresa el siguiente bloque:
+
+```php
+$categories = [
+    ['name' => 'Tecnología e Inteligencia Artificial', 'icon' => 'memory', 'color' => '#231fb5', 'description' => 'Soluciones digitales, automatización, IA, ciberseguridad e infraestructura tecnológica.'],
+    ['name' => 'Formación y Metodología Docente', 'icon' => 'school', 'color' => '#003e6f', 'description' => 'Metodologías docentes, currículo formativo, entornos híbridos y pedagogía técnico-profesional.'],
+    ['name' => 'Procesos y Simplificación Administrativa', 'icon' => 'account_tree', 'color' => '#005696', 'description' => 'Optimización de flujos de trabajo, trámites internos, digitalización y eficiencia operativa.'],
+    ['name' => 'Experiencia del Participante', 'icon' => 'group', 'color' => '#00838f', 'description' => 'Iniciativas para enriquecer el aprendizaje, acompañamiento, bienestar y servicios al estudiante.'],
+    ['name' => 'Experiencia del Colaborador', 'icon' => 'sentiment_very_satisfied', 'color' => '#d81b60', 'description' => 'Desarrollo humano, bienestar institucional, cultura colaborativa y clima laboral.'],
+    ['name' => 'Sostenibilidad y Medio Ambiente', 'icon' => 'eco', 'color' => '#2e7d32', 'description' => 'Eficiencia energética, campus verde, reducción de huella de carbono y reciclaje institucional.'],
+    ['name' => 'Servicios Empresariales y Comunitarios', 'icon' => 'support_agent', 'color' => '#e65100', 'description' => 'Atención al sector empresarial, vinculación comunitaria, pasantías y consultoría técnica.'],
+    ['name' => 'Infraestructura, Talleres y Laboratorios', 'icon' => 'apartment', 'color' => '#455a64', 'description' => 'Modernización de espacios físicos, equipamiento técnico, seguridad industrial y mantenimiento.'],
+    ['name' => 'Innovación Curricular y Carreras 4.0', 'icon' => 'auto_stories', 'color' => '#6200ea', 'description' => 'Diseño de programas para industrias 4.0, microcredenciales y ocupaciones emergentes.'],
+    ['name' => 'Emprendimiento y Transferencia Tecnológica', 'icon' => 'rocket_launch', 'color' => '#f57c00', 'description' => 'Incubación de proyectos, prototipado, ferias de innovación y patentes.'],
+    ['name' => 'Comunicación y Marca Institucional', 'icon' => 'campaign', 'color' => '#c2185b', 'description' => 'Estrategias de difusión, visibilidad de logros, canales digitales y cultura de innovación.'],
+    ['name' => 'Inclusión y Accesibilidad', 'icon' => 'accessibility_new', 'color' => '#00796b', 'description' => 'Programas inclusivos para personas con discapacidad, equidad y acceso universal.'],
+];
+
+foreach ($categories as $cat) {
+    \App\Models\Category::firstOrCreate(
+        ['name' => $cat['name']],
+        [
+            'slug' => \Illuminate\Support\Str::slug($cat['name']),
+            'icon' => $cat['icon'],
+            'color' => $cat['color'],
+            'description' => $cat['description']
+        ]
+    );
+}
+echo "Categorías oficiales creadas exitosamente.\n";
+```
 
 ---
 
