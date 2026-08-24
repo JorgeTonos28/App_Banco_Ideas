@@ -400,7 +400,7 @@
             </div>
 
             <!-- Category -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>
                     <label for="category_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                         Categoría <span class="text-error">*</span>
@@ -419,17 +419,31 @@
                     </select>
                 </div>
 
-                <!-- Visibility -->
                 <div>
                     <label for="visibility" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
-                        Visibilidad <span class="text-error">*</span>
+                        Estado de preparación <span class="text-error">*</span>
                     </label>
                     <select id="visibility" 
                             name="visibility" 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="private" {{ old('visibility', 'private') == 'private' ? 'selected' : '' }}>Guardar como idea privada</option>
-                        <option value="draft" {{ old('visibility', 'draft') == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
+                        <option value="private" {{ old('visibility', 'private') == 'private' ? 'selected' : '' }}>Idea completa</option>
+                        <option value="draft" {{ old('visibility', 'draft') == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
                     </select>
+                    <p class="mt-1.5 text-[11px] text-on-surface-variant">Los borradores siempre son visibles sólo para ti.</p>
+                </div>
+
+                <div>
+                    <label for="access_scope" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                        Quién puede verla <span class="text-error">*</span>
+                    </label>
+                    <select id="access_scope"
+                            name="access_scope"
+                            class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="only_me" {{ old('access_scope', 'only_me') === 'only_me' ? 'selected' : '' }}>Sólo yo</option>
+                        <option value="profile" {{ old('access_scope') === 'profile' ? 'selected' : '' }}>Visible en mi perfil</option>
+                    </select>
+                    <p class="mt-1.5 text-[11px] text-on-surface-variant">Compartir en tu perfil no publica la idea en Comunidad.</p>
+                    @error('access_scope')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 

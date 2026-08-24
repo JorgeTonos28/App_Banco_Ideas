@@ -28,7 +28,20 @@ class ProfileController extends Controller
         // Recent public contributions
         $contributions = $targetUser->ideas()
             ->with(['category', 'tags'])
-            ->withCount('comments')
+            ->withCount([
+                'comments',
+                'children as published_children_count' => function ($children): void {
+                    $children->where(function ($visible): void {
+                        $visible
+                            ->where('publication_status', 'published')
+                            ->orWhere(function ($shared): void {
+                                $shared
+                                    ->where('access_scope', 'profile')
+                                    ->where('visibility', '!=', 'draft');
+                            });
+                    });
+                },
+            ])
             ->visibleOnProfile()
             ->latest()
             ->take(8)

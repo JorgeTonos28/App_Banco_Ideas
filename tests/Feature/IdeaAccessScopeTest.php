@@ -142,6 +142,58 @@ class IdeaAccessScopeTest extends TestCase
         ]);
     }
 
+    public function test_forms_present_preparation_and_access_as_separate_decisions(): void
+    {
+        $idea = $this->idea();
+
+        $this->actingAs($this->author)
+            ->get(route('ideas.create'))
+            ->assertOk()
+            ->assertSee('Estado de preparación')
+            ->assertSee('Quién puede verla')
+            ->assertSee('Visible en mi perfil');
+
+        $this->actingAs($this->author)
+            ->get(route('ideas.edit', $idea))
+            ->assertOk()
+            ->assertSee('Estado de preparación')
+            ->assertSee('Quién puede verla')
+            ->assertSee('No modifica el estado de revisión editorial.');
+    }
+
+    public function test_shared_root_detail_exposes_preliminary_validation_without_community_conversation_or_score(): void
+    {
+        $idea = $this->idea(['access_scope' => 'profile']);
+
+        $this->actingAs($this->visitor)
+            ->get(route('ideas.show', $idea->slug))
+            ->assertOk()
+            ->assertSee('Visible en mi perfil')
+            ->assertSee('Valoración preliminar')
+            ->assertSee('Aún sin Innovation Score oficial')
+            ->assertDontSee('Conversación y Aportes');
+    }
+
+    public function test_root_detail_traces_only_microideas_accessible_to_the_visitor(): void
+    {
+        $root = $this->idea(['access_scope' => 'profile']);
+        $sharedChild = $this->idea([
+            'parent_idea_id' => $root->id,
+            'access_scope' => 'profile',
+        ]);
+        $privateGrandchild = $this->idea([
+            'parent_idea_id' => $sharedChild->id,
+            'access_scope' => 'only_me',
+        ]);
+
+        $this->actingAs($this->visitor)
+            ->get(route('ideas.show', $root->slug))
+            ->assertOk()
+            ->assertSee('Trazabilidad de microideas')
+            ->assertSee($sharedChild->title)
+            ->assertDontSee($privateGrandchild->title);
+    }
+
     private function idea(array $attributes = []): Idea
     {
         return Idea::factory()->for($this->author)->create(array_merge([

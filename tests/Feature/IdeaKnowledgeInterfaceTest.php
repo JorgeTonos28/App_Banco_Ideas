@@ -110,7 +110,7 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->assertSee($institutional->title)
             ->assertSee($regional->title)
             ->assertDontSee($child->title)
-            ->assertSee('1 subidea integrada');
+            ->assertSee('1 microidea trazable');
 
         $this->actingAs($this->author)
             ->get(route('ideas.index', [

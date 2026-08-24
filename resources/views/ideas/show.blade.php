@@ -90,9 +90,9 @@
         </h1>
 
         <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $idea->isPublished() ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-surface-container text-on-surface-variant border border-surface-container-high' }} font-bold">
-                <span class="material-symbols-outlined text-sm">{{ $idea->isPublished() ? 'public' : 'lock' }}</span>
-                {{ $idea->isPublished() ? 'Publicada en la comunidad' : 'Espacio privado' }}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $idea->isPublished() ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : ($idea->isSharedOnProfile() ? 'bg-tertiary/10 text-tertiary border border-tertiary/20' : 'bg-surface-container text-on-surface-variant border border-surface-container-high') }} font-bold">
+                <span class="material-symbols-outlined text-sm">{{ $idea->isPublished() ? 'public' : ($idea->isSharedOnProfile() ? 'person' : 'lock') }}</span>
+                {{ $idea->isPublished() ? 'Publicada en la comunidad' : $idea->access_scope_label }}
             </span>
             <span class="font-mono-tech text-outline">Revisión editorial: {{ $idea->publication_status_label }}</span>
             @if($idea->community_display === 'represented_by_parent')
@@ -330,6 +330,29 @@
     </section>
     @endif
 
+    @if(!$idea->parent_idea_id && $traceIdeas->count() > 1)
+    <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs p-5 sm:p-6 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h2 class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-tertiary">schema</span>
+                    Trazabilidad de microideas
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-1">Recorrido multinivel visible desde esta idea madre. Los nodos restringidos no se exponen.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-tertiary/10 text-tertiary text-[10px] font-mono-tech font-bold">
+                {{ $traceIdeas->count() - 1 }} {{ $traceIdeas->count() === 2 ? 'microidea visible' : 'microideas visibles' }}
+            </span>
+        </div>
+
+        <div class="space-y-3">
+            @foreach($traceTreeByParent->get($idea->id, collect()) as $traceChild)
+                <x-idea-tree-node :node="$traceChild" :tree-by-parent="$traceTreeByParent" :level="1" />
+            @endforeach
+        </div>
+    </section>
+    @endif
+
     <!-- 2-Column Main Content & Sidebar -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -462,6 +485,7 @@
                 @endif
             </div>
 
+            @if($idea->isPublished())
             <!-- Section: Comments & Collaborative Conversation -->
             <div class="bg-surface-container-lowest rounded-3xl p-6 sm:p-8 border border-surface-container-high/80 shadow-xs space-y-6">
                 <div class="flex items-center justify-between">
@@ -569,6 +593,7 @@
                     @endforelse
                 </div>
             </div>
+            @endif
 
         </div>
 
@@ -615,15 +640,27 @@
                     <a href="{{ route('ideas.edit', $idea) }}" class="block text-center text-xs font-bold text-primary hover:underline">Completar el borrador antes de enviarlo</a>
                 @endif
             </div>
-            @else
+            @endunless
+
+            @if($idea->acceptsRatings())
             <!-- Voting Widget Card -->
             <div class="bg-surface-container-lowest rounded-3xl p-6 border border-surface-container-high/80 shadow-xs relative overflow-hidden text-center"
                  x-data="starRating({{ $idea->id }}, {{ $idea->user_rating ?? 0 }})">
                 <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary-container/5 pointer-events-none"></div>
 
                 <div class="relative z-10 space-y-4">
-                    <h3 class="font-headline font-bold text-lg text-on-surface">¿Qué te parece esta idea?</h3>
-                    <p class="text-xs text-on-surface-variant">Califica el valor e impacto potencial para INFOTEP</p>
+                    <div>
+                        @if($idea->hasPreliminaryRatings())
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-mono-tech font-bold uppercase mb-2">
+                            <span class="material-symbols-outlined text-xs">science</span>
+                            Valoración preliminar
+                        </span>
+                        @endif
+                        <h3 class="font-headline font-bold text-lg text-on-surface">¿Qué te parece esta idea?</h3>
+                        <p class="text-xs text-on-surface-variant mt-1">
+                            {{ $idea->hasPreliminaryRatings() ? 'Ayuda al autor a validar su propuesta antes de enviarla a Comunidad.' : 'Califica el valor e impacto potencial para INFOTEP.' }}
+                        </p>
+                    </div>
 
                     <!-- Interactive Stars (1 to 5) -->
                     @if(auth()->check() && auth()->id() === $idea->user_id)
@@ -664,7 +701,9 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if($idea->isPublishedToCommunity())
             <!-- Innovation Score Card -->
             <div class="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
                 <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
@@ -682,7 +721,19 @@
                     El algoritmo pondera valoraciones, volumen de votos, comentarios recientes e impacto pedagógico e institucional.
                 </p>
             </div>
-            @endunless
+            @elseif($idea->hasPreliminaryRatings())
+            <div class="bg-surface-container-lowest rounded-3xl p-5 border border-tertiary/20 shadow-xs">
+                <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-tertiary/10 text-tertiary flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-lg">query_stats</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-on-surface">Aún sin Innovation Score oficial</h3>
+                        <p class="text-[11px] text-on-surface-variant mt-1 leading-relaxed">Las valoraciones se conservarán, pero la idea sólo participará en score y ranking después de ser aprobada para Comunidad.</p>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             <!-- Related Ideas in Category -->
             @if($relatedIdeas->isNotEmpty())

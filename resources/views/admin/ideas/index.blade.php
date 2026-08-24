@@ -185,6 +185,7 @@
                             @else
                                 <span class="inline-flex px-2 py-1 rounded-lg bg-surface-container text-[10px] font-bold text-on-surface-variant">{{ $idea->publication_status_label }}</span>
                                 <span class="block mt-1 text-[9px] font-mono-tech text-outline">{{ $idea->workspace_status_label }}</span>
+                                <span class="block mt-1 text-[9px] font-mono-tech {{ $idea->access_scope === 'profile' ? 'text-tertiary font-bold' : 'text-outline' }}">{{ $idea->access_scope_label }}</span>
                             @endif
                         </td>
                         <td class="py-4 px-4 text-center text-xs">
@@ -280,6 +281,9 @@
                             <span class="block text-[10px] font-mono-tech uppercase font-bold text-primary">Decisión editorial</span>
                             <p class="text-xs text-on-surface-variant mt-1">
                                 Estado actual: <strong x-text="selectedIdea?.publication_status_label || selectedIdea?.publication_status"></strong>
+                            </p>
+                            <p class="text-[10px] text-on-surface-variant mt-1">
+                                Acceso elegido por el autor: <strong x-text="selectedIdea?.access_scope === 'profile' ? 'Visible en su perfil' : 'Sólo el autor'"></strong>
                             </p>
                         </div>
                         <div>

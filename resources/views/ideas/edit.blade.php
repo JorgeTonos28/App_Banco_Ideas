@@ -397,8 +397,8 @@
                           class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y">{{ old('problem_opportunity', $idea->problem_opportunity) }}</textarea>
             </div>
 
-            <!-- Category & Visibility -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <!-- Category, readiness & access -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>
                     <label for="category_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                         Categoría <span class="text-error">*</span>
@@ -418,21 +418,37 @@
 
                 <div>
                     <label for="visibility" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
-                        Visibilidad <span class="text-error">*</span>
+                        Estado de preparación <span class="text-error">*</span>
                     </label>
                     @if($idea->isPublished())
                         <input type="hidden" name="visibility" value="public">
                         <div class="w-full bg-primary-fixed/50 text-on-primary-fixed-variant text-sm rounded-2xl p-3.5 border border-primary/20">
-                            Publicada por el equipo de innovación
+                            Completa · publicada por Innovación
                         </div>
                     @else
                         <select id="visibility"
                                 name="visibility"
                                 class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                            <option value="private" {{ old('visibility', $idea->visibility) == 'private' ? 'selected' : '' }}>Idea privada completa</option>
+                            <option value="private" {{ old('visibility', $idea->visibility) == 'private' ? 'selected' : '' }}>Idea completa</option>
                             <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
                         </select>
                     @endif
+                </div>
+
+                <div>
+                    <label for="access_scope" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                        Quién puede verla <span class="text-error">*</span>
+                    </label>
+                    <select id="access_scope"
+                            name="access_scope"
+                            class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="only_me" {{ old('access_scope', $idea->access_scope) === 'only_me' ? 'selected' : '' }}>Sólo yo</option>
+                        <option value="profile" {{ old('access_scope', $idea->access_scope) === 'profile' ? 'selected' : '' }}>Visible en mi perfil</option>
+                    </select>
+                    <p class="mt-1.5 text-[11px] text-on-surface-variant">
+                        {{ $idea->isPublished() ? 'Se aplicará si la idea se retira de Comunidad.' : 'No modifica el estado de revisión editorial.' }}
+                    </p>
+                    @error('access_scope')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
 

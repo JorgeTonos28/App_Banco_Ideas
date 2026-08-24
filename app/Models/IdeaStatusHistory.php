@@ -65,6 +65,8 @@ class IdeaStatusHistory extends Model
             'published' => 'Publicada',
             'rejected' => 'Rechazada',
             'unpublished' => 'Retirada de comunidad',
+            'only_me' => 'Sólo yo',
+            'profile' => 'Visible en mi perfil',
             default => ucfirst(str_replace('_', ' ', $status)),
         };
     }

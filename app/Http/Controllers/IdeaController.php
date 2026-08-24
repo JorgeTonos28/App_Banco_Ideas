@@ -265,13 +265,26 @@ class IdeaController extends Controller
                     : 'Idea registrada en el espacio privado de trabajo.',
             ]);
 
+            IdeaStatusHistory::create([
+                'idea_id' => $idea->id,
+                'user_id' => auth()->id(),
+                'workflow' => 'access',
+                'old_status' => null,
+                'new_status' => $idea->access_scope,
+                'comment' => $idea->access_scope === 'profile'
+                    ? 'La idea se compartió inicialmente desde el perfil de su autor.'
+                    : 'La idea se registró con acceso exclusivo para su autor.',
+            ]);
+
             $idea->recalculateRatingAndScore();
 
             DB::commit();
 
             $message = $idea->visibility === 'draft'
                 ? 'Borrador guardado correctamente. Puedes completarlo cuando estés listo.'
-                : 'Idea guardada en tu espacio privado. Cuando esté lista podrás solicitar su publicación.';
+                : ($idea->access_scope === 'profile'
+                    ? 'Idea guardada y visible desde tu perfil. Cuando esté lista también podrás solicitar su publicación.'
+                    : 'Idea guardada sólo para ti. Cuando esté lista podrás compartirla o solicitar su publicación.');
 
             return redirect()->route('ideas.show', $idea->slug)->with('success', $message);
         } catch (ValidationException $e) {
@@ -381,13 +394,47 @@ class IdeaController extends Controller
                 ->get();
         }
 
+        $traceIdeas = collect([$idea]);
+
+        if (! $idea->parent_idea_id) {
+            $pendingParentIds = collect([$idea->id]);
+            $visitedIds = [$idea->id => true];
+
+            while ($pendingParentIds->isNotEmpty() && $traceIdeas->count() < 250) {
+                $remainingNodes = 250 - $traceIdeas->count();
+                $level = Idea::with('category')
+                    ->whereIn('parent_idea_id', $pendingParentIds)
+                    ->orderBy('title')
+                    ->limit($remainingNodes)
+                    ->get();
+
+                $unvisitedLevel = $level->reject(fn (Idea $node) => isset($visitedIds[$node->id]));
+
+                foreach ($unvisitedLevel as $node) {
+                    $visitedIds[$node->id] = true;
+                }
+
+                $pendingParentIds = $unvisitedLevel->pluck('id');
+
+                $traceIdeas = $traceIdeas->concat(
+                    $unvisitedLevel->filter(fn (Idea $node) => $viewer?->can('view', $node))
+                );
+            }
+        }
+
+        $traceTreeByParent = $traceIdeas
+            ->whereNotNull('parent_idea_id')
+            ->groupBy('parent_idea_id');
+
         return view('ideas.show', compact(
             'idea',
             'relatedIdeas',
             'canOrganize',
             'parentCandidates',
             'relationCandidates',
-            'pendingRelationReviews'
+            'pendingRelationReviews',
+            'traceIdeas',
+            'traceTreeByParent'
         ));
     }
 

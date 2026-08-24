@@ -45,7 +45,7 @@
     <!-- Impact & Recognition Stats -->
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div class="bg-surface-container-lowest rounded-2xl p-5 border border-surface-container-high/80 shadow-2xs text-center">
-            <span class="text-[11px] font-mono-tech uppercase font-bold text-outline block">Ideas Propuestas</span>
+            <span class="text-[11px] font-mono-tech uppercase font-bold text-outline block">Ideas Visibles</span>
             <span class="font-headline font-extrabold text-2xl sm:text-3xl text-primary mt-1 block">{{ $ideasCount }}</span>
         </div>
 
@@ -94,11 +94,11 @@
         </div>
     </div>
 
-    <!-- Public Contributions Section -->
+    <!-- Shared and published root ideas -->
     <div class="space-y-4">
         <h2 class="font-headline font-bold text-xl text-on-surface flex items-center gap-2">
             <span class="material-symbols-outlined text-primary text-2xl">folder_special</span>
-            <span>Contribuciones e Ideas Publicadas</span>
+            <span>Ideas compartidas y publicadas</span>
         </h2>
 
         @if($contributions->isNotEmpty())
@@ -109,7 +109,7 @@
         </div>
         @else
         <div class="bg-surface-container-lowest rounded-3xl p-8 text-center border border-surface-container-high">
-            <p class="text-xs text-on-surface-variant">Este colaborador aún no ha publicado ideas públicas.</p>
+            <p class="text-xs text-on-surface-variant">Este colaborador todavía no ha compartido ideas desde su perfil.</p>
         </div>
         @endif
     </div>

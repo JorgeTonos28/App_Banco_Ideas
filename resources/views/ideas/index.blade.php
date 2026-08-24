@@ -171,7 +171,7 @@
                 Ver todas las ideas
             </a>
             <a href="{{ route('ideas.create') }}" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">
-                Crear una idea privada
+                Crear una idea
             </a>
         </div>
     </div>

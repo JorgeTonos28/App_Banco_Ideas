@@ -14,7 +14,7 @@ class IdeaPublicationController extends Controller
     {
         $service->requestPublication($idea, $request->user());
 
-        return back()->with('success', 'La idea fue enviada a revisión editorial. Permanecerá privada hasta que sea aprobada.');
+        return back()->with('success', 'La idea fue enviada a revisión editorial y conservará el acceso que elegiste mientras se revisa.');
     }
 
     public function destroy(CancelIdeaPublicationRequest $request, Idea $idea, IdeaPublicationService $service): RedirectResponse

@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Mis Ideas</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Organiza ideas privadas, conecta subideas y decide cuáles enviar a la comunidad</p>
+            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Organiza tus ideas, decide cuáles compartir en tu perfil y cuáles enviar a la comunidad</p>
         </div>
 
         <a href="{{ route('ideas.create') }}" 
@@ -51,7 +51,7 @@
     <div class="flex items-center gap-2 border-b border-surface-container-high overflow-x-auto no-scrollbar pb-px">
         @php
         $tabs = [
-            'privadas' => 'Espacio privado',
+            'privadas' => 'Espacio personal',
             'publicadas' => 'Publicadas',
             'borradores' => 'Borradores',
             'implementadas' => 'Implementadas',
@@ -122,6 +122,8 @@
                     <span>★ {{ number_format($idea->average_rating, 1) }}</span>
                     <span>•</span>
                     <span>{{ $idea->votes_count }} votos</span>
+                    <span>•</span>
+                    <span>{{ $idea->isPublished() ? 'Comunidad' : $idea->access_scope_label }}</span>
                 </div>
 
                 <div class="flex items-center gap-2">
