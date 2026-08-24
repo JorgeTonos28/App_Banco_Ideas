@@ -11,12 +11,14 @@ La plataforma fomenta una cultura participativa bajo el principio:
 ## 🌟 Características Principales
 
 ### 1. Captura, Organización y Publicación Editorial
-- **Captura privada y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, clasificación, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos). Una idea nueva se guarda como privada o borrador; nunca se publica directamente desde el formulario.
+- **Captura personal y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, clasificación, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos). El autor decide por separado si el contenido está completo o sigue como borrador y quién puede consultarlo.
+- **Acceso independiente de la publicación**: Una idea completa puede quedar como `Sólo yo` o `Visible en mi perfil`. La segunda opción permite que usuarios autenticados la consulten mediante el perfil o un enlace directo, pero no la incorpora al explorador, la búsqueda global, el ranking ni la Comunidad.
+- **Borradores siempre restringidos**: Un borrador no puede compartirse desde el perfil hasta marcarse como idea completa.
 - **Flujo de trabajo privado independiente**: Las ideas no publicadas utilizan los estados `Capturada`, `En clarificación`, `Lista para actuar`, `En ejecución`, `Completada`, `En pausa`, `Descartada` y `Archivada`. Este flujo organiza el trabajo personal y no altera el ciclo comunitario.
-- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea continúa siendo privada.
+- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea conserva el acceso `Sólo yo` o `Visible en mi perfil` elegido por el autor.
 - **Ciclo comunitario después de publicar**: Sólo las ideas aprobadas utilizan `Nueva`, `En revisión`, `Priorizada`, `En desarrollo`, `Implementada`, `Descartada` y `Archivada`.
-- **Publicación por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta en Comunidad. Las subideas aprobadas se muestran dentro de esa raíz y no compiten como publicaciones independientes.
-- **Jerarquías multinivel auditadas**: Una idea puede contener subideas en varios niveles. El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados.
+- **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
+- **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea puede restringir su propio acceso, pero nunca superar el acceso efectivo de sus ancestros.
 - **Grafo de relaciones semánticas**: Las ideas pueden conectarse como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. Las propuestas entre autores requieren confirmación.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
@@ -36,17 +38,18 @@ La plataforma fomenta una cultura participativa bajo el principio:
 ### 2. Descubrimiento y Colaboración
 - **Explorador con Filtros Multifactor**: Búsqueda global, filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
 - **Navegación estructural**: “Mis Ideas” dispone de vista de árbol y tarjetas; cada ficha muestra madre, subideas, clasificaciones y relaciones verificadas.
-- **Votación Comunitaria (1 a 5 Estrellas)**: Sistema de valoración interactivo donde los colaboradores califican el impacto potencial (con restricción de auto-voto para el autor).
+- **Valoración preliminar y comunitaria (1 a 5 estrellas)**: Una idea madre visible en el perfil puede recibir votos antes de publicarse, con actualización inmediata del promedio y sin autovoto. Las microideas nunca reciben votos independientes.
+- **Continuidad de las valoraciones**: Los votos preliminares se conservan al publicar la idea, pero no activan Innovation Score ni participación en rankings antes de la aprobación editorial.
 - **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".
 - **Guardar en Favoritas**: Marcadores personales para seguimiento rápido.
 
 ### 3. Innovation Score & Leaderboard
-- **Algoritmo de Innovation Score (0-100)**: Fórmula ponderada que combina promedio de estrellas, volumen de votos, interacción comunitaria (vistas y comentarios) y vigencia temporal.
+- **Algoritmo de Innovation Score (0-100)**: Fórmula ponderada que combina promedio de estrellas, volumen de votos, interacción comunitaria (vistas y comentarios) y vigencia temporal. Sólo se activa para ideas madre aprobadas en Comunidad.
 - **Podio Top 3**: Reconocimiento visual con medallas de oro (🥇), plata (🥈) y bronce (🥉).
 - **Ranking Dinámico**: Filtros por periodos (*Esta semana*, *Este mes*, *Este año*, *Histórico*) y áreas.
 
 ### 4. Gestión Personal, Seguridad y 2FA
-- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona ideas privadas, árboles de subideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
+- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona ideas exclusivas, compartidas en perfil, árboles de microideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
 - **Comunidad (Feed de Innovación)**: Ecosistema colaborativo que muestra sólo ideas principales aprobadas, junto con la cantidad de subideas integradas.
 - **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
 - **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
@@ -181,6 +184,8 @@ En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh
 
 `php artisan migrate --force` crea automáticamente la dimensión principal **Área de innovación**, asigna las categorías existentes a esa dimensión y migra cada `ideas.category_id` a la tabla multidimensional `idea_category`. No es necesario modificar previamente los registros actuales.
 
+La migración de acceso agrega `ideas.access_scope` sin convertir ideas privadas en visibles. Las publicaciones existentes se inicializan con acceso de perfil para que, si luego se retiran de Comunidad, continúen siendo localizables desde el perfil de su autor; el autor puede cambiar posteriormente ese acceso a `Sólo yo`.
+
 Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
 
 ---
@@ -201,7 +206,7 @@ Las dimensiones y términos adicionales pueden gestionarse desde **Administraci�
 
 1. **Protección CSRF**: Tokens obligatorios en todas las peticiones POST, PUT y DELETE.
 2. **Políticas de Autorización (Policies & Gates)**:
-   - `IdeaPolicy`: Restringe visualización, edición, eliminación, organización y solicitudes de publicación según autoría, rol y estado.
+   - `IdeaPolicy`: Restringe visualización, edición, eliminación, organización, publicación y votación según autoría, rol, acceso efectivo, ancestros y estado. Las microideas no son votables.
    - `IdeaRelationPolicy`: Sólo el autor objetivo o un administrador puede confirmar relaciones propuestas entre autores; sólo el origen o un administrador puede eliminarlas.
    - `AdminMiddleware`: Protección estricta en todas las rutas administrativas `/admin/*`.
    - Control de auto-voto: Un creador no puede calificar su propia propuesta.
