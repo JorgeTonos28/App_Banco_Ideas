@@ -28,12 +28,14 @@ Alpine.data('globalSearch', () => ({
 }));
 
 // Star Rating Component
-Alpine.data('starRating', (ideaId, currentRating = 0) => ({
+Alpine.data('starRating', (ideaId, currentRating = 0, currentAverage = 0, currentVotes = 0) => ({
     ideaId: ideaId,
     rating: currentRating,
     hoverRating: 0,
     submitting: false,
     userRating: currentRating,
+    averageRating: Number(currentAverage).toFixed(1),
+    votesCount: Number(currentVotes),
 
     async setRating(value) {
         if (this.submitting) return;
@@ -55,6 +57,8 @@ Alpine.data('starRating', (ideaId, currentRating = 0) => ({
             const data = await response.json();
             if (response.ok) {
                 this.userRating = value;
+                this.averageRating = data.average_rating;
+                this.votesCount = data.votes_count;
                 // Dispatch event to update average rating and score in UI if present
                 window.dispatchEvent(new CustomEvent('rating-updated', { detail: data }));
             } else {

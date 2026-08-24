@@ -645,7 +645,7 @@
             @if($idea->acceptsRatings())
             <!-- Voting Widget Card -->
             <div class="bg-surface-container-lowest rounded-3xl p-6 border border-surface-container-high/80 shadow-xs relative overflow-hidden text-center"
-                 x-data="starRating({{ $idea->id }}, {{ $idea->user_rating ?? 0 }})">
+                 x-data="starRating({{ $idea->id }}, {{ $idea->user_rating ?? 0 }}, {{ $idea->average_rating }}, {{ $idea->votes_count }})">
                 <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary-container/5 pointer-events-none"></div>
 
                 <div class="relative z-10 space-y-4">
@@ -693,11 +693,14 @@
                     <div class="flex items-center justify-center gap-2 pt-3 border-t border-surface-container-high/60">
                         <div class="flex items-center gap-1.5 text-base font-bold text-on-surface">
                             <span class="material-symbols-outlined text-amber-400" style="font-variation-settings: 'FILL' 1;">star</span>
-                            <span>{{ number_format($idea->average_rating, 1) }}</span>
+                            <span x-text="averageRating">{{ number_format($idea->average_rating, 1) }}</span>
                             <span class="text-xs font-normal text-outline">/ 5</span>
                         </div>
                         <span class="text-outline text-xs">•</span>
-                        <span class="text-xs font-mono-tech text-on-surface-variant">{{ $idea->votes_count }} valoraciones</span>
+                        <span class="text-xs font-mono-tech text-on-surface-variant">
+                            <span x-text="votesCount">{{ $idea->votes_count }}</span>
+                            <span x-text="votesCount === 1 ? 'valoración' : 'valoraciones'">{{ $idea->votes_count === 1 ? 'valoración' : 'valoraciones' }}</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -705,7 +708,9 @@
 
             @if($idea->isPublishedToCommunity())
             <!-- Innovation Score Card -->
-            <div class="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-6 shadow-md relative overflow-hidden">
+            <div class="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-6 shadow-md relative overflow-hidden"
+                 x-data="{ score: {{ $idea->innovation_score }} }"
+                 @rating-updated.window="score = $event.detail.innovation_score">
                 <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
                 <div class="flex items-center justify-between mb-4">
                     <span class="font-mono-tech text-xs uppercase font-bold tracking-wider text-on-primary-container">Innovation Score</span>
@@ -713,7 +718,7 @@
                 </div>
 
                 <div class="flex items-baseline gap-2">
-                    <span class="font-headline font-extrabold text-5xl">{{ $idea->innovation_score }}</span>
+                    <span class="font-headline font-extrabold text-5xl" x-text="score">{{ $idea->innovation_score }}</span>
                     <span class="text-on-primary-container text-sm font-mono-tech">/ 100</span>
                 </div>
 
