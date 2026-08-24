@@ -64,6 +64,13 @@ class IdeaPolicy
             return false;
         }
 
+        if ($idea->children()
+            ->published()
+            ->where('community_display', 'represented_by_parent')
+            ->exists()) {
+            return false;
+        }
+
         if ($user->isAdmin()) {
             return true;
         }
@@ -115,5 +122,11 @@ class IdeaPolicy
     public function reviewPublication(User $user, Idea $idea): bool
     {
         return $user->is_active && $user->isAdmin();
+    }
+
+    public function organize(User $user, Idea $idea): bool
+    {
+        return $user->is_active
+            && ($user->isAdmin() || $idea->user_id === $user->id);
     }
 }

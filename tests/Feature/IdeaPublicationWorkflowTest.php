@@ -125,22 +125,34 @@ class IdeaPublicationWorkflowTest extends TestCase
         $this->assertTrue(Idea::communityPublished()->whereKey($idea)->exists());
     }
 
-    public function test_published_child_can_be_represented_without_appearing_as_a_community_card(): void
+    public function test_published_child_can_be_represented_by_a_published_parent_without_appearing_as_a_community_card(): void
     {
-        $idea = $this->privateIdea();
-        $this->actingAs($this->author)->post(route('ideas.publication.request', $idea));
+        $parent = $this->privateIdea();
+        $child = $this->privateIdea();
+
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $parent));
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $parent), [
+                'publication_status' => 'published',
+                'community_display' => 'standalone',
+            ]);
+
+        $this->actingAs($this->author)->put(route('ideas.hierarchy.update', $child), [
+            'parent_idea_id' => $parent->id,
+        ]);
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $child));
 
         $this->actingAs($this->admin)
-            ->put(route('admin.ideas.publication.update', $idea), [
+            ->put(route('admin.ideas.publication.update', $child), [
                 'publication_status' => 'published',
                 'community_display' => 'represented_by_parent',
             ])
             ->assertRedirect();
 
-        $idea->refresh();
+        $child->refresh();
 
-        $this->assertTrue(Idea::published()->whereKey($idea)->exists());
-        $this->assertFalse(Idea::communityPublished()->whereKey($idea)->exists());
+        $this->assertTrue(Idea::published()->whereKey($child)->exists());
+        $this->assertFalse(Idea::communityPublished()->whereKey($child)->exists());
     }
 
     public function test_private_workspace_status_changes_without_advancing_community_lifecycle(): void

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class Idea extends Model
@@ -67,6 +68,7 @@ class Idea extends Model
     protected $fillable = [
         'user_id',
         'category_id',
+        'parent_idea_id',
         'title',
         'slug',
         'summary',
@@ -155,6 +157,46 @@ class Idea extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function parentIdea(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_idea_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_idea_id')->orderByDesc('updated_at');
+    }
+
+    public function outgoingRelations(): HasMany
+    {
+        return $this->hasMany(IdeaRelation::class, 'source_idea_id');
+    }
+
+    public function incomingRelations(): HasMany
+    {
+        return $this->hasMany(IdeaRelation::class, 'target_idea_id');
+    }
+
+    public function hierarchyHistories(): HasMany
+    {
+        return $this->hasMany(IdeaHierarchyHistory::class)->orderBy('created_at');
+    }
+
+    public function ancestors(): Collection
+    {
+        $ancestors = collect();
+        $current = $this->parentIdea;
+        $visited = [$this->id => true];
+
+        while ($current && ! isset($visited[$current->id])) {
+            $ancestors->prepend($current);
+            $visited[$current->id] = true;
+            $current = $current->parentIdea;
+        }
+
+        return $ancestors;
     }
 
     public function tags(): BelongsToMany

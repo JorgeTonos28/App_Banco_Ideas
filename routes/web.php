@@ -12,7 +12,9 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\IdeaHierarchyController;
 use App\Http\Controllers\IdeaPublicationController;
+use App\Http\Controllers\IdeaRelationController;
 use App\Http\Controllers\MyIdeasController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -73,6 +75,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/ideas/{idea}/editar', [IdeaController::class, 'edit'])->name('ideas.edit');
     Route::put('/ideas/{idea}', [IdeaController::class, 'update'])->name('ideas.update');
     Route::delete('/ideas/{idea}', [IdeaController::class, 'destroy'])->name('ideas.destroy');
+    Route::put('/ideas/{idea}/jerarquia', [IdeaHierarchyController::class, 'update'])
+        ->name('ideas.hierarchy.update')
+        ->middleware('throttle:30,1');
+    Route::post('/ideas/{idea}/relaciones', [IdeaRelationController::class, 'store'])
+        ->name('ideas.relations.store')
+        ->middleware('throttle:30,1');
+    Route::put('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'update'])
+        ->name('ideas.relations.update')
+        ->middleware('throttle:30,1');
+    Route::delete('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'destroy'])
+        ->name('ideas.relations.destroy')
+        ->middleware('throttle:30,1');
     Route::post('/ideas/{idea}/publicacion/solicitar', [IdeaPublicationController::class, 'store'])
         ->name('ideas.publication.request')
         ->middleware('throttle:5,1');

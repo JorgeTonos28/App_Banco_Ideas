@@ -73,6 +73,20 @@ class IdeaPublicationService
             ]);
         }
 
+        if ($status === 'published' && $display === 'represented_by_parent') {
+            if (! $idea->parent_idea_id) {
+                throw ValidationException::withMessages([
+                    'community_display' => 'Asigna una idea madre antes de publicar esta idea como representada.',
+                ]);
+            }
+
+            if (! $idea->parentIdea?->isPublishedToCommunity()) {
+                throw ValidationException::withMessages([
+                    'community_display' => 'La idea madre debe estar publicada como idea principal en la comunidad.',
+                ]);
+            }
+        }
+
         return DB::transaction(function () use ($idea, $reviewer, $status, $display, $notes): Idea {
             $oldStatus = $idea->publication_status;
             $isPublished = $status === 'published';
