@@ -427,7 +427,7 @@
                             name="visibility" 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         <option value="private" {{ old('visibility', 'private') == 'private' ? 'selected' : '' }}>Idea completa</option>
-                        <option value="draft" {{ old('visibility', 'draft') == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
+                        <option value="draft" {{ old('visibility', 'private') == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
                     </select>
                     <p class="mt-1.5 text-[11px] text-on-surface-variant">Los borradores siempre son visibles sólo para ti.</p>
                 </div>
