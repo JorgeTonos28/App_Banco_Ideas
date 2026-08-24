@@ -35,6 +35,7 @@ class HomeController extends Controller
 
         // 2. Featured Ideas (up to 4)
         $featuredIdeas = Idea::with(['user', 'category', 'tags'])
+            ->withCount(['children as published_children_count' => fn ($query) => $query->published()->where('community_display', 'represented_by_parent')])
             ->communityPublished()
             ->where(function ($query) {
                 $query->where('is_featured', true)
@@ -47,6 +48,7 @@ class HomeController extends Controller
 
         // 3. Trending Ideas (receiving recent activity/votes)
         $trendingIdeas = Idea::with(['user', 'category'])
+            ->withCount(['children as published_children_count' => fn ($query) => $query->published()->where('community_display', 'represented_by_parent')])
             ->communityPublished()
             ->orderByDesc('votes_count')
             ->orderByDesc('innovation_score')
@@ -55,6 +57,7 @@ class HomeController extends Controller
 
         // 4. Latest Ideas Feed
         $latestIdeas = Idea::with(['user', 'category', 'tags'])
+            ->withCount(['children as published_children_count' => fn ($query) => $query->published()->where('community_display', 'represented_by_parent')])
             ->communityPublished()
             ->latest()
             ->take(6)

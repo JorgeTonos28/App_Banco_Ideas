@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Idea;
 
 use App\Http\Requests\Concerns\ValidatesIdeaClassifications;
+use App\Http\Requests\Concerns\ValidatesIdeaParent;
 use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,6 +12,7 @@ use Illuminate\Validation\Validator;
 class StoreIdeaRequest extends FormRequest
 {
     use ValidatesIdeaClassifications;
+    use ValidatesIdeaParent;
 
     public function authorize(): bool
     {
@@ -24,6 +26,7 @@ class StoreIdeaRequest extends FormRequest
             'description' => ['required', 'string', 'min:20', 'max:10000'],
             'problem_opportunity' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
+            'parent_idea_id' => ['nullable', 'integer', 'exists:ideas,id'],
             'classifications' => ['nullable', 'array', 'max:10'],
             'classifications.*' => ['nullable', 'array', 'max:20'],
             'classifications.*.*' => ['integer', 'distinct', 'exists:categories,id'],
@@ -54,6 +57,7 @@ class StoreIdeaRequest extends FormRequest
                 }
             },
             fn (Validator $validator) => $this->validateIdeaClassifications($validator),
+            fn (Validator $validator) => $this->validateIdeaParent($validator),
         ];
     }
 

@@ -449,6 +449,22 @@
             </div>
             @endunless
 
+            <div>
+                <label for="parent_idea_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                    Idea madre <span class="text-outline normal-case tracking-normal">(opcional)</span>
+                </label>
+                <select id="parent_idea_id" name="parent_idea_id" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="">Mantener como idea independiente</option>
+                    @foreach($parentCandidates as $candidate)
+                        <option value="{{ $candidate->id }}" {{ (string) old('parent_idea_id', $idea->parent_idea_id) === (string) $candidate->id ? 'selected' : '' }}>{{ $candidate->title }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1.5 text-[11px] text-on-surface-variant">La jerarquía puede tener varios niveles y se valida para impedir ciclos.</p>
+                @error('parent_idea_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+            </div>
+
+            <x-idea-classification-fields :dimensions="$categoryDimensions" :selected="$selectedClassifications" />
+
             <!-- Tags Input with Chips, In-place Editing, Real-time Similarity Detection & Modal Explorer -->
             <div>
                 <div class="flex items-center justify-between mb-2">

@@ -44,7 +44,25 @@ class MyIdeasController extends Controller
                 ->latest(),
         };
 
+        $treeIdeasQuery = clone $ideasQuery;
         $ideas = $ideasQuery->with(['category', 'tags'])->paginate(8)->withQueryString();
+
+        $treeIdeas = null;
+        $treeRoots = collect();
+        $treeByParent = collect();
+        $viewMode = $request->input('vista', $activeTab === 'guardadas' ? 'cards' : 'tree');
+
+        if ($viewMode === 'tree' && $activeTab !== 'guardadas') {
+            $treeIdeas = $treeIdeasQuery
+                ->reorder('title')
+                ->with(['category', 'parentIdea'])
+                ->withCount('children')
+                ->get();
+
+            $treeIds = $treeIdeas->modelKeys();
+            $treeRoots = $treeIdeas->filter(fn ($idea) => ! $idea->parent_idea_id || ! in_array($idea->parent_idea_id, $treeIds, true));
+            $treeByParent = $treeIdeas->whereNotNull('parent_idea_id')->groupBy('parent_idea_id');
+        }
 
         return view('my_ideas.index', compact(
             'totalIdeas',
@@ -53,7 +71,10 @@ class MyIdeasController extends Controller
             'inDevelopmentCount',
             'implementedCount',
             'activeTab',
-            'ideas'
+            'ideas',
+            'viewMode',
+            'treeRoots',
+            'treeByParent'
         ));
     }
 }

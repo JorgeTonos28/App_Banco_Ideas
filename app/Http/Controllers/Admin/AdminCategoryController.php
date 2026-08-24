@@ -19,7 +19,7 @@ class AdminCategoryController extends Controller
         $dimensions = CategoryDimension::ordered()
             ->with(['categories' => fn ($query) => $query
                 ->with(['parent'])
-                ->withCount(['ideas', 'classifiedIdeas'])])
+                ->withCount(['ideas', 'classifiedIdeas', 'children'])])
             ->get();
         $categories = $dimensions->flatMap->categories;
 

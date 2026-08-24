@@ -5,7 +5,20 @@
 @section('content')
 <div class="space-y-6" x-data="{ 
     drawerOpen: false, 
-    selectedIdea: null,
+    selectedIdea: {
+        id: '',
+        title: '',
+        slug: '',
+        status: 'nueva',
+        publication_status: 'not_submitted',
+        assigned_to_user_id: '',
+        priority: '',
+        admin_observations: '',
+        next_action: '',
+        follow_up_date: '',
+        is_featured: false,
+        parent_idea: null
+    },
     selectedIds: [],
     bulkAction: '',
     openDrawer(idea) {
@@ -18,7 +31,7 @@
     <div class="space-y-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Gestión Administrativa de Ideas</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Control de ciclo de vida, moderación, asignación de responsables y seguimiento</p>
+            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Revisión editorial, publicación de ideas madre y seguimiento del ciclo comunitario</p>
         </div>
 
         <x-admin-nav-tabs />
@@ -26,7 +39,7 @@
 
     <!-- Filters & Search Toolbar -->
     <div class="bg-surface-container-lowest rounded-2xl p-4 border border-surface-container-high/80 shadow-2xs">
-        <form method="GET" action="{{ route('admin.ideas.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <form method="GET" action="{{ route('admin.ideas.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <!-- Search -->
             <div class="lg:col-span-2 relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
@@ -35,6 +48,15 @@
                        value="{{ request('q') }}" 
                        placeholder="Buscar por ID, título o autor..." 
                        class="w-full bg-surface-container-low text-xs rounded-xl py-2.5 pl-9 pr-3 border border-surface-container-high">
+            </div>
+
+            <div>
+                <select name="publicacion" onchange="this.form.submit()" class="w-full bg-surface-container-low text-xs rounded-xl p-2.5 border border-surface-container-high">
+                    <option value="">Toda publicación</option>
+                    @foreach(['not_submitted' => 'No enviada', 'pending_review' => 'Pendiente de revisión', 'changes_requested' => 'Cambios solicitados', 'published' => 'Publicada', 'rejected' => 'Rechazada', 'unpublished' => 'Retirada'] as $value => $label)
+                        <option value="{{ $value }}" {{ request('publicacion') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
             </div>
 
             <!-- Status Filter -->
@@ -139,6 +161,9 @@
                                 </a>
                             </div>
                             <span class="text-[10px] font-mono-tech text-outline">ID #{{ $idea->id }} • {{ $idea->created_at->translatedFormat('d M, Y') }}</span>
+                            @if($idea->children_count > 0)
+                                <span class="block text-[10px] font-mono-tech text-tertiary mt-1">{{ $idea->children_count }} {{ $idea->children_count === 1 ? 'subidea' : 'subideas' }}</span>
+                            @endif
                         </td>
                         <td class="py-4 px-4">
                             <span class="font-bold text-on-surface block text-xs truncate">{{ $idea->user->name }}</span>
@@ -152,7 +177,15 @@
                             <span class="text-outline block text-[10px]">({{ $idea->votes_count }} votos)</span>
                         </td>
                         <td class="py-4 px-4 text-center">
-                            <x-status-badge :status="$idea->status" />
+                            @if($idea->isPublished())
+                                <x-status-badge :status="$idea->status" />
+                                @if($idea->community_display === 'represented_by_parent')
+                                    <span class="block mt-1 text-[9px] font-mono-tech text-tertiary">Representada</span>
+                                @endif
+                            @else
+                                <span class="inline-flex px-2 py-1 rounded-lg bg-surface-container text-[10px] font-bold text-on-surface-variant">{{ $idea->publication_status_label }}</span>
+                                <span class="block mt-1 text-[9px] font-mono-tech text-outline">{{ $idea->workspace_status_label }}</span>
+                            @endif
                         </td>
                         <td class="py-4 px-4 text-center text-xs">
                             @if($idea->assignedTo)
@@ -240,16 +273,52 @@
                     </div>
 
                     <!-- Update Form -->
+                    <form :action="'{{ url('/admin/ideas') }}/' + (selectedIdea?.id || '') + '/publicacion'" method="POST" class="space-y-4 rounded-2xl border border-primary/15 bg-primary-fixed/25 p-4">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <span class="block text-[10px] font-mono-tech uppercase font-bold text-primary">Decisión editorial</span>
+                            <p class="text-xs text-on-surface-variant mt-1">
+                                Estado actual: <strong x-text="selectedIdea?.publication_status_label || selectedIdea?.publication_status"></strong>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-on-surface mb-1.5">Decisión</label>
+                            <select name="publication_status" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                                <option value="published">Aprobar publicación</option>
+                                <option value="changes_requested">Solicitar cambios</option>
+                                <option value="rejected">Rechazar solicitud</option>
+                                <option value="unpublished">Retirar de la comunidad</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-on-surface mb-1.5">Representación en comunidad</label>
+                            <select name="community_display" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                                <option value="standalone">Idea principal, crea una tarjeta</option>
+                                <option value="represented_by_parent">Subidea, se muestra dentro de su madre</option>
+                            </select>
+                            <p class="text-[10px] text-on-surface-variant mt-1" x-show="selectedIdea?.parent_idea">
+                                Madre actual: <span class="font-bold" x-text="selectedIdea?.parent_idea?.title"></span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-on-surface mb-1.5">Nota editorial</label>
+                            <textarea name="publication_notes" rows="3" maxlength="2000" placeholder="Explica la decisión o los cambios requeridos" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">Registrar decisión editorial</button>
+                    </form>
+
+                    <!-- Update Form -->
                     <form :action="'{{ url('/admin/ideas') }}/' + (selectedIdea?.id || '')" method="POST" class="space-y-4">
                         @csrf
                         @method('PUT')
 
                         <!-- Status Selection -->
-                        <div>
+                        <div x-show="selectedIdea?.publication_status === 'published'">
                             <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1.5">
                                 Estado del Ciclo de Vida <span class="text-error">*</span>
                             </label>
-                            <select name="status" x-model="selectedIdea.status" required class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high font-semibold">
+                            <select name="status" x-model="selectedIdea.status" class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high font-semibold">
                                 <option value="nueva">💡 Nueva</option>
                                 <option value="en_revision">👀 En revisión</option>
                                 <option value="priorizada">⭐ Priorizada</option>

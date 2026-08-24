@@ -19,7 +19,8 @@ class AdminIdeaController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Idea::with(['user', 'category', 'assignedTo']);
+        $query = Idea::with(['user', 'category', 'assignedTo', 'parentIdea'])
+            ->withCount('children');
 
         // Search
         if ($search = $request->input('q')) {
@@ -35,6 +36,10 @@ class AdminIdeaController extends Controller
         // Filters
         if ($status = $request->input('estado')) {
             $query->where('status', $status);
+        }
+
+        if ($publicationStatus = $request->input('publicacion')) {
+            $query->where('publication_status', $publicationStatus);
         }
 
         if ($categoryId = $request->input('categoria')) {

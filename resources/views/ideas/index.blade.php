@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Explorar Ideas</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Descubre, vota y comenta las propuestas de la comunidad INFOTEP</p>
+            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Explora ideas principales y navega sus subideas, dimensiones y conexiones</p>
         </div>
 
         <a href="{{ route('ideas.create') }}" 
@@ -51,7 +51,7 @@
                         class="w-full md:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-surface-container hover:bg-surface-container-high text-on-surface rounded-xl text-sm font-medium transition-colors">
                     <span class="material-symbols-outlined text-lg">filter_list</span>
                     <span>Filtros</span>
-                    @if(request('categoria') || request('estado') || request('etiqueta') || request('departamento'))
+                    @if(request('categoria') || request('estado') || request('etiqueta') || request('departamento') || request('facetas'))
                     <span class="w-2 h-2 rounded-full bg-primary"></span>
                     @endif
                 </button>
@@ -69,6 +69,37 @@
                         @endforeach
                     </select>
                 </div>
+
+                @if($categoryDimensions->where('is_primary', false)->isNotEmpty())
+                <div class="sm:col-span-2 lg:col-span-4 pt-3 border-t border-surface-container-high/70">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="material-symbols-outlined text-primary text-lg">tune</span>
+                        <span class="text-xs font-bold text-on-surface font-mono-tech uppercase">Dimensiones de clasificación</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach($categoryDimensions->where('is_primary', false) as $dimension)
+                        <fieldset>
+                            <legend class="text-xs font-bold text-on-surface mb-2">{{ $dimension->name }}</legend>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach($dimension->categories as $term)
+                                <label class="cursor-pointer">
+                                    <input type="checkbox"
+                                           name="facetas[{{ $dimension->slug }}][]"
+                                           value="{{ $term->slug }}"
+                                           class="peer sr-only"
+                                           {{ in_array($term->slug, request("facetas.{$dimension->slug}", []), true) ? 'checked' : '' }}>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-surface-container-high bg-surface-container-low text-[11px] text-on-surface-variant peer-checked:bg-primary-fixed peer-checked:border-primary peer-checked:text-primary peer-checked:font-bold">
+                                        {{ $term->name }}
+                                        <span class="font-mono-tech text-[9px] opacity-70">{{ $term->community_ideas_count }}</span>
+                                    </span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
 
                 <!-- Status Filter -->
                 <div>
@@ -140,7 +171,7 @@
                 Ver todas las ideas
             </a>
             <a href="{{ route('ideas.create') }}" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">
-                + Publicar nueva idea
+                Crear una idea privada
             </a>
         </div>
     </div>

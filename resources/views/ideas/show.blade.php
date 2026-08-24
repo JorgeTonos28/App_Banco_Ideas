@@ -12,8 +12,12 @@
                 <span class="material-symbols-outlined text-sm">arrow_back</span>
                 <span>Ideas</span>
             </a>
+            @if($idea->parentIdea)
+                <span>/</span>
+                <a href="{{ route('ideas.show', $idea->parentIdea->slug) }}" class="hover:text-primary truncate max-w-[12rem]">{{ $idea->parentIdea->title }}</a>
+            @endif
             <span>/</span>
-            <span class="text-on-surface truncate max-w-xs sm:max-w-md">{{ $idea->category?->name ?: 'Propuesta' }}</span>
+            <span class="text-on-surface truncate max-w-xs sm:max-w-md">{{ $idea->title }}</span>
         </nav>
 
         <!-- Quick actions: Favorite, Share, Edit -->
@@ -70,13 +74,31 @@
                 @endif
             </div>
 
-            <x-status-badge :status="$idea->status" />
+            @if($idea->isPublished())
+                <x-status-badge :status="$idea->status" />
+            @else
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-on-surface-variant text-xs font-bold">
+                    <span class="material-symbols-outlined text-sm">workspaces</span>
+                    {{ $idea->workspace_status_label }}
+                </span>
+            @endif
         </div>
 
         <!-- Title -->
         <h1 class="font-headline font-extrabold text-2xl sm:text-4xl text-on-surface leading-tight">
             {{ $idea->title }}
         </h1>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $idea->isPublished() ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-surface-container text-on-surface-variant border border-surface-container-high' }} font-bold">
+                <span class="material-symbols-outlined text-sm">{{ $idea->isPublished() ? 'public' : 'lock' }}</span>
+                {{ $idea->isPublished() ? 'Publicada en la comunidad' : 'Espacio privado' }}
+            </span>
+            <span class="font-mono-tech text-outline">Revisión editorial: {{ $idea->publication_status_label }}</span>
+            @if($idea->community_display === 'represented_by_parent')
+                <span class="font-bold text-tertiary">Visible dentro de su idea madre</span>
+            @endif
+        </div>
 
         <!-- Author Block & Metadata -->
         <div class="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-surface-container-low border border-surface-container-high/50">
@@ -134,7 +156,179 @@
             </a>
         </div>
         @endif
+
+        @php
+            $classificationsByDimension = $idea->categories->groupBy('category_dimension_id');
+        @endphp
+        @if($classificationsByDimension->count() > 1)
+        <div class="pt-4 border-t border-surface-container-high/70 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            @foreach($classificationsByDimension as $classifiedTerms)
+                @php $dimension = $classifiedTerms->first()?->dimension; @endphp
+                @if($dimension && ! $dimension->is_primary)
+                <div>
+                    <span class="block text-[10px] font-mono-tech uppercase font-bold text-outline mb-1">{{ $dimension->name }}</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach($classifiedTerms as $term)
+                            <span class="px-2.5 py-1 rounded-lg bg-tertiary/10 text-tertiary text-xs font-semibold">{{ $term->path_label }}</span>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+            @endforeach
+        </div>
+        @endif
     </div>
+
+    @if($idea->parentIdea || $idea->children->isNotEmpty() || $idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $canOrganize || $pendingRelationReviews->isNotEmpty())
+    <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs overflow-hidden" x-data="{ organizeOpen: false }">
+        <div class="p-5 sm:p-6 border-b border-surface-container-high/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">hub</span>
+                    Mapa de la idea
+                </h2>
+                <p class="text-xs text-on-surface-variant mt-1">Jerarquía canónica y conexiones semánticas verificadas.</p>
+            </div>
+            @if($canOrganize)
+            <button type="button" @click="organizeOpen = !organizeOpen" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-fixed text-primary hover:bg-primary hover:text-white text-xs font-bold">
+                <span class="material-symbols-outlined text-base">account_tree</span>
+                Organizar conexiones
+            </button>
+            @endif
+        </div>
+
+        <div class="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-3">
+                <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Estructura madre e hijas</h3>
+
+                @if($idea->parentIdea)
+                <a href="{{ route('ideas.show', $idea->parentIdea->slug) }}" class="flex items-center gap-3 p-3 rounded-2xl bg-primary-fixed/45 border border-primary/10 hover:border-primary/30 group">
+                    <div class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-lg">arrow_upward</span>
+                    </div>
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-mono-tech font-bold uppercase text-primary">Idea madre</span>
+                        <p class="text-xs font-bold text-on-surface group-hover:text-primary truncate">{{ $idea->parentIdea->title }}</p>
+                    </div>
+                </a>
+                @else
+                <div class="p-3 rounded-2xl bg-surface-container-low text-xs text-on-surface-variant">Esta idea no depende de una idea madre.</div>
+                @endif
+
+                @if($idea->children->isNotEmpty())
+                <div class="space-y-2">
+                    @foreach($idea->children as $child)
+                    <a href="{{ route('ideas.show', $child->slug) }}" class="flex items-center justify-between gap-3 p-3 rounded-xl border border-surface-container-high hover:bg-surface-container-low group">
+                        <div class="min-w-0">
+                            <span class="text-[10px] font-mono-tech text-outline">Subidea</span>
+                            <p class="text-xs font-bold text-on-surface group-hover:text-primary truncate">{{ $child->title }}</p>
+                        </div>
+                        <span class="material-symbols-outlined text-base text-outline">arrow_forward</span>
+                    </a>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+
+            <div class="space-y-3">
+                <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Relaciones semánticas</h3>
+                @forelse($idea->outgoingRelations as $relation)
+                    <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-surface-container-low">
+                        <div class="min-w-0">
+                            <span class="text-[10px] font-mono-tech font-bold text-tertiary">{{ $relation->type_label }}</span>
+                            <a href="{{ route('ideas.show', $relation->targetIdea->slug) }}" class="block text-xs font-bold text-on-surface hover:text-primary truncate">{{ $relation->targetIdea->title }}</a>
+                            @if($relation->rationale)<p class="text-[11px] text-on-surface-variant mt-1">{{ $relation->rationale }}</p>@endif
+                        </div>
+                        @can('delete', $relation)
+                        <form action="{{ route('ideas.relations.destroy', $relation) }}" method="POST">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="p-1 text-outline hover:text-error" title="Eliminar relación"><span class="material-symbols-outlined text-base">close</span></button>
+                        </form>
+                        @endcan
+                    </div>
+                @empty
+                    @if($idea->incomingRelations->isEmpty())
+                    <div class="p-3 rounded-2xl bg-surface-container-low text-xs text-on-surface-variant">Aún no hay relaciones semánticas verificadas.</div>
+                    @endif
+                @endforelse
+
+                @foreach($idea->incomingRelations as $relation)
+                    <div class="p-3 rounded-xl border border-surface-container-high">
+                        <span class="text-[10px] font-mono-tech font-bold text-outline">Conexión entrante · {{ $relation->type_label }}</span>
+                        <a href="{{ route('ideas.show', $relation->sourceIdea->slug) }}" class="block text-xs font-bold text-on-surface hover:text-primary truncate">{{ $relation->sourceIdea->title }}</a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        @if($canOrganize)
+        <div x-show="organizeOpen" class="p-5 sm:p-6 border-t border-surface-container-high bg-surface-container-low/55 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form action="{{ route('ideas.hierarchy.update', $idea) }}" method="POST" class="space-y-3">
+                @csrf
+                @method('PUT')
+                <div>
+                    <label for="map_parent_idea_id" class="block text-xs font-bold text-on-surface mb-1.5">Ubicar bajo una idea madre</label>
+                    <select id="map_parent_idea_id" name="parent_idea_id" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                        <option value="">Sin idea madre</option>
+                        @foreach($parentCandidates as $candidate)
+                            <option value="{{ $candidate->id }}" {{ $idea->parent_idea_id === $candidate->id ? 'selected' : '' }}>{{ $candidate->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <input type="text" name="note" maxlength="1000" placeholder="Motivo del cambio, opcional" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                <button type="submit" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl">Guardar jerarquía</button>
+            </form>
+
+            <form action="{{ route('ideas.relations.store', $idea) }}" method="POST" class="space-y-3">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface mb-1.5">Tipo de relación</label>
+                        <select name="type" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                            @foreach(\App\Models\IdeaRelation::TYPES as $type)
+                                <option value="{{ $type }}">{{ (new \App\Models\IdeaRelation(['type' => $type]))->type_label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-on-surface mb-1.5">Idea conectada</label>
+                        <select name="target_idea_id" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                            <option value="">Seleccionar</option>
+                            @foreach($relationCandidates as $candidate)
+                                <option value="{{ $candidate->id }}">{{ $candidate->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <input type="text" name="rationale" maxlength="1000" placeholder="Explica brevemente la conexión" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                <button type="submit" class="px-4 py-2 bg-tertiary text-white text-xs font-bold rounded-xl">Crear relación</button>
+            </form>
+        </div>
+        @endif
+
+        @if($pendingRelationReviews->isNotEmpty())
+        <div class="p-5 sm:p-6 border-t border-secondary/20 bg-secondary-container/10 space-y-3">
+            <h3 class="text-xs font-bold text-on-surface">Relaciones que esperan tu confirmación</h3>
+            @foreach($pendingRelationReviews as $pendingRelation)
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl bg-surface-container-lowest border border-secondary/20">
+                <p class="text-xs text-on-surface"><strong>{{ $pendingRelation->sourceIdea->title }}</strong> propone: {{ $pendingRelation->type_label }}.</p>
+                <div class="flex gap-2">
+                    @foreach(['approved' => 'Aprobar', 'rejected' => 'Rechazar'] as $decision => $label)
+                    <form action="{{ route('ideas.relations.update', $pendingRelation) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="{{ $decision }}">
+                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $decision === 'approved' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant' }}">{{ $label }}</button>
+                    </form>
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+    </section>
+    @endif
 
     <!-- 2-Column Main Content & Sidebar -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -201,15 +395,23 @@
 
                 <!-- Linear Progress Stepper Bar -->
                 @php
-                $stages = [
-                    'nueva' => 'Nueva',
-                    'en_revision' => 'En revisión',
-                    'priorizada' => 'Priorizada',
-                    'en_desarrollo' => 'En desarrollo',
-                    'implementada' => 'Implementada'
-                ];
+                $stages = $idea->isPublished()
+                    ? [
+                        'nueva' => 'Nueva',
+                        'en_revision' => 'En revisión',
+                        'priorizada' => 'Priorizada',
+                        'en_desarrollo' => 'En desarrollo',
+                        'implementada' => 'Implementada',
+                    ]
+                    : [
+                        'capturada' => 'Capturada',
+                        'en_clarificacion' => 'En clarificación',
+                        'lista_para_actuar' => 'Lista para actuar',
+                        'en_ejecucion' => 'En ejecución',
+                        'completada' => 'Completada',
+                    ];
                 $stageKeys = array_keys($stages);
-                $currentIndex = array_search($idea->status, $stageKeys);
+                $currentIndex = array_search($idea->isPublished() ? $idea->status : $idea->workspace_status, $stageKeys);
                 if ($currentIndex === false) $currentIndex = 0;
                 @endphp
 
@@ -372,7 +574,48 @@
 
         <!-- Right: Interactive Voting, Innovation Score & Related Ideas (4 cols) -->
         <div class="lg:col-span-4 space-y-6">
-            
+
+            @unless($idea->isPublished())
+            <div class="bg-surface-container-lowest rounded-3xl p-6 border border-surface-container-high/80 shadow-xs space-y-5">
+                <div>
+                    <span class="text-[10px] font-mono-tech uppercase font-bold text-outline">Trabajo privado</span>
+                    <h3 class="font-headline font-bold text-lg text-on-surface mt-1">{{ $idea->workspace_status_label }}</h3>
+                    <p class="text-xs text-on-surface-variant mt-1">Este estado organiza tu ejecución personal y no forma parte del ciclo comunitario.</p>
+                </div>
+
+                <div class="p-3 rounded-2xl bg-surface-container-low border border-surface-container-high">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-on-surface">Publicación comunitaria</span>
+                        <span class="px-2 py-0.5 rounded-lg bg-surface-container text-[10px] font-mono-tech text-on-surface-variant">{{ $idea->publication_status_label }}</span>
+                    </div>
+                    @if($idea->publication_notes)
+                        <p class="text-xs text-on-surface-variant mt-2">{{ $idea->publication_notes }}</p>
+                    @endif
+                </div>
+
+                @can('requestPublication', $idea)
+                <form action="{{ route('ideas.publication.request', $idea) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">
+                        <span class="material-symbols-outlined text-base">send</span>
+                        Solicitar revisión editorial
+                    </button>
+                </form>
+                @endcan
+
+                @can('cancelPublication', $idea)
+                <form action="{{ route('ideas.publication.cancel', $idea) }}" method="POST">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="w-full px-4 py-2.5 bg-surface-container text-on-surface text-xs font-bold rounded-xl hover:bg-surface-container-high">Cancelar solicitud</button>
+                </form>
+                @endcan
+
+                @if($idea->visibility === 'draft')
+                    <a href="{{ route('ideas.edit', $idea) }}" class="block text-center text-xs font-bold text-primary hover:underline">Completar el borrador antes de enviarlo</a>
+                @endif
+            </div>
+            @else
             <!-- Voting Widget Card -->
             <div class="bg-surface-container-lowest rounded-3xl p-6 border border-surface-container-high/80 shadow-xs relative overflow-hidden text-center"
                  x-data="starRating({{ $idea->id }}, {{ $idea->user_rating ?? 0 }})">
@@ -439,6 +682,7 @@
                     El algoritmo pondera valoraciones, volumen de votos, comentarios recientes e impacto pedagógico e institucional.
                 </p>
             </div>
+            @endunless
 
             <!-- Related Ideas in Category -->
             @if($relatedIdeas->isNotEmpty())

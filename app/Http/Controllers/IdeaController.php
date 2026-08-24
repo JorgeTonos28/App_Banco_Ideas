@@ -14,6 +14,7 @@ use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\IdeaClassificationService;
+use App\Services\IdeaHierarchyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -21,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class IdeaController extends Controller
@@ -31,7 +33,10 @@ class IdeaController extends Controller
     public function index(Request $request): View
     {
         $query = Idea::with(['user', 'category', 'tags'])
-            ->published();
+            ->withCount([
+                'children as published_children_count' => fn ($children) => $children->published()->where('community_display', 'represented_by_parent'),
+            ])
+            ->communityPublished();
 
         // Search
         if ($search = $request->input('q')) {
@@ -50,6 +55,29 @@ class IdeaController extends Controller
         if ($categorySlug = $request->input('categoria')) {
             $query->whereHas('category', function ($q) use ($categorySlug) {
                 $q->where('slug', $categorySlug);
+            });
+        }
+
+        $facetSelections = collect($request->input('facetas', []))
+            ->filter(fn ($values, $dimensionSlug) => is_string($dimensionSlug)
+                && preg_match('/^[a-z0-9-]+$/', $dimensionSlug)
+                && is_array($values))
+            ->take(10)
+            ->map(fn (array $values) => collect($values)
+                ->filter(fn ($value) => is_string($value) && preg_match('/^[a-z0-9-]+$/', $value))
+                ->unique()
+                ->take(20)
+                ->values());
+
+        foreach ($facetSelections as $dimensionSlug => $categorySlugs) {
+            if ($categorySlugs->isEmpty()) {
+                continue;
+            }
+
+            $query->whereHas('categories', function ($categories) use ($dimensionSlug, $categorySlugs): void {
+                $categories
+                    ->whereIn('categories.slug', $categorySlugs)
+                    ->whereHas('dimension', fn ($dimension) => $dimension->where('slug', $dimensionSlug));
             });
         }
 
@@ -91,8 +119,19 @@ class IdeaController extends Controller
         $ideas = $query->paginate(9)->withQueryString();
 
         $categories = Category::withCount(['ideas' => function ($q) {
-            $q->published();
+            $q->communityPublished();
         }])->get();
+
+        $categoryDimensions = CategoryDimension::query()
+            ->active()
+            ->ordered()
+            ->whereHas('categories', fn ($categoriesQuery) => $categoriesQuery->where('is_active', true))
+            ->with(['categories' => fn ($categoriesQuery) => $categoriesQuery
+                ->where('is_active', true)
+                ->withCount(['classifiedIdeas as community_ideas_count' => fn ($ideasQuery) => $ideasQuery->communityPublished()])
+                ->orderBy('sort_order')
+                ->orderBy('name')])
+            ->get();
 
         $tags = Tag::withCount(['ideas' => fn ($q) => $q->published()])
             ->orderByDesc('ideas_count')
@@ -103,7 +142,7 @@ class IdeaController extends Controller
             ->distinct()
             ->pluck('department');
 
-        return view('ideas.index', compact('ideas', 'categories', 'tags', 'departments', 'sort'));
+        return view('ideas.index', compact('ideas', 'categories', 'categoryDimensions', 'tags', 'departments', 'sort'));
     }
 
     /**
@@ -117,6 +156,11 @@ class IdeaController extends Controller
             ->orderBy('name')
             ->get();
         $categoryDimensions = $this->activeCategoryDimensions();
+        $parentCandidates = Idea::query()
+            ->when(! auth()->user()->isAdmin(), fn ($query) => $query->where('user_id', auth()->id()))
+            ->whereNotIn('workspace_status', ['archivada', 'descartada'])
+            ->orderBy('title')
+            ->get(['id', 'title', 'parent_idea_id']);
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -137,14 +181,17 @@ class IdeaController extends Controller
         $popularTags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(8)->get();
         $tags = $popularTags;
 
-        return view('ideas.create', compact('categories', 'categoryDimensions', 'allTags', 'popularTags', 'tags'));
+        return view('ideas.create', compact('categories', 'categoryDimensions', 'parentCandidates', 'allTags', 'popularTags', 'tags'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreIdeaRequest $request, IdeaClassificationService $classificationService): RedirectResponse
-    {
+    public function store(
+        StoreIdeaRequest $request,
+        IdeaClassificationService $classificationService,
+        IdeaHierarchyService $hierarchyService
+    ): RedirectResponse {
         DB::beginTransaction();
         try {
             $idea = Idea::create([
@@ -166,6 +213,15 @@ class IdeaController extends Controller
                 $request->input('classifications', []),
                 $request->integer('category_id'),
             );
+
+            if ($request->filled('parent_idea_id')) {
+                $hierarchyService->move(
+                    $idea,
+                    Idea::findOrFail($request->integer('parent_idea_id')),
+                    $request->user(),
+                    'Jerarquía definida al crear la idea.',
+                );
+            }
 
             // Handle Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
@@ -217,6 +273,10 @@ class IdeaController extends Controller
                 : 'Idea guardada en tu espacio privado. Cuando esté lista podrás solicitar su publicación.';
 
             return redirect()->route('ideas.show', $idea->slug)->with('success', $message);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -232,9 +292,15 @@ class IdeaController extends Controller
         $idea = Idea::with([
             'user',
             'category',
+            'categories.dimension',
             'tags',
             'attachments',
             'statusHistories.user',
+            'parentIdea.user',
+            'children.user',
+            'children.category',
+            'outgoingRelations.targetIdea.user',
+            'incomingRelations.sourceIdea.user',
             'comments' => function ($query) {
                 $query->whereNull('parent_id')
                     ->with(['user', 'likes', 'replies.user', 'replies.likes'])
@@ -243,6 +309,26 @@ class IdeaController extends Controller
         ])->where('slug', $slug)->firstOrFail();
 
         $this->authorize('view', $idea);
+
+        $viewer = auth()->user();
+        $idea->setRelation('children', $idea->children
+            ->filter(fn (Idea $child) => $viewer?->can('view', $child))
+            ->values());
+
+        if ($idea->parentIdea && ! $viewer?->can('view', $idea->parentIdea)) {
+            $idea->unsetRelation('parentIdea');
+        }
+
+        $idea->setRelation('outgoingRelations', $idea->outgoingRelations
+            ->filter(fn ($relation) => $relation->status === 'approved'
+                && $relation->targetIdea
+                && $viewer?->can('view', $relation->targetIdea))
+            ->values());
+        $idea->setRelation('incomingRelations', $idea->incomingRelations
+            ->filter(fn ($relation) => $relation->status === 'approved'
+                && $relation->sourceIdea
+                && $viewer?->can('view', $relation->sourceIdea))
+            ->values());
 
         // Increment views count safely
         $sessionKey = 'viewed_idea_'.$idea->id;
@@ -254,14 +340,54 @@ class IdeaController extends Controller
 
         // Related ideas in the same category
         $relatedIdeas = Idea::with(['user', 'category'])
-            ->where('category_id', $idea->category_id)
+            ->whereHas('categories', fn ($query) => $query->whereIn('categories.id', $idea->categories->modelKeys()))
             ->where('id', '!=', $idea->id)
             ->published()
             ->orderByDesc('innovation_score')
             ->take(3)
             ->get();
 
-        return view('ideas.show', compact('idea', 'relatedIdeas'));
+        $canOrganize = $viewer?->can('organize', $idea) ?? false;
+        $parentCandidates = collect();
+        $relationCandidates = collect();
+        $pendingRelationReviews = collect();
+
+        if ($canOrganize) {
+            $parentCandidates = Idea::query()
+                ->when(! $viewer->isAdmin(), fn ($query) => $query->where('user_id', $viewer->id))
+                ->whereKeyNot($idea->id)
+                ->orderBy('title')
+                ->limit(250)
+                ->get(['id', 'title', 'user_id', 'visibility', 'publication_status']);
+
+            $relationCandidates = Idea::query()
+                ->whereKeyNot($idea->id)
+                ->when(! $viewer->isAdmin(), function ($query) use ($viewer): void {
+                    $query->where(function ($visible) use ($viewer): void {
+                        $visible->where('user_id', $viewer->id)->orWhere(fn ($published) => $published->published());
+                    });
+                })
+                ->orderBy('title')
+                ->limit(250)
+                ->get(['id', 'title', 'user_id', 'visibility', 'publication_status']);
+        }
+
+        if ($viewer) {
+            $pendingRelationReviews = $idea->incomingRelations()
+                ->where('status', 'pending')
+                ->when(! $viewer->isAdmin(), fn ($query) => $query->whereHas('targetIdea', fn ($target) => $target->where('user_id', $viewer->id)))
+                ->with('sourceIdea.user')
+                ->get();
+        }
+
+        return view('ideas.show', compact(
+            'idea',
+            'relatedIdeas',
+            'canOrganize',
+            'parentCandidates',
+            'relationCandidates',
+            'pendingRelationReviews'
+        ));
     }
 
     /**
@@ -277,6 +403,9 @@ class IdeaController extends Controller
             ->orderBy('name')
             ->get();
         $categoryDimensions = $this->activeCategoryDimensions();
+        $parentCandidates = auth()->user()->isAdmin()
+            ? Idea::whereKeyNot($idea->id)->orderBy('title')->limit(250)->get(['id', 'title', 'parent_idea_id'])
+            : auth()->user()->ideas()->whereKeyNot($idea->id)->orderBy('title')->get(['id', 'title', 'parent_idea_id']);
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -300,14 +429,18 @@ class IdeaController extends Controller
 
         $selectedClassifications = $classificationService->currentSelections($idea->loadMissing('categories'));
 
-        return view('ideas.edit', compact('idea', 'categories', 'categoryDimensions', 'allTags', 'popularTags', 'tags', 'selectedTags', 'selectedClassifications'));
+        return view('ideas.edit', compact('idea', 'categories', 'categoryDimensions', 'parentCandidates', 'allTags', 'popularTags', 'tags', 'selectedTags', 'selectedClassifications'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateIdeaRequest $request, Idea $idea, IdeaClassificationService $classificationService): RedirectResponse
-    {
+    public function update(
+        UpdateIdeaRequest $request,
+        Idea $idea,
+        IdeaClassificationService $classificationService,
+        IdeaHierarchyService $hierarchyService
+    ): RedirectResponse {
         $this->authorize('update', $idea);
 
         DB::beginTransaction();
@@ -330,6 +463,13 @@ class IdeaController extends Controller
                 $request->input('classifications', []),
                 $request->integer('category_id'),
             );
+
+            if ($request->has('parent_idea_id')) {
+                $parent = $request->filled('parent_idea_id')
+                    ? Idea::findOrFail($request->integer('parent_idea_id'))
+                    : null;
+                $hierarchyService->move($idea, $parent, $request->user(), 'Jerarquía actualizada desde la edición de la idea.');
+            }
 
             if (! $idea->isPublished() && $oldWorkspaceStatus !== $newWorkspaceStatus) {
                 IdeaStatusHistory::create([
@@ -390,6 +530,10 @@ class IdeaController extends Controller
             DB::commit();
 
             return redirect()->route('ideas.show', $idea->slug)->with('success', '¡Idea actualizada con éxito!');
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            throw $e;
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -509,6 +653,7 @@ class IdeaController extends Controller
             ->ordered()
             ->with(['categories' => fn ($query) => $query
                 ->where('is_active', true)
+                ->with(['parent.parent'])
                 ->orderBy('sort_order')
                 ->orderBy('name')])
             ->get();

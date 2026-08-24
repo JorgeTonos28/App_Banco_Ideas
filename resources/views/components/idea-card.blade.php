@@ -46,6 +46,13 @@
             {{ $idea->summary ?: Str::limit(strip_tags($idea->description), 140) }}
         </p>
 
+        @if(($idea->published_children_count ?? 0) > 0)
+        <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-tertiary/10 border border-tertiary/15 text-tertiary text-xs font-bold">
+            <span class="material-symbols-outlined text-base">account_tree</span>
+            <span>{{ $idea->published_children_count }} {{ $idea->published_children_count === 1 ? 'subidea integrada' : 'subideas integradas' }}</span>
+        </div>
+        @endif
+
         <!-- Tags List -->
         @if($idea->tags->isNotEmpty())
         <div class="flex flex-wrap gap-1.5 mb-4">
