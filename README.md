@@ -10,8 +10,15 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ## 🌟 Características Principales
 
-### 1. Captura y Gestión de Ideas
-- **Publicación ágil y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, categoría, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos).
+### 1. Captura, Organización y Publicación Editorial
+- **Captura privada y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, clasificación, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos). Una idea nueva se guarda como privada o borrador; nunca se publica directamente desde el formulario.
+- **Flujo de trabajo privado independiente**: Las ideas no publicadas utilizan los estados `Capturada`, `En clarificación`, `Lista para actuar`, `En ejecución`, `Completada`, `En pausa`, `Descartada` y `Archivada`. Este flujo organiza el trabajo personal y no altera el ciclo comunitario.
+- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea continúa siendo privada.
+- **Ciclo comunitario después de publicar**: Sólo las ideas aprobadas utilizan `Nueva`, `En revisión`, `Priorizada`, `En desarrollo`, `Implementada`, `Descartada` y `Archivada`.
+- **Publicación por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta en Comunidad. Las subideas aprobadas se muestran dentro de esa raíz y no compiten como publicaciones independientes.
+- **Jerarquías multinivel auditadas**: Una idea puede contener subideas en varios niveles. El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados.
+- **Grafo de relaciones semánticas**: Las ideas pueden conectarse como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. Las propuestas entre autores requieren confirmación.
+- **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
   - 🔤 **Alfabético (A - Z)**: Agrupadas por letra con selector de salto rápido.
   - 🏷️ **Por Categoría Oficial**: Clasificación de etiquetas vinculadas a cada categoría institucional.
@@ -24,13 +31,11 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - ⚡ **Detección de Similares en Tiempo Real (Fuzzy & Lematización en Español)**: Identifica variaciones de singular/plural (`Sensor` ↔ `Sensores`, `Capacitación` ↔ `Capacitaciones`) y errores tipográficos (`Inteligencia Artifical` ↔ `Inteligencia Artificial`).
   - 💡 **Asistente Visual Interactivo**: Notifica al usuario en el formulario y en el explorador modal cuando existen etiquetas similares con conteo de uso en el sistema, permitiendo seleccionarlas con un solo clic o confirmar el término nuevo.
 - **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
-- **Borradores y Estados**: Capacidad de guardar borradores privados o publicar directamente.
-- **Ciclo de Vida Evolutivo**: Seguimiento en tiempo real a través de las etapas:
-  `💡 Nueva` → `👀 En revisión` → `⭐ Priorizada` → `🧪 En desarrollo` → `🚀 Implementada` (con opciones de `⛔ Descartada` y `📦 Archivada`).
-- **Línea de tiempo**: Historial público con observaciones registradas por el equipo de innovación.
+- **Línea de tiempo por flujo**: Historial separado para trabajo privado, revisión editorial y ciclo comunitario, con actor y observaciones.
 
 ### 2. Descubrimiento y Colaboración
-- **Explorador con Filtros Multifactor**: Búsqueda global, filtrado por categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
+- **Explorador con Filtros Multifactor**: Búsqueda global, filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
+- **Navegación estructural**: “Mis Ideas” dispone de vista de árbol y tarjetas; cada ficha muestra madre, subideas, clasificaciones y relaciones verificadas.
 - **Votación Comunitaria (1 a 5 Estrellas)**: Sistema de valoración interactivo donde los colaboradores califican el impacto potencial (con restricción de auto-voto para el autor).
 - **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".
 - **Guardar en Favoritas**: Marcadores personales para seguimiento rápido.
@@ -41,8 +46,8 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Ranking Dinámico**: Filtros por periodos (*Esta semana*, *Este mes*, *Este año*, *Histórico*) y áreas.
 
 ### 4. Gestión Personal, Seguridad y 2FA
-- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona sus propuestas publicadas, borradores, ideas implementadas y favoritas desde el primer momento.
-- **Comunidad (Feed de Innovación)**: Ecosistema colaborativo institucional con métricas en tiempo real, propuestas destacadas, tendencias y leaderboard.
+- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona ideas privadas, árboles de subideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
+- **Comunidad (Feed de Innovación)**: Ecosistema colaborativo que muestra sólo ideas principales aprobadas, junto con la cantidad de subideas integradas.
 - **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
 - **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
 - **Autenticación en Dos Pasos (2FA)**:
@@ -54,14 +59,18 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 5. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
-- **Gestión Avanzada de Ideas**: Tabla interactiva con búsqueda, selección múltiple, cambio rápido de estado y panel lateral (*slide-over drawer*) para asignar responsables, fijar prioridad (`Baja`, `Media`, `Alta`, `Estratégica`), redactar observaciones internas y programar fechas de seguimiento.
+- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar ideas principales, representar subideas, solicitar cambios, asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
 - **Control Integral de Usuarios y Onboarding**:
   - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
   - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.
   - **Regla de Protección de Administrador Único**: Bloqueo estricto para impedir eliminar, desactivar o degradar al último administrador general activo.
 - **Gestión Configurable de Regionales INFOTEP**:
   - Mantenimiento completo de direcciones regionales (`ONA - Oficina Nacional`, `DRM - Regional Metropolitana`, `DRO`, `DRV`, `DRCS`, `DRE`, `DRCN`, `DRCNE`, `DRS`).
-- **Taxonomía y Control Inteligente de Etiquetas**:
+- **Taxonomía Multidimensional Administrable**:
+  - Dimensiones configurables con modo único o múltiple, obligatoriedad, activación y orden.
+  - Términos controlados con icono, color, jerarquía padre-hijo y protección cuando están en uso.
+  - Facetas navegables en el explorador y clasificación integrada en creación y edición.
+- **Control Inteligente de Etiquetas**:
   - 🔍 **Buscador Dinámico en Tiempo Real**: Filtrado reactivo instantáneo de etiquetas por nombre y conteo de ideas mientras se escribe.
   - ✏️ **Edición y Corrección de Nombres**: Modificación de términos con normalización de caracteres y slugs.
   - ⚡ **Fusión Inteligente Automática**: Si al corregir una etiqueta se asigna el nombre de una etiqueta ya existente, el sistema unifica automáticamente ambas etiquetas reasignando de manera segura todas las ideas vinculadas y eliminando la duplicada.
@@ -71,7 +80,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ## 🛠️ Stack Tecnológico
 
-- **Backend**: [Laravel 11.x](https://laravel.com) / PHP 8.4+
+- **Backend**: [Laravel 13.x](https://laravel.com) / PHP 8.3+
 - **Base de Datos**: SQLite (por defecto para desarrollo inmediato) / MySQL / PostgreSQL
 - **Frontend**: Blade Components + [Tailwind CSS v4](https://tailwindcss.com) + [Alpine.js](https://alpinejs.dev)
 - **Tipografía**: Google Fonts (*Hanken Grotesk*, *Inter*, *JetBrains Mono*)
@@ -168,39 +177,11 @@ El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovate
 
 En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
 
-### Poblar Categorías Oficiales en Producción (vía Tinker)
+### Migración de la taxonomía en producción
 
-Para registrar la batería completa de categorías oficiales de innovación en un entorno de producción sin cargar datos de prueba, ejecuta `php artisan tinker` e ingresa el siguiente bloque:
+`php artisan migrate --force` crea automáticamente la dimensión principal **Área de innovación**, asigna las categorías existentes a esa dimensión y migra cada `ideas.category_id` a la tabla multidimensional `idea_category`. No es necesario modificar previamente los registros actuales.
 
-```php
-$categories = [
-    ['name' => 'Tecnología e Inteligencia Artificial', 'icon' => 'memory', 'color' => '#231fb5', 'description' => 'Soluciones digitales, automatización, IA, ciberseguridad e infraestructura tecnológica.'],
-    ['name' => 'Formación y Metodología Docente', 'icon' => 'school', 'color' => '#003e6f', 'description' => 'Metodologías docentes, currículo formativo, entornos híbridos y pedagogía técnico-profesional.'],
-    ['name' => 'Procesos y Simplificación Administrativa', 'icon' => 'account_tree', 'color' => '#005696', 'description' => 'Optimización de flujos de trabajo, trámites internos, digitalización y eficiencia operativa.'],
-    ['name' => 'Experiencia del Participante', 'icon' => 'group', 'color' => '#00838f', 'description' => 'Iniciativas para enriquecer el aprendizaje, acompañamiento, bienestar y servicios al estudiante.'],
-    ['name' => 'Experiencia del Colaborador', 'icon' => 'sentiment_very_satisfied', 'color' => '#d81b60', 'description' => 'Desarrollo humano, bienestar institucional, cultura colaborativa y clima laboral.'],
-    ['name' => 'Sostenibilidad y Medio Ambiente', 'icon' => 'eco', 'color' => '#2e7d32', 'description' => 'Eficiencia energética, campus verde, reducción de huella de carbono y reciclaje institucional.'],
-    ['name' => 'Servicios Empresariales y Comunitarios', 'icon' => 'support_agent', 'color' => '#e65100', 'description' => 'Atención al sector empresarial, vinculación comunitaria, pasantías y consultoría técnica.'],
-    ['name' => 'Infraestructura, Talleres y Laboratorios', 'icon' => 'apartment', 'color' => '#455a64', 'description' => 'Modernización de espacios físicos, equipamiento técnico, seguridad industrial y mantenimiento.'],
-    ['name' => 'Innovación Curricular y Carreras 4.0', 'icon' => 'auto_stories', 'color' => '#6200ea', 'description' => 'Diseño de programas para industrias 4.0, microcredenciales y ocupaciones emergentes.'],
-    ['name' => 'Emprendimiento y Transferencia Tecnológica', 'icon' => 'rocket_launch', 'color' => '#f57c00', 'description' => 'Incubación de proyectos, prototipado, ferias de innovación y patentes.'],
-    ['name' => 'Comunicación y Marca Institucional', 'icon' => 'campaign', 'color' => '#c2185b', 'description' => 'Estrategias de difusión, visibilidad de logros, canales digitales y cultura de innovación.'],
-    ['name' => 'Inclusión y Accesibilidad', 'icon' => 'accessibility_new', 'color' => '#00796b', 'description' => 'Programas inclusivos para personas con discapacidad, equidad y acceso universal.'],
-];
-
-foreach ($categories as $cat) {
-    \App\Models\Category::firstOrCreate(
-        ['name' => $cat['name']],
-        [
-            'slug' => \Illuminate\Support\Str::slug($cat['name']),
-            'icon' => $cat['icon'],
-            'color' => $cat['color'],
-            'description' => $cat['description']
-        ]
-    );
-}
-echo "Categorías oficiales creadas exitosamente.\n";
-```
+Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
 
 ---
 
@@ -220,12 +201,13 @@ echo "Categorías oficiales creadas exitosamente.\n";
 
 1. **Protección CSRF**: Tokens obligatorios en todas las peticiones POST, PUT y DELETE.
 2. **Políticas de Autorización (Policies & Gates)**:
-   - `IdeaPolicy`: Los usuarios solo pueden modificar o eliminar sus ideas si están en estado borrador o nueva.
+   - `IdeaPolicy`: Restringe visualización, edición, eliminación, organización y solicitudes de publicación según autoría, rol y estado.
+   - `IdeaRelationPolicy`: Sólo el autor objetivo o un administrador puede confirmar relaciones propuestas entre autores; sólo el origen o un administrador puede eliminarlas.
    - `AdminMiddleware`: Protección estricta en todas las rutas administrativas `/admin/*`.
    - Control de auto-voto: Un creador no puede calificar su propia propuesta.
-3. **Validación y Sanitización**: Uso estricto de `FormRequest` con validación de tipo, longitud y formato.
+3. **Validación y Sanitización**: Uso estricto de `FormRequest` con validación de tipo, longitud, formato, pertenencia taxonómica, ciclos jerárquicos y acceso a ideas relacionadas.
 4. **Subida Segura de Archivos**: Validación de tipos MIME permitidos (`pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,zip`), límite de 10 MB y almacenamiento con nombres hash únicos.
-5. **Rate Limiting**: Throttling en login (`6/min`), votación (`30/min`) y comentarios (`15/min`).
+5. **Rate Limiting**: Throttling en login (`6/min`), solicitudes editoriales (`5/min`), organización y relaciones (`30/min`), votación (`30/min`) y comentarios (`15/min`).
 6. **Protección contra SQL Injection**: Consultas exclusivamente a través de Eloquent ORM con sentencias preparadas.
 
 ---
