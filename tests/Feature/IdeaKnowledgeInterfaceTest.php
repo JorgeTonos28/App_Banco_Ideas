@@ -131,6 +131,8 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->assertOk()
             ->assertSee('Idea madre')
             ->assertSee('Clasificación multidimensional')
+            ->assertSee('Clasifica una vez, conecta muchas ideas')
+            ->assertSee('Usa entre 4 y 7 términos concretos')
             ->assertSee($this->scopeDimension->name)
             ->assertSee($parent->title);
 
@@ -138,6 +140,7 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->get(route('ideas.edit', $parent))
             ->assertOk()
             ->assertSee('Idea madre')
+            ->assertSee('Clasifica una vez, conecta muchas ideas')
             ->assertSee($this->institutionalScope->name);
     }
 
@@ -154,6 +157,8 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->get(route('admin.categories.index'))
             ->assertOk()
             ->assertSee('Taxonomía multidimensional')
+            ->assertSee('Criterios para mantener una taxonomía útil')
+            ->assertSee('debería servir para cinco ideas')
             ->assertSee($this->scopeDimension->name)
             ->assertSee('Nuevo término');
 

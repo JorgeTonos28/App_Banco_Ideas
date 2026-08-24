@@ -397,6 +397,8 @@
                           class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y">{{ old('problem_opportunity', $idea->problem_opportunity) }}</textarea>
             </div>
 
+            <x-classification-guidance />
+
             <!-- Category, readiness & access -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>

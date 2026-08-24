@@ -64,6 +64,8 @@
     </div>
     @endif
 
+    <x-classification-guidance context="admin" />
+
     <div class="space-y-5">
         @foreach($dimensions as $dimension)
         <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-2xs overflow-hidden">

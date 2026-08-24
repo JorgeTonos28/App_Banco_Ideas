@@ -7,7 +7,7 @@
 <aside aria-label="Guía de clasificación de ideas"
        class="overflow-hidden rounded-2xl border border-primary/20 bg-primary-fixed/35">
     <details class="group" @if($isAdminContext) open @endif>
-        <summary class="flex cursor-pointer list-none items-center gap-3 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:p-5 [&::-webkit-details-marker]:hidden">
+        <summary class="flex cursor-pointer list-none items-center gap-3 p-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset sm:p-5 [&::-webkit-details-marker]:hidden">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-white">
                 <span class="material-symbols-outlined text-xl">rule</span>
             </span>
