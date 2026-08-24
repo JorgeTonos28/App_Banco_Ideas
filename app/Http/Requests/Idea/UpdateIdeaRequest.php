@@ -35,6 +35,7 @@ class UpdateIdeaRequest extends FormRequest
             'tags' => ['nullable', 'array', 'max:20'],
             'tags.*' => ['string', 'max:500'],
             'visibility' => ['required', 'in:private,draft,public'],
+            'access_scope' => ['sometimes', 'required', Rule::in(Idea::ACCESS_SCOPES)],
             'workspace_status' => ['nullable', Rule::in(Idea::WORKSPACE_STATUSES)],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'],
@@ -58,6 +59,10 @@ class UpdateIdeaRequest extends FormRequest
 
                 if ($tagNames->contains(fn (string $name) => mb_strlen($name) > 50)) {
                     $validator->errors()->add('tags', 'Cada etiqueta puede tener un máximo de 50 caracteres.');
+                }
+
+                if ($this->input('visibility') === 'draft' && $this->input('access_scope', 'only_me') === 'profile') {
+                    $validator->errors()->add('access_scope', 'Completa la idea antes de hacerla visible en tu perfil.');
                 }
             },
             fn (Validator $validator) => $this->validateIdeaClassifications($validator),

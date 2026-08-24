@@ -28,7 +28,9 @@ class IdeaPolicy
             return false;
         }
 
-        return $user->isAdmin() || $idea->user_id === $user->id;
+        return $user->isAdmin()
+            || $idea->user_id === $user->id
+            || $idea->isAccessibleToAuthenticatedAudience();
     }
 
     /**

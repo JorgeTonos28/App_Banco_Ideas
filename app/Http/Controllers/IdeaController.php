@@ -203,6 +203,7 @@ class IdeaController extends Controller
                 'problem_opportunity' => $request->problem_opportunity,
                 'status' => 'nueva',
                 'visibility' => $request->visibility,
+                'access_scope' => $request->input('access_scope', 'only_me'),
                 'workspace_status' => $request->input('workspace_status', 'capturada'),
                 'publication_status' => 'not_submitted',
                 'community_display' => 'hidden',
@@ -447,6 +448,8 @@ class IdeaController extends Controller
         try {
             $oldWorkspaceStatus = $idea->workspace_status;
             $newWorkspaceStatus = $request->input('workspace_status', $oldWorkspaceStatus);
+            $oldAccessScope = $idea->access_scope;
+            $newAccessScope = $request->input('access_scope', $oldAccessScope);
 
             $idea->update([
                 'title' => $request->title,
@@ -455,6 +458,7 @@ class IdeaController extends Controller
                 'problem_opportunity' => $request->problem_opportunity,
                 'category_id' => $request->category_id,
                 'visibility' => $idea->isPublished() ? 'public' : $request->visibility,
+                'access_scope' => $newAccessScope,
                 'workspace_status' => $idea->isPublished() ? $oldWorkspaceStatus : $newWorkspaceStatus,
             ]);
 
@@ -479,6 +483,19 @@ class IdeaController extends Controller
                     'old_status' => $oldWorkspaceStatus,
                     'new_status' => $newWorkspaceStatus,
                     'comment' => 'Estado de trabajo privado actualizado por el autor.',
+                ]);
+            }
+
+            if ($oldAccessScope !== $newAccessScope) {
+                IdeaStatusHistory::create([
+                    'idea_id' => $idea->id,
+                    'user_id' => auth()->id(),
+                    'workflow' => 'access',
+                    'old_status' => $oldAccessScope,
+                    'new_status' => $newAccessScope,
+                    'comment' => $newAccessScope === 'profile'
+                        ? 'La idea ahora es visible desde el perfil de su autor.'
+                        : 'El acceso a la idea quedó restringido a su autor.',
                 ]);
             }
 

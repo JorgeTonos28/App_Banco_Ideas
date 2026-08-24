@@ -17,9 +17,9 @@ class ProfileController extends Controller
         $targetUser = $user && $user->exists ? $user : auth()->user();
 
         // User stats
-        $ideasCount = $targetUser->ideas()->published()->count();
-        $implementedCount = $targetUser->ideas()->published()->where('status', 'implementada')->count();
-        $totalVotesReceived = $targetUser->ideas()->published()->sum('votes_count');
+        $ideasCount = $targetUser->ideas()->visibleOnProfile()->count();
+        $implementedCount = $targetUser->ideas()->communityPublished()->where('status', 'implementada')->count();
+        $totalVotesReceived = $targetUser->ideas()->visibleOnProfile()->sum('votes_count');
         $ratingsGivenCount = $targetUser->ratings()->count();
 
         // Participation Score (calculated)
@@ -28,7 +28,8 @@ class ProfileController extends Controller
         // Recent public contributions
         $contributions = $targetUser->ideas()
             ->with(['category', 'tags'])
-            ->published()
+            ->withCount('comments')
+            ->visibleOnProfile()
             ->latest()
             ->take(8)
             ->get();

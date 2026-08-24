@@ -26,6 +26,7 @@ class IdeaFactory extends Factory
             'description' => fake()->paragraph(3),
             'status' => 'nueva',
             'visibility' => 'draft',
+            'access_scope' => 'only_me',
         ];
     }
 }

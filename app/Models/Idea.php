@@ -15,6 +15,11 @@ class Idea extends Model
 {
     use HasFactory;
 
+    public const ACCESS_SCOPES = [
+        'only_me',
+        'profile',
+    ];
+
     public const WORKSPACE_STATUSES = [
         'capturada',
         'en_clarificacion',
@@ -76,6 +81,7 @@ class Idea extends Model
         'problem_opportunity',
         'status',
         'visibility',
+        'access_scope',
         'workspace_status',
         'publication_status',
         'community_display',
@@ -241,9 +247,7 @@ class Idea extends Model
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query
-            ->where('visibility', 'public')
-            ->where('publication_status', 'published');
+        return $query->where('publication_status', 'published');
     }
 
     public function scopeCommunityPublished(Builder $query): Builder
@@ -253,9 +257,24 @@ class Idea extends Model
             ->where('community_display', 'standalone');
     }
 
+    public function scopeVisibleOnProfile(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('parent_idea_id')
+            ->where(function (Builder $visible): void {
+                $visible
+                    ->where('publication_status', 'published')
+                    ->orWhere(function (Builder $shared): void {
+                        $shared
+                            ->where('access_scope', 'profile')
+                            ->where('visibility', '!=', 'draft');
+                    });
+            });
+    }
+
     public function isPublished(): bool
     {
-        return $this->visibility === 'public' && $this->publication_status === 'published';
+        return $this->publication_status === 'published';
     }
 
     public function isPublishedToCommunity(): bool
@@ -270,8 +289,28 @@ class Idea extends Model
 
     public function canRequestPublication(): bool
     {
-        return $this->visibility === 'private'
+        return $this->visibility !== 'draft'
             && in_array($this->publication_status, self::PUBLICATION_REQUESTABLE_STATUSES, true);
+    }
+
+    public function isSharedOnProfile(): bool
+    {
+        return $this->access_scope === 'profile' && $this->visibility !== 'draft';
+    }
+
+    public function isAccessibleToAuthenticatedAudience(): bool
+    {
+        if ($this->isPublished()) {
+            return true;
+        }
+
+        if (! $this->isSharedOnProfile()) {
+            return false;
+        }
+
+        return $this->ancestors()->every(
+            fn (Idea $ancestor) => $ancestor->isPublished() || $ancestor->isSharedOnProfile()
+        );
     }
 
     public function isEditableBy(?User $user): bool
@@ -392,6 +431,14 @@ class Idea extends Model
             'rejected' => 'Rechazada',
             'unpublished' => 'Retirada',
             default => ucfirst(str_replace('_', ' ', $this->publication_status)),
+        };
+    }
+
+    public function getAccessScopeLabelAttribute(): string
+    {
+        return match ($this->access_scope) {
+            'profile' => 'Visible en mi perfil',
+            default => 'Sólo yo',
         };
     }
 

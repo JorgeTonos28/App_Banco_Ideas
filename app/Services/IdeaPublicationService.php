@@ -130,6 +130,8 @@ class IdeaPublicationService
 
             $this->recordTransition($idea, $reviewer, 'publication', $oldStatus, $status, $comment);
 
+            $idea->recalculateRatingAndScore();
+
             return $idea->refresh();
         });
     }
