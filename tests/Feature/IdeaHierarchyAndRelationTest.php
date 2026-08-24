@@ -228,6 +228,51 @@ class IdeaHierarchyAndRelationTest extends TestCase
         $this->assertSame($parent->id, $child->fresh()->parent_idea_id);
     }
 
+    public function test_only_root_creates_a_community_card_across_multiple_hierarchy_levels(): void
+    {
+        $root = $this->privateIdea($this->author);
+        $middle = $this->privateIdea($this->author);
+        $leaf = $this->privateIdea($this->author);
+
+        $this->actingAs($this->author)->put(route('ideas.hierarchy.update', $middle), [
+            'parent_idea_id' => $root->id,
+        ]);
+        $this->actingAs($this->author)->put(route('ideas.hierarchy.update', $leaf), [
+            'parent_idea_id' => $middle->id,
+        ]);
+
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $middle));
+        $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $middle), [
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+        ])->assertSessionHasErrors('community_display');
+
+        $this->publishThroughWorkflow($root);
+        $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $middle), [
+            'publication_status' => 'published',
+            'community_display' => 'represented_by_parent',
+        ])->assertSessionDoesntHaveErrors();
+
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $leaf));
+        $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $leaf), [
+            'publication_status' => 'published',
+            'community_display' => 'represented_by_parent',
+        ])->assertSessionDoesntHaveErrors();
+
+        $this->assertEqualsCanonicalizing([$root->id], Idea::communityPublished()->pluck('id')->all());
+        $this->assertTrue($middle->fresh()->isPublished());
+        $this->assertTrue($leaf->fresh()->isPublished());
+
+        $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $root), [
+            'publication_status' => 'unpublished',
+        ])->assertSessionHasErrors('publication_status');
+
+        $otherRoot = $this->privateIdea($this->author);
+        $this->actingAs($this->admin)->put(route('ideas.hierarchy.update', $root), [
+            'parent_idea_id' => $otherRoot->id,
+        ])->assertSessionHasErrors('parent_idea_id');
+    }
+
     private function privateIdea(User $user): Idea
     {
         return Idea::factory()->for($user)->create([

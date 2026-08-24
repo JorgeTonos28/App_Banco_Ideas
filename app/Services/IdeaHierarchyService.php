@@ -80,5 +80,28 @@ class IdeaHierarchyService
             $visited[$current->id] = true;
             $current = $current->parentIdea;
         }
+
+        if ($idea->isPublished() && $idea->community_display === 'standalone' && $parent) {
+            throw ValidationException::withMessages([
+                'parent_idea_id' => 'Una idea principal publicada no puede convertirse en subidea. Retírala de la comunidad primero.',
+            ]);
+        }
+
+        if ($idea->isPublished() && $idea->community_display === 'represented_by_parent' && $parent) {
+            $ancestors = collect();
+            $current = $parent;
+
+            while ($current) {
+                $ancestors->prepend($current);
+                $current = $current->parentIdea;
+            }
+
+            if ($ancestors->contains(fn (Idea $ancestor) => ! $ancestor->isPublished())
+                || ! $ancestors->first()?->isPublishedToCommunity()) {
+                throw ValidationException::withMessages([
+                    'parent_idea_id' => 'La nueva jerarquía debe conservar una raíz comunitaria y todos sus niveles publicados.',
+                ]);
+            }
+        }
     }
 }

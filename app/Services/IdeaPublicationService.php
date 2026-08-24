@@ -73,18 +73,38 @@ class IdeaPublicationService
             ]);
         }
 
+        if ($status === 'published' && $display === 'standalone' && $idea->parent_idea_id) {
+            throw ValidationException::withMessages([
+                'community_display' => 'Una idea con madre debe publicarse como subidea representada. Desvincúlala primero si debe ser una idea principal.',
+            ]);
+        }
+
         if ($status === 'published' && $display === 'represented_by_parent') {
-            if (! $idea->parent_idea_id) {
+            $ancestors = $idea->ancestors();
+
+            if ($ancestors->isEmpty()) {
                 throw ValidationException::withMessages([
                     'community_display' => 'Asigna una idea madre antes de publicar esta idea como representada.',
                 ]);
             }
 
-            if (! $idea->parentIdea?->isPublishedToCommunity()) {
+            if ($ancestors->contains(fn (Idea $ancestor) => ! $ancestor->isPublished())) {
                 throw ValidationException::withMessages([
-                    'community_display' => 'La idea madre debe estar publicada como idea principal en la comunidad.',
+                    'community_display' => 'Todas las ideas superiores deben publicarse antes que esta subidea.',
                 ]);
             }
+
+            if (! $ancestors->first()->isPublishedToCommunity()) {
+                throw ValidationException::withMessages([
+                    'community_display' => 'La raíz de la jerarquía debe estar publicada como idea principal en la comunidad.',
+                ]);
+            }
+        }
+
+        if ($status !== 'published' && $this->hasPublishedDescendants($idea)) {
+            throw ValidationException::withMessages([
+                'publication_status' => 'Retira primero las subideas publicadas que dependen de esta idea.',
+            ]);
         }
 
         return DB::transaction(function () use ($idea, $reviewer, $status, $display, $notes): Idea {
@@ -124,5 +144,33 @@ class IdeaPublicationService
             'new_status' => $newStatus,
             'comment' => $comment,
         ]);
+    }
+
+    private function hasPublishedDescendants(Idea $idea): bool
+    {
+        $pendingIds = $idea->children()->pluck('id');
+        $visited = [];
+
+        while ($pendingIds->isNotEmpty()) {
+            $levelIds = $pendingIds
+                ->reject(fn (int $id) => isset($visited[$id]))
+                ->values();
+
+            if ($levelIds->isEmpty()) {
+                return false;
+            }
+
+            foreach ($levelIds as $id) {
+                $visited[$id] = true;
+            }
+
+            if (Idea::whereKey($levelIds)->published()->exists()) {
+                return true;
+            }
+
+            $pendingIds = Idea::whereIn('parent_idea_id', $levelIds)->pluck('id');
+        }
+
+        return false;
     }
 }
