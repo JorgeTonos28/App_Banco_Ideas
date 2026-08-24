@@ -21,6 +21,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea puede restringir su propio acceso, pero nunca superar el acceso efectivo de sus ancestros.
 - **Grafo de relaciones semánticas**: Las ideas pueden conectarse como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. Las propuestas entre autores requieren confirmación.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
+- **Guía contextual de clasificación**: Los formularios de creación y edición incluyen una ayuda desplegable que diferencia categoría, dimensiones y etiquetas, recomienda entre 4 y 7 etiquetas y muestra ejemplos de términos útiles o duplicados que deben evitarse.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
   - 🔤 **Alfabético (A - Z)**: Agrupadas por letra con selector de salto rápido.
   - 🏷️ **Por Categoría Oficial**: Clasificación de etiquetas vinculadas a cada categoría institucional.
@@ -73,6 +74,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - Dimensiones configurables con modo único o múltiple, obligatoriedad, activación y orden.
   - Términos controlados con icono, color, jerarquía padre-hijo y protección cuando están en uso.
   - Facetas navegables en el explorador y clasificación integrada en creación y edición.
+  - Guía de gobernanza visible en la administración para decidir cuándo crear dimensiones, términos controlados o etiquetas reutilizables.
 - **Control Inteligente de Etiquetas**:
   - 🔍 **Buscador Dinámico en Tiempo Real**: Filtrado reactivo instantáneo de etiquetas por nombre y conteo de ideas mientras se escribe.
   - ✏️ **Edición y Corrección de Nombres**: Modificación de términos con normalización de caracteres y slugs.
@@ -187,6 +189,15 @@ En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh
 La migración de acceso agrega `ideas.access_scope` sin convertir ideas privadas en visibles. Las publicaciones existentes se inicializan con acceso de perfil para que, si luego se retiran de Comunidad, continúen siendo localizables desde el perfil de su autor; el autor puede cambiar posteriormente ese acceso a `Sólo yo`.
 
 Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
+
+### Reglas recomendadas de clasificación
+
+- Cada idea debe tener una categoría temática principal y completar todas las dimensiones obligatorias.
+- Una dimensión nueva debe responder una pregunta estable, aplicar a la mayoría de las ideas y aportar un filtro útil para navegar.
+- Un término controlado debería servir, como referencia, para cinco ideas actuales o previstas. Las excepciones deben tener valor claro de recuperación o navegación.
+- Cada idea debería usar entre 4 y 7 etiquetas concretas, combinando ecosistema, capacidades, tecnología o método y, cuando aporte, audiencia o resultado.
+- Las etiquetas deben escribirse como sustantivos breves, preferiblemente de 2 a 4 palabras, con una forma canónica y las siglas en mayúsculas.
+- Antes de crear una etiqueta se deben revisar coincidencias y términos similares. Estados, visibilidad, publicación y jerarquía no deben duplicarse como categorías o etiquetas.
 
 ---
 
