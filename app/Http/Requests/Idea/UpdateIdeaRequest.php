@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateIdeaRequest extends FormRequest
@@ -23,7 +25,8 @@ class UpdateIdeaRequest extends FormRequest
             'category_id' => ['required', 'exists:categories,id'],
             'tags' => ['nullable', 'array', 'max:20'],
             'tags.*' => ['string', 'max:500'],
-            'visibility' => ['required', 'in:public,draft'],
+            'visibility' => ['required', 'in:private,draft,public'],
+            'workspace_status' => ['nullable', Rule::in(Idea::WORKSPACE_STATUSES)],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'],
             'delete_attachments' => ['nullable', 'array'],

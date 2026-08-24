@@ -20,11 +20,11 @@ class IdeaPolicy
      */
     public function view(?User $user, Idea $idea): bool
     {
-        if ($idea->visibility === 'public') {
+        if ($idea->isPublished()) {
             return true;
         }
 
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -44,7 +44,7 @@ class IdeaPolicy
      */
     public function update(User $user, Idea $idea): bool
     {
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return false;
         }
 
@@ -52,8 +52,7 @@ class IdeaPolicy
             return true;
         }
 
-        // Author can update their own idea if it's not implemented, discarded or archived
-        return $idea->user_id === $user->id && !in_array($idea->status, ['implementada', 'descartada', 'archivada']);
+        return $idea->isEditableBy($user);
     }
 
     /**
@@ -61,7 +60,7 @@ class IdeaPolicy
      */
     public function delete(User $user, Idea $idea): bool
     {
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return false;
         }
 
@@ -69,8 +68,9 @@ class IdeaPolicy
             return true;
         }
 
-        // User can only delete if it's a draft or in 'nueva' status
-        return $idea->user_id === $user->id && (in_array($idea->status, ['nueva']) || $idea->visibility === 'draft');
+        return $idea->user_id === $user->id
+            && $idea->publication_status === 'not_submitted'
+            && ($idea->visibility === 'draft' || $idea->workspace_status === 'capturada');
     }
 
     /**
@@ -78,7 +78,7 @@ class IdeaPolicy
      */
     public function vote(User $user, Idea $idea): bool
     {
-        if (!$user->is_active) {
+        if (! $user->is_active) {
             return false;
         }
 
@@ -87,14 +87,32 @@ class IdeaPolicy
             return false;
         }
 
-        // Idea must be public and not discarded/archived
-        return $idea->visibility === 'public' && !in_array($idea->status, ['descartada', 'archivada']);
+        return $idea->isPublished() && ! in_array($idea->status, ['descartada', 'archivada'], true);
     }
 
     /**
      * Determine whether the user can change status / manage administrative attributes.
      */
     public function manage(User $user): bool
+    {
+        return $user->is_active && $user->isAdmin();
+    }
+
+    public function requestPublication(User $user, Idea $idea): bool
+    {
+        return $user->is_active
+            && ($user->isAdmin() || $idea->user_id === $user->id)
+            && $idea->canRequestPublication();
+    }
+
+    public function cancelPublication(User $user, Idea $idea): bool
+    {
+        return $user->is_active
+            && ($user->isAdmin() || $idea->user_id === $user->id)
+            && $idea->publication_status === 'pending_review';
+    }
+
+    public function reviewPublication(User $user, Idea $idea): bool
     {
         return $user->is_active && $user->isAdmin();
     }

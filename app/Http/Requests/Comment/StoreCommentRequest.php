@@ -8,7 +8,13 @@ class StoreCommentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->is_active;
+        $idea = $this->route('idea');
+
+        return auth()->check()
+            && auth()->user()->is_active
+            && $idea
+            && $idea->isPublished()
+            && auth()->user()->can('view', $idea);
     }
 
     public function rules(): array

@@ -2,17 +2,67 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class Idea extends Model
 {
     use HasFactory;
+
+    public const WORKSPACE_STATUSES = [
+        'capturada',
+        'en_clarificacion',
+        'lista_para_actuar',
+        'en_ejecucion',
+        'completada',
+        'en_pausa',
+        'descartada',
+        'archivada',
+    ];
+
+    public const COMMUNITY_STATUSES = [
+        'nueva',
+        'en_revision',
+        'priorizada',
+        'en_desarrollo',
+        'implementada',
+        'descartada',
+        'archivada',
+    ];
+
+    public const PUBLICATION_STATUSES = [
+        'not_submitted',
+        'pending_review',
+        'changes_requested',
+        'published',
+        'rejected',
+        'unpublished',
+    ];
+
+    public const PUBLICATION_REQUESTABLE_STATUSES = [
+        'not_submitted',
+        'changes_requested',
+        'rejected',
+        'unpublished',
+    ];
+
+    public const PUBLICATION_REVIEW_STATUSES = [
+        'changes_requested',
+        'published',
+        'rejected',
+        'unpublished',
+    ];
+
+    public const COMMUNITY_DISPLAY_MODES = [
+        'standalone',
+        'represented_by_parent',
+        'hidden',
+    ];
 
     protected $fillable = [
         'user_id',
@@ -24,6 +74,15 @@ class Idea extends Model
         'problem_opportunity',
         'status',
         'visibility',
+        'workspace_status',
+        'publication_status',
+        'community_display',
+        'publication_requested_at',
+        'publication_requested_by_user_id',
+        'publication_reviewed_at',
+        'publication_reviewed_by_user_id',
+        'published_at',
+        'publication_notes',
         'is_featured',
         'priority',
         'assigned_to_user_id',
@@ -47,6 +106,9 @@ class Idea extends Model
             'innovation_score' => 'integer',
             'follow_up_date' => 'date',
             'implemented_at' => 'datetime',
+            'publication_requested_at' => 'datetime',
+            'publication_reviewed_at' => 'datetime',
+            'published_at' => 'datetime',
         ];
     }
 
@@ -59,12 +121,12 @@ class Idea extends Model
                 $slug = $baseSlug;
                 $count = 1;
                 while (static::where('slug', $slug)->exists()) {
-                    $slug = "{$baseSlug}-" . $count++;
+                    $slug = "{$baseSlug}-".$count++;
                 }
                 $idea->slug = $slug;
             }
 
-            if (empty($idea->summary) && !empty($idea->description)) {
+            if (empty($idea->summary) && ! empty($idea->description)) {
                 $idea->summary = Str::limit(strip_tags($idea->description), 160);
             }
         });
@@ -78,6 +140,16 @@ class Idea extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to_user_id');
+    }
+
+    public function publicationRequestedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'publication_requested_by_user_id');
+    }
+
+    public function publicationReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'publication_reviewed_by_user_id');
     }
 
     public function category(): BelongsTo
@@ -120,23 +192,77 @@ class Idea extends Model
         return $this->hasMany(IdeaStatusHistory::class)->orderBy('created_at', 'asc');
     }
 
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query
+            ->where('visibility', 'public')
+            ->where('publication_status', 'published');
+    }
+
+    public function scopeCommunityPublished(Builder $query): Builder
+    {
+        return $query
+            ->published()
+            ->where('community_display', 'standalone');
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->visibility === 'public' && $this->publication_status === 'published';
+    }
+
+    public function isPublishedToCommunity(): bool
+    {
+        return $this->isPublished() && $this->community_display === 'standalone';
+    }
+
+    public function usesCommunityLifecycle(): bool
+    {
+        return $this->isPublished();
+    }
+
+    public function canRequestPublication(): bool
+    {
+        return $this->visibility === 'private'
+            && in_array($this->publication_status, self::PUBLICATION_REQUESTABLE_STATUSES, true);
+    }
+
     public function isEditableBy(?User $user): bool
     {
-        if (!$user) return false;
-        if ($user->isAdmin()) return true;
-        return $this->user_id === $user->id && !in_array($this->status, ['implementada', 'descartada', 'archivada']);
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if ($this->user_id !== $user->id) {
+            return false;
+        }
+
+        return $this->isPublished()
+            ? ! in_array($this->status, ['implementada', 'descartada', 'archivada'], true)
+            : ! in_array($this->workspace_status, ['descartada', 'archivada'], true);
     }
 
     public function isFavoritedBy(?User $user): bool
     {
-        if (!$user) return false;
+        if (! $user) {
+            return false;
+        }
+
         return $this->favorites()->where('user_id', $user->id)->exists();
     }
 
     public function getUserRatingAttribute(): ?int
     {
-        if (!auth()->check()) return null;
+        if (! auth()->check()) {
+            return null;
+        }
+
         $rating = $this->ratings()->where('user_id', auth()->id())->first();
+
         return $rating ? $rating->rating : null;
     }
 
@@ -191,6 +317,34 @@ class Idea extends Model
             'descartada' => 'Descartada',
             'archivada' => 'Archivada',
             default => ucfirst(str_replace('_', ' ', $this->status)),
+        };
+    }
+
+    public function getWorkspaceStatusLabelAttribute(): string
+    {
+        return match ($this->workspace_status) {
+            'capturada' => 'Capturada',
+            'en_clarificacion' => 'En clarificación',
+            'lista_para_actuar' => 'Lista para actuar',
+            'en_ejecucion' => 'En ejecución',
+            'completada' => 'Completada',
+            'en_pausa' => 'En pausa',
+            'descartada' => 'Descartada',
+            'archivada' => 'Archivada',
+            default => ucfirst(str_replace('_', ' ', $this->workspace_status)),
+        };
+    }
+
+    public function getPublicationStatusLabelAttribute(): string
+    {
+        return match ($this->publication_status) {
+            'not_submitted' => 'No enviada',
+            'pending_review' => 'Pendiente de revisión',
+            'changes_requested' => 'Cambios solicitados',
+            'published' => 'Publicada',
+            'rejected' => 'Rechazada',
+            'unpublished' => 'Retirada',
+            default => ucfirst(str_replace('_', ' ', $this->publication_status)),
         };
     }
 

@@ -427,7 +427,7 @@
                     <select id="visibility" 
                             name="visibility" 
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="public" {{ old('visibility', 'public') == 'public' ? 'selected' : '' }}>Visible para toda la comunidad</option>
+                        <option value="private" {{ old('visibility', 'private') == 'private' ? 'selected' : '' }}>Guardar como idea privada</option>
                         <option value="draft" {{ old('visibility', 'draft') == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
                     </select>
                 </div>
@@ -617,7 +617,7 @@
                     </a>
                     <button type="submit" 
                             class="w-1/2 sm:w-auto px-6 py-3 bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                        Publicar Idea
+                        Guardar Idea
                     </button>
                 </div>
             </div>

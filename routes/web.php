@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminIdeaController;
+use App\Http\Controllers\Admin\AdminIdeaPublicationController;
 use App\Http\Controllers\Admin\AdminRegionalController;
 use App\Http\Controllers\Admin\AdminTagController;
 use App\Http\Controllers\Admin\AdminUserController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\IdeaPublicationController;
 use App\Http\Controllers\MyIdeasController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -71,6 +73,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/ideas/{idea}/editar', [IdeaController::class, 'edit'])->name('ideas.edit');
     Route::put('/ideas/{idea}', [IdeaController::class, 'update'])->name('ideas.update');
     Route::delete('/ideas/{idea}', [IdeaController::class, 'destroy'])->name('ideas.destroy');
+    Route::post('/ideas/{idea}/publicacion/solicitar', [IdeaPublicationController::class, 'store'])
+        ->name('ideas.publication.request')
+        ->middleware('throttle:5,1');
+    Route::delete('/ideas/{idea}/publicacion/solicitud', [IdeaPublicationController::class, 'destroy'])
+        ->name('ideas.publication.cancel')
+        ->middleware('throttle:5,1');
 
     // Voting & Favorites
     Route::post('/ideas/{idea}/votar', [IdeaController::class, 'vote'])->name('ideas.vote')->middleware('throttle:30,1');
@@ -106,6 +114,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/ideas', [AdminIdeaController::class, 'index'])->name('ideas.index');
         Route::get('/ideas/{idea}', [AdminIdeaController::class, 'show'])->name('ideas.show');
         Route::put('/ideas/{idea}', [AdminIdeaController::class, 'update'])->name('ideas.update');
+        Route::put('/ideas/{idea}/publicacion', [AdminIdeaPublicationController::class, 'update'])
+            ->name('ideas.publication.update')
+            ->middleware('throttle:30,1');
         Route::post('/ideas/{idea}/destacar', [AdminIdeaController::class, 'toggleFeatured'])->name('ideas.feature');
         Route::post('/ideas/acciones-masivas', [AdminIdeaController::class, 'batchAction'])->name('ideas.batch');
 

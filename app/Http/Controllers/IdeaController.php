@@ -28,18 +28,18 @@ class IdeaController extends Controller
     public function index(Request $request): View
     {
         $query = Idea::with(['user', 'category', 'tags'])
-            ->where('visibility', 'public');
+            ->published();
 
         // Search
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('summary', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('problem_opportunity', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($u) use ($search) {
-                      $u->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('summary', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%")
+                    ->orWhere('problem_opportunity', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -88,10 +88,13 @@ class IdeaController extends Controller
         $ideas = $query->paginate(9)->withQueryString();
 
         $categories = Category::withCount(['ideas' => function ($q) {
-            $q->where('visibility', 'public');
+            $q->published();
         }])->get();
 
-        $tags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(15)->get();
+        $tags = Tag::withCount(['ideas' => fn ($q) => $q->published()])
+            ->orderByDesc('ideas_count')
+            ->take(15)
+            ->get();
 
         $departments = User::whereNotNull('department')
             ->distinct()
@@ -106,7 +109,7 @@ class IdeaController extends Controller
     public function create(): View
     {
         $categories = Category::orderBy('name')->get();
-        
+
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
                 $q->select('ideas.id', 'ideas.category_id');
@@ -145,13 +148,16 @@ class IdeaController extends Controller
                 'problem_opportunity' => $request->problem_opportunity,
                 'status' => 'nueva',
                 'visibility' => $request->visibility,
+                'workspace_status' => $request->input('workspace_status', 'capturada'),
+                'publication_status' => 'not_submitted',
+                'community_display' => 'hidden',
             ]);
 
             // Handle Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
                 foreach ($request->tags as $tagItem) {
-                    $exploded = explode(',', (string)$tagItem);
+                    $exploded = explode(',', (string) $tagItem);
                     foreach ($exploded as $rawName) {
                         $tagName = trim(ltrim(trim($rawName), '#'));
                         if ($tagName !== '') {
@@ -166,7 +172,7 @@ class IdeaController extends Controller
             // Handle Attachments
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('idea_attachments/' . $idea->id, 'public');
+                    $path = $file->store('idea_attachments/'.$idea->id, 'public');
                     $idea->attachments()->create([
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => $path,
@@ -180,25 +186,27 @@ class IdeaController extends Controller
             IdeaStatusHistory::create([
                 'idea_id' => $idea->id,
                 'user_id' => auth()->id(),
+                'workflow' => 'workspace',
                 'old_status' => null,
-                'new_status' => 'nueva',
-                'comment' => $idea->visibility === 'public'
-                    ? 'Idea publicada en el banco institucional INNOVATEP.'
-                    : 'Borrador inicial guardado.',
+                'new_status' => $idea->workspace_status,
+                'comment' => $idea->visibility === 'draft'
+                    ? 'Borrador inicial guardado.'
+                    : 'Idea registrada en el espacio privado de trabajo.',
             ]);
 
             $idea->recalculateRatingAndScore();
 
             DB::commit();
 
-            $message = $idea->visibility === 'public'
-                ? '¡Tu idea ha sido publicada con éxito y ya forma parte del Banco INNOVATEP!'
-                : 'Borrador guardado correctamente. Puedes completarlo cuando estés listo.';
+            $message = $idea->visibility === 'draft'
+                ? 'Borrador guardado correctamente. Puedes completarlo cuando estés listo.'
+                : 'Idea guardada en tu espacio privado. Cuando esté lista podrás solicitar su publicación.';
 
             return redirect()->route('ideas.show', $idea->slug)->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Ocurrió un error al registrar la idea: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Ocurrió un error al registrar la idea: '.$e->getMessage());
         }
     }
 
@@ -215,19 +223,16 @@ class IdeaController extends Controller
             'statusHistories.user',
             'comments' => function ($query) {
                 $query->whereNull('parent_id')
-                      ->with(['user', 'likes', 'replies.user', 'replies.likes'])
-                      ->latest();
+                    ->with(['user', 'likes', 'replies.user', 'replies.likes'])
+                    ->latest();
             },
         ])->where('slug', $slug)->firstOrFail();
 
-        // Check view authorization for drafts
-        if ($idea->visibility === 'draft' && (!auth()->check() || (!auth()->user()->isAdmin() && auth()->id() !== $idea->user_id))) {
-            abort(403, 'Esta idea se encuentra en borrador y no es pública.');
-        }
+        $this->authorize('view', $idea);
 
         // Increment views count safely
-        $sessionKey = 'viewed_idea_' . $idea->id;
-        if (!session()->has($sessionKey)) {
+        $sessionKey = 'viewed_idea_'.$idea->id;
+        if (! session()->has($sessionKey)) {
             $idea->increment('views_count');
             session()->put($sessionKey, true);
             $idea->recalculateRatingAndScore();
@@ -237,7 +242,7 @@ class IdeaController extends Controller
         $relatedIdeas = Idea::with(['user', 'category'])
             ->where('category_id', $idea->category_id)
             ->where('id', '!=', $idea->id)
-            ->where('visibility', 'public')
+            ->published()
             ->orderByDesc('innovation_score')
             ->take(3)
             ->get();
@@ -253,7 +258,7 @@ class IdeaController extends Controller
         $this->authorize('update', $idea);
 
         $categories = Category::orderBy('name')->get();
-        
+
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
                 $q->select('ideas.id', 'ideas.category_id');
@@ -286,20 +291,35 @@ class IdeaController extends Controller
 
         DB::beginTransaction();
         try {
+            $oldWorkspaceStatus = $idea->workspace_status;
+            $newWorkspaceStatus = $request->input('workspace_status', $oldWorkspaceStatus);
+
             $idea->update([
                 'title' => $request->title,
                 'summary' => Str::limit(strip_tags($request->description), 160),
                 'description' => $request->description,
                 'problem_opportunity' => $request->problem_opportunity,
                 'category_id' => $request->category_id,
-                'visibility' => $request->visibility,
+                'visibility' => $idea->isPublished() ? 'public' : $request->visibility,
+                'workspace_status' => $idea->isPublished() ? $oldWorkspaceStatus : $newWorkspaceStatus,
             ]);
+
+            if (! $idea->isPublished() && $oldWorkspaceStatus !== $newWorkspaceStatus) {
+                IdeaStatusHistory::create([
+                    'idea_id' => $idea->id,
+                    'user_id' => auth()->id(),
+                    'workflow' => 'workspace',
+                    'old_status' => $oldWorkspaceStatus,
+                    'new_status' => $newWorkspaceStatus,
+                    'comment' => 'Estado de trabajo privado actualizado por el autor.',
+                ]);
+            }
 
             // Sync Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
                 $tagIds = [];
                 foreach ($request->tags as $tagItem) {
-                    $exploded = explode(',', (string)$tagItem);
+                    $exploded = explode(',', (string) $tagItem);
                     foreach ($exploded as $rawName) {
                         $tagName = trim(ltrim(trim($rawName), '#'));
                         if ($tagName !== '') {
@@ -328,7 +348,7 @@ class IdeaController extends Controller
             // Handle New Attachments
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
-                    $path = $file->store('idea_attachments/' . $idea->id, 'public');
+                    $path = $file->store('idea_attachments/'.$idea->id, 'public');
                     $idea->attachments()->create([
                         'file_name' => $file->getClientOriginalName(),
                         'file_path' => $path,
@@ -345,7 +365,8 @@ class IdeaController extends Controller
             return redirect()->route('ideas.show', $idea->slug)->with('success', '¡Idea actualizada con éxito!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Error al actualizar la idea: ' . $e->getMessage());
+
+            return back()->withInput()->with('error', 'Error al actualizar la idea: '.$e->getMessage());
         }
     }
 
@@ -375,10 +396,11 @@ class IdeaController extends Controller
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
         ]);
 
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Debes iniciar sesión para votar.'], 401);
             }
+
             return redirect()->route('login');
         }
 
@@ -386,13 +408,15 @@ class IdeaController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'No puedes votar por tu propia idea.'], 422);
             }
+
             return back()->with('error', 'No puedes votar por tu propia idea.');
         }
 
-        if ($idea->visibility !== 'public' || in_array($idea->status, ['descartada', 'archivada'])) {
+        if (! $idea->isPublished() || in_array($idea->status, ['descartada', 'archivada'], true)) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => 'Esta idea no admite votaciones.'], 422);
             }
+
             return back()->with('error', 'Esta idea no admite votaciones en su estado actual.');
         }
 
@@ -416,7 +440,7 @@ class IdeaController extends Controller
             ]);
         }
 
-        return back()->with('success', '¡Tu valoración de ' . $request->rating . ' estrellas ha sido registrada!');
+        return back()->with('success', '¡Tu valoración de '.$request->rating.' estrellas ha sido registrada!');
     }
 
     /**
@@ -424,9 +448,11 @@ class IdeaController extends Controller
      */
     public function toggleFavorite(Idea $idea): JsonResponse|RedirectResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
+
+        $this->authorize('view', $idea);
 
         $fav = IdeaFavorite::where('idea_id', $idea->id)
             ->where('user_id', auth()->id())

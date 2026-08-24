@@ -25,20 +25,20 @@ class HomeController extends Controller
     public function index(Request $request): View
     {
         // 1. Overall Platform Stats
-        $totalIdeas = Idea::where('visibility', 'public')->count();
-        $thisMonthIdeas = Idea::where('visibility', 'public')
+        $totalIdeas = Idea::communityPublished()->count();
+        $thisMonthIdeas = Idea::communityPublished()
             ->where('created_at', '>=', now()->startOfMonth())
             ->count();
-        $implementedIdeas = Idea::where('status', 'implementada')->count();
+        $implementedIdeas = Idea::communityPublished()->where('status', 'implementada')->count();
         $totalParticipants = User::where('is_active', true)->count();
         $totalVotes = IdeaRating::count();
 
         // 2. Featured Ideas (up to 4)
         $featuredIdeas = Idea::with(['user', 'category', 'tags'])
-            ->where('visibility', 'public')
+            ->communityPublished()
             ->where(function ($query) {
                 $query->where('is_featured', true)
-                      ->orWhere('innovation_score', '>=', 75);
+                    ->orWhere('innovation_score', '>=', 75);
             })
             ->orderByDesc('is_featured')
             ->orderByDesc('innovation_score')
@@ -47,7 +47,7 @@ class HomeController extends Controller
 
         // 3. Trending Ideas (receiving recent activity/votes)
         $trendingIdeas = Idea::with(['user', 'category'])
-            ->where('visibility', 'public')
+            ->communityPublished()
             ->orderByDesc('votes_count')
             ->orderByDesc('innovation_score')
             ->take(5)
@@ -55,27 +55,27 @@ class HomeController extends Controller
 
         // 4. Latest Ideas Feed
         $latestIdeas = Idea::with(['user', 'category', 'tags'])
-            ->where('visibility', 'public')
+            ->communityPublished()
             ->latest()
             ->take(6)
             ->get();
 
         // 5. Popular Categories
         $popularCategories = Category::withCount(['ideas' => function ($query) {
-            $query->where('visibility', 'public');
+            $query->communityPublished();
         }])
-        ->orderByDesc('ideas_count')
-        ->take(6)
-        ->get();
+            ->orderByDesc('ideas_count')
+            ->take(6)
+            ->get();
 
         // 6. Top Innovators
         $topInnovators = User::withCount(['ideas' => function ($query) {
-            $query->where('visibility', 'public');
+            $query->communityPublished();
         }])
-        ->where('is_active', true)
-        ->orderByDesc('ideas_count')
-        ->take(5)
-        ->get();
+            ->where('is_active', true)
+            ->orderByDesc('ideas_count')
+            ->take(5)
+            ->get();
 
         return view('home', compact(
             'totalIdeas',

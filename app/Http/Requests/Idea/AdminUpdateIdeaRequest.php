@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AdminUpdateIdeaRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class AdminUpdateIdeaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'in:nueva,en_revision,priorizada,en_desarrollo,implementada,descartada,archivada'],
+            'status' => ['nullable', Rule::in(Idea::COMMUNITY_STATUSES)],
             'assigned_to_user_id' => ['nullable', 'exists:users,id'],
             'priority' => ['nullable', 'in:baja,media,alta,estrategica'],
             'category_id' => ['nullable', 'exists:categories,id'],

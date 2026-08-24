@@ -24,10 +24,10 @@ class AdminIdeaController extends Controller
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('id', $search)
-                  ->orWhereHas('user', function ($u) use ($search) {
-                      $u->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('id', $search)
+                    ->orWhereHas('user', function ($u) use ($search) {
+                        $u->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -59,6 +59,7 @@ class AdminIdeaController extends Controller
     public function show(Idea $idea): JsonResponse
     {
         $idea->load(['user', 'category', 'tags', 'assignedTo', 'statusHistories.user']);
+
         return response()->json($idea);
     }
 
@@ -67,7 +68,9 @@ class AdminIdeaController extends Controller
         DB::beginTransaction();
         try {
             $oldStatus = $idea->status;
-            $newStatus = $request->status;
+            $newStatus = $idea->isPublished()
+                ? $request->input('status', $oldStatus)
+                : $oldStatus;
 
             $idea->update([
                 'status' => $newStatus,
@@ -78,14 +81,15 @@ class AdminIdeaController extends Controller
                 'next_action' => $request->next_action,
                 'follow_up_date' => $request->follow_up_date,
                 'is_featured' => $request->boolean('is_featured'),
-                'implemented_at' => $newStatus === 'implementada' && !$idea->implemented_at ? now() : $idea->implemented_at,
+                'implemented_at' => $newStatus === 'implementada' && ! $idea->implemented_at ? now() : $idea->implemented_at,
             ]);
 
             // If status changed, create StatusHistory record
-            if ($oldStatus !== $newStatus || $request->filled('status_comment')) {
+            if ($idea->isPublished() && ($oldStatus !== $newStatus || $request->filled('status_comment'))) {
                 IdeaStatusHistory::create([
                     'idea_id' => $idea->id,
                     'user_id' => auth()->id(),
+                    'workflow' => 'community',
                     'old_status' => $oldStatus,
                     'new_status' => $newStatus,
                     'comment' => $request->status_comment ?: 'Estado actualizado por el equipo de innovación.',
@@ -110,13 +114,14 @@ class AdminIdeaController extends Controller
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 500);
             }
-            return back()->with('error', 'Error al guardar los cambios administrativos: ' . $e->getMessage());
+
+            return back()->with('error', 'Error al guardar los cambios administrativos: '.$e->getMessage());
         }
     }
 
     public function toggleFeatured(Idea $idea): JsonResponse|RedirectResponse
     {
-        $idea->update(['is_featured' => !$idea->is_featured]);
+        $idea->update(['is_featured' => ! $idea->is_featured]);
 
         if (request()->expectsJson()) {
             return response()->json([
@@ -141,12 +146,12 @@ class AdminIdeaController extends Controller
         $ids = $request->idea_ids;
 
         match ($action) {
-            'set_status' => Idea::whereIn('id', $ids)->update(['status' => $request->new_status]),
-            'archive' => Idea::whereIn('id', $ids)->update(['status' => 'archivada']),
-            'feature' => Idea::whereIn('id', $ids)->update(['is_featured' => true]),
+            'set_status' => Idea::whereIn('id', $ids)->published()->update(['status' => $request->new_status]),
+            'archive' => Idea::whereIn('id', $ids)->published()->update(['status' => 'archivada']),
+            'feature' => Idea::whereIn('id', $ids)->communityPublished()->update(['is_featured' => true]),
             'unfeature' => Idea::whereIn('id', $ids)->update(['is_featured' => false]),
         };
 
-        return back()->with('success', 'Acción masiva ejecutada con éxito en ' . count($ids) . ' ideas.');
+        return back()->with('success', 'Acción masiva ejecutada con éxito en '.count($ids).' ideas.');
     }
 }

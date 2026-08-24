@@ -420,14 +420,34 @@
                     <label for="visibility" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                         Visibilidad <span class="text-error">*</span>
                     </label>
-                    <select id="visibility" 
-                            name="visibility" 
-                            class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="public" {{ old('visibility', $idea->visibility) == 'public' ? 'selected' : '' }}>Visible para toda la comunidad</option>
-                        <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
-                    </select>
+                    @if($idea->isPublished())
+                        <input type="hidden" name="visibility" value="public">
+                        <div class="w-full bg-primary-fixed/50 text-on-primary-fixed-variant text-sm rounded-2xl p-3.5 border border-primary/20">
+                            Publicada por el equipo de innovación
+                        </div>
+                    @else
+                        <select id="visibility"
+                                name="visibility"
+                                class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="private" {{ old('visibility', $idea->visibility) == 'private' ? 'selected' : '' }}>Idea privada completa</option>
+                            <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
+                        </select>
+                    @endif
                 </div>
             </div>
+
+            @unless($idea->isPublished())
+            <div>
+                <label for="workspace_status" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                    Estado de trabajo privado
+                </label>
+                <select id="workspace_status" name="workspace_status" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    @foreach(['capturada' => 'Capturada', 'en_clarificacion' => 'En clarificación', 'lista_para_actuar' => 'Lista para actuar', 'en_ejecucion' => 'En ejecución', 'completada' => 'Completada', 'en_pausa' => 'En pausa', 'descartada' => 'Descartada', 'archivada' => 'Archivada'] as $value => $label)
+                        <option value="{{ $value }}" {{ old('workspace_status', $idea->workspace_status) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endunless
 
             <!-- Tags Input with Chips, In-place Editing, Real-time Similarity Detection & Modal Explorer -->
             <div>

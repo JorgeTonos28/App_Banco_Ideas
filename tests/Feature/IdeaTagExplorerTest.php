@@ -66,7 +66,7 @@ class IdeaTagExplorerTest extends TestCase
             'description' => 'Proponemos instalar sensores inteligentes en talleres y aulas técnicas.',
             'problem_opportunity' => 'Falta de visibilidad de uso de equipos.',
             'category_id' => $this->category->id,
-            'visibility' => 'public',
+            'visibility' => 'private',
             'tags' => ['Automatización', 'Sensores IoT'],
         ];
 
@@ -95,7 +95,7 @@ class IdeaTagExplorerTest extends TestCase
             'description' => "Primera línea de la propuesta.\nSegunda línea con \"comillas\" y 'apóstrofes'.\nTercera línea.",
             'problem_opportunity' => "Oportunidad con saltos\nde línea.",
             'status' => 'nueva',
-            'visibility' => 'public',
+            'visibility' => 'private',
         ]);
 
         $tag = Tag::create(['name' => 'E-learning', 'slug' => 'e-learning']);
@@ -148,7 +148,7 @@ class IdeaTagExplorerTest extends TestCase
             'title' => 'Gestión Automatizada con IA',
             'description' => 'Descripción con múltiples etiquetas separadas por comas.',
             'category_id' => $this->category->id,
-            'visibility' => 'public',
+            'visibility' => 'private',
             'tags' => ['Inteligencia Artificial, Robótica, Machine Learning', '#BigData, Ciberseguridad'],
         ];
 

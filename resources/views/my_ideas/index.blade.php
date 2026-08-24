@@ -51,6 +51,7 @@
     <div class="flex items-center gap-2 border-b border-surface-container-high overflow-x-auto no-scrollbar pb-px">
         @php
         $tabs = [
+            'privadas' => 'Espacio privado',
             'publicadas' => 'Publicadas',
             'borradores' => 'Borradores',
             'implementadas' => 'Implementadas',
@@ -75,7 +76,11 @@
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-primary font-mono-tech">{{ $idea->category?->name ?: 'General' }}</span>
-                    <x-status-badge :status="$idea->status" />
+                    @if($idea->isPublished())
+                        <x-status-badge :status="$idea->status" />
+                    @else
+                        <span class="px-2 py-1 rounded-lg bg-surface-container text-[10px] font-bold text-on-surface-variant">{{ $idea->workspace_status_label }}</span>
+                    @endif
                 </div>
 
                 <a href="{{ route('ideas.show', $idea->slug) }}" class="block group-hover:text-primary transition-colors">

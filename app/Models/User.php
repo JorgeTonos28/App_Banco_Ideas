@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
@@ -117,10 +117,11 @@ class User extends Authenticatable
             if (str_starts_with($this->avatar, 'http')) {
                 return $this->avatar;
             }
-            return asset('storage/' . $this->avatar);
+
+            return asset('storage/'.$this->avatar);
         }
 
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=005696&color=ffffff&bold=true';
+        return 'https://ui-avatars.com/api/?name='.urlencode($this->name).'&background=005696&color=ffffff&bold=true';
     }
 
     /**
@@ -129,9 +130,9 @@ class User extends Authenticatable
     public function getBadgesAttribute(): array
     {
         $badges = [];
-        $ideasCount = $this->ideas()->where('visibility', 'public')->count();
-        $implementedCount = $this->ideas()->where('status', 'implementada')->count();
-        $hasTrending = $this->ideas()->where('innovation_score', '>=', 80)->exists();
+        $ideasCount = $this->ideas()->published()->count();
+        $implementedCount = $this->ideas()->published()->where('status', 'implementada')->count();
+        $hasTrending = $this->ideas()->communityPublished()->where('innovation_score', '>=', 80)->exists();
 
         if ($ideasCount >= 1) {
             $badges[] = [
@@ -139,7 +140,7 @@ class User extends Authenticatable
                 'name' => 'Generador de ideas',
                 'icon' => 'lightbulb',
                 'color' => 'bg-primary-container text-on-primary-container',
-                'description' => 'Ha propuesto ideas en la plataforma.'
+                'description' => 'Ha propuesto ideas en la plataforma.',
             ];
         }
 
@@ -149,7 +150,7 @@ class User extends Authenticatable
                 'name' => 'Idea en tendencia',
                 'icon' => 'local_fire_department',
                 'color' => 'bg-secondary-container text-on-secondary-container',
-                'description' => 'Una de sus ideas alcanzó alta puntuación de innovación.'
+                'description' => 'Una de sus ideas alcanzó alta puntuación de innovación.',
             ];
         }
 
@@ -159,7 +160,7 @@ class User extends Authenticatable
                 'name' => 'Idea implementada',
                 'icon' => 'rocket_launch',
                 'color' => 'bg-tertiary-container text-on-tertiary-container',
-                'description' => 'Logró transformar una idea en realidad en INFOTEP.'
+                'description' => 'Logró transformar una idea en realidad en INFOTEP.',
             ];
         }
 
@@ -169,7 +170,7 @@ class User extends Authenticatable
                 'name' => 'Top Innovador',
                 'icon' => 'emoji_events',
                 'color' => 'bg-secondary-fixed text-on-secondary-fixed',
-                'description' => 'Contribuyente destacado en la comunidad INNOVATEP.'
+                'description' => 'Contribuyente destacado en la comunidad INNOVATEP.',
             ];
         }
 
