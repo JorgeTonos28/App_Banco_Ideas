@@ -313,6 +313,26 @@ class Idea extends Model
         );
     }
 
+    public function acceptsRatings(): bool
+    {
+        if ($this->parent_idea_id !== null) {
+            return false;
+        }
+
+        if ($this->isPublished()) {
+            return $this->isPublishedToCommunity()
+                && ! in_array($this->status, ['descartada', 'archivada'], true);
+        }
+
+        return $this->isAccessibleToAuthenticatedAudience()
+            && ! in_array($this->workspace_status, ['descartada', 'archivada'], true);
+    }
+
+    public function hasPreliminaryRatings(): bool
+    {
+        return ! $this->isPublished() && $this->acceptsRatings();
+    }
+
     public function isEditableBy(?User $user): bool
     {
         if (! $user) {
@@ -382,8 +402,12 @@ class Idea extends Model
         $daysOld = $this->created_at ? $this->created_at->diffInDays(now()) : 0;
         $freshnessScore = max(2, 15 - ($daysOld * 0.4));
 
-        $totalScore = round($ratingScore + $voteScore + $engagementScore + $freshnessScore);
-        $totalScore = min(100, max(0, $totalScore));
+        $totalScore = 0;
+
+        if ($this->isPublishedToCommunity()) {
+            $totalScore = round($ratingScore + $voteScore + $engagementScore + $freshnessScore);
+            $totalScore = min(100, max(0, $totalScore));
+        }
 
         $this->updateQuietly([
             'votes_count' => $votesCount,

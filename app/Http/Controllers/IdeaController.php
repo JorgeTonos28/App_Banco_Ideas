@@ -592,20 +592,18 @@ class IdeaController extends Controller
             return redirect()->route('login');
         }
 
-        if ($idea->user_id === auth()->id()) {
+        if (! $request->user()->can('vote', $idea)) {
+            $message = $idea->user_id === auth()->id()
+                ? 'No puedes votar por tu propia idea.'
+                : ($idea->parent_idea_id
+                    ? 'Las valoraciones se concentran en la idea madre.'
+                    : 'Esta idea no admite votaciones en su estado o nivel de acceso actual.');
+
             if ($request->expectsJson()) {
-                return response()->json(['error' => 'No puedes votar por tu propia idea.'], 422);
+                return response()->json(['error' => $message], 422);
             }
 
-            return back()->with('error', 'No puedes votar por tu propia idea.');
-        }
-
-        if (! $idea->isPublished() || in_array($idea->status, ['descartada', 'archivada'], true)) {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => 'Esta idea no admite votaciones.'], 422);
-            }
-
-            return back()->with('error', 'Esta idea no admite votaciones en su estado actual.');
+            return back()->with('error', $message);
         }
 
         // Upsert rating
@@ -625,6 +623,7 @@ class IdeaController extends Controller
                 'average_rating' => number_format($idea->average_rating, 1),
                 'votes_count' => $idea->votes_count,
                 'innovation_score' => $idea->innovation_score,
+                'rating_context' => $idea->hasPreliminaryRatings() ? 'preliminary' : 'community',
             ]);
         }
 

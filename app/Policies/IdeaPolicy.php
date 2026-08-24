@@ -96,7 +96,7 @@ class IdeaPolicy
             return false;
         }
 
-        return $idea->isPublished() && ! in_array($idea->status, ['descartada', 'archivada'], true);
+        return $idea->acceptsRatings();
     }
 
     /**
