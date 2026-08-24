@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Idea\StoreIdeaRequest;
 use App\Http\Requests\Idea\UpdateIdeaRequest;
 use App\Models\Category;
+use App\Models\CategoryDimension;
 use App\Models\Idea;
 use App\Models\IdeaAttachment;
 use App\Models\IdeaFavorite;
@@ -12,6 +13,8 @@ use App\Models\IdeaRating;
 use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\IdeaClassificationService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -108,7 +111,12 @@ class IdeaController extends Controller
      */
     public function create(): View
     {
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)
+            ->whereHas('dimension', fn ($query) => $query->where('is_primary', true)->where('is_active', true))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        $categoryDimensions = $this->activeCategoryDimensions();
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -129,13 +137,13 @@ class IdeaController extends Controller
         $popularTags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(8)->get();
         $tags = $popularTags;
 
-        return view('ideas.create', compact('categories', 'allTags', 'popularTags', 'tags'));
+        return view('ideas.create', compact('categories', 'categoryDimensions', 'allTags', 'popularTags', 'tags'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreIdeaRequest $request): RedirectResponse
+    public function store(StoreIdeaRequest $request, IdeaClassificationService $classificationService): RedirectResponse
     {
         DB::beginTransaction();
         try {
@@ -152,6 +160,12 @@ class IdeaController extends Controller
                 'publication_status' => 'not_submitted',
                 'community_display' => 'hidden',
             ]);
+
+            $classificationService->sync(
+                $idea,
+                $request->input('classifications', []),
+                $request->integer('category_id'),
+            );
 
             // Handle Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
@@ -253,11 +267,16 @@ class IdeaController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Idea $idea): View
+    public function edit(Idea $idea, IdeaClassificationService $classificationService): View
     {
         $this->authorize('update', $idea);
 
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::where('is_active', true)
+            ->whereHas('dimension', fn ($query) => $query->where('is_primary', true)->where('is_active', true))
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+        $categoryDimensions = $this->activeCategoryDimensions();
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -279,13 +298,15 @@ class IdeaController extends Controller
         $tags = $popularTags;
         $selectedTags = $idea->tags->pluck('name')->toArray();
 
-        return view('ideas.edit', compact('idea', 'categories', 'allTags', 'popularTags', 'tags', 'selectedTags'));
+        $selectedClassifications = $classificationService->currentSelections($idea->loadMissing('categories'));
+
+        return view('ideas.edit', compact('idea', 'categories', 'categoryDimensions', 'allTags', 'popularTags', 'tags', 'selectedTags', 'selectedClassifications'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateIdeaRequest $request, Idea $idea): RedirectResponse
+    public function update(UpdateIdeaRequest $request, Idea $idea, IdeaClassificationService $classificationService): RedirectResponse
     {
         $this->authorize('update', $idea);
 
@@ -303,6 +324,12 @@ class IdeaController extends Controller
                 'visibility' => $idea->isPublished() ? 'public' : $request->visibility,
                 'workspace_status' => $idea->isPublished() ? $oldWorkspaceStatus : $newWorkspaceStatus,
             ]);
+
+            $classificationService->sync(
+                $idea,
+                $request->input('classifications', []),
+                $request->integer('category_id'),
+            );
 
             if (! $idea->isPublished() && $oldWorkspaceStatus !== $newWorkspaceStatus) {
                 IdeaStatusHistory::create([
@@ -473,5 +500,17 @@ class IdeaController extends Controller
         }
 
         return back()->with('success', $msg);
+    }
+
+    private function activeCategoryDimensions(): Collection
+    {
+        return CategoryDimension::query()
+            ->active()
+            ->ordered()
+            ->with(['categories' => fn ($query) => $query
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')])
+            ->get();
     }
 }

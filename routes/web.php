@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminCategoryDimensionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminIdeaController;
 use App\Http\Controllers\Admin\AdminIdeaPublicationController;
@@ -143,6 +144,9 @@ Route::middleware('auth')->group(function () {
 
         // Categories Administration
         Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/dimensiones-categoria', [AdminCategoryDimensionController::class, 'store'])->name('category-dimensions.store');
+        Route::put('/dimensiones-categoria/{categoryDimension}', [AdminCategoryDimensionController::class, 'update'])->name('category-dimensions.update');
+        Route::delete('/dimensiones-categoria/{categoryDimension}', [AdminCategoryDimensionController::class, 'destroy'])->name('category-dimensions.destroy');
         Route::post('/categorias', [AdminCategoryController::class, 'store'])->name('categories.store');
         Route::put('/categorias/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categorias/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');

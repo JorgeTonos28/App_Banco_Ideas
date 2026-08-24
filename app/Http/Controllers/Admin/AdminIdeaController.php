@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\User;
+use App\Services\IdeaClassificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,7 +64,7 @@ class AdminIdeaController extends Controller
         return response()->json($idea);
     }
 
-    public function update(AdminUpdateIdeaRequest $request, Idea $idea): RedirectResponse|JsonResponse
+    public function update(AdminUpdateIdeaRequest $request, Idea $idea, IdeaClassificationService $classificationService): RedirectResponse|JsonResponse
     {
         DB::beginTransaction();
         try {
@@ -83,6 +84,14 @@ class AdminIdeaController extends Controller
                 'is_featured' => $request->boolean('is_featured'),
                 'implemented_at' => $newStatus === 'implementada' && ! $idea->implemented_at ? now() : $idea->implemented_at,
             ]);
+
+            if ($request->filled('category_id')) {
+                $classificationService->sync(
+                    $idea->loadMissing('categories'),
+                    $request->input('classifications', $classificationService->currentSelections($idea)),
+                    $request->integer('category_id'),
+                );
+            }
 
             // If status changed, create StatusHistory record
             if ($idea->isPublished() && ($oldStatus !== $newStatus || $request->filled('status_comment'))) {

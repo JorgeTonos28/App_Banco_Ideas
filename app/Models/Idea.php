@@ -159,6 +159,11 @@ class Idea extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'idea_category')->withTimestamps();
+    }
+
     public function parentIdea(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_idea_id');

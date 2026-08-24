@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Http\Requests\Concerns\ValidatesIdeaClassifications;
 use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Validator;
 
 class UpdateIdeaRequest extends FormRequest
 {
+    use ValidatesIdeaClassifications;
+
     public function authorize(): bool
     {
         $idea = $this->route('idea');
@@ -23,6 +26,9 @@ class UpdateIdeaRequest extends FormRequest
             'description' => ['required', 'string', 'min:20', 'max:10000'],
             'problem_opportunity' => ['nullable', 'string', 'max:5000'],
             'category_id' => ['required', 'exists:categories,id'],
+            'classifications' => ['nullable', 'array', 'max:10'],
+            'classifications.*' => ['nullable', 'array', 'max:20'],
+            'classifications.*.*' => ['integer', 'distinct', 'exists:categories,id'],
             'tags' => ['nullable', 'array', 'max:20'],
             'tags.*' => ['string', 'max:500'],
             'visibility' => ['required', 'in:private,draft,public'],
@@ -51,6 +57,7 @@ class UpdateIdeaRequest extends FormRequest
                     $validator->errors()->add('tags', 'Cada etiqueta puede tener un máximo de 50 caracteres.');
                 }
             },
+            fn (Validator $validator) => $this->validateIdeaClassifications($validator),
         ];
     }
 }
