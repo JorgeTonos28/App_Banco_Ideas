@@ -73,6 +73,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Gestión de estructura organizacional**:
   - Árbol administrable de regionales o sedes, direcciones funcionales y departamentos, con validación de niveles superiores, prevención de ciclos y bloqueo de eliminación cuando existen miembros o dependencias.
   - El directorio, las invitaciones y el onboarding asignan a cada colaborador su unidad más específica y conservan automáticamente la regional raíz para compatibilidad.
+  - Cuando una invitación ya tiene unidad organizacional, el colaborador la ve como dato informativo y el servidor impide sustituirla durante la activación.
   - La unidad organizacional se muestra en el perfil, pero sólo puede ser modificada desde Administración para evitar ampliaciones de acceso no autorizadas.
 - **Taxonomía Multidimensional Administrable**:
   - Dimensiones configurables con modo único o múltiple, obligatoriedad, activación y orden.

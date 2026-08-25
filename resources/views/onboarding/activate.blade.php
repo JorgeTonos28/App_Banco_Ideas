@@ -62,14 +62,26 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1.5">Unidad organizacional <span class="text-error">*</span></label>
+                        @php($assignedUnit = $invitation->organizationalUnit ?: $invitation->regional)
+                        @if($assignedUnit)
+                        <input type="hidden" name="organizational_unit_id" value="{{ $assignedUnit->id }}">
+                        <div class="flex items-start gap-2.5 rounded-xl border border-primary/15 bg-primary-fixed/35 p-3">
+                            <span class="material-symbols-outlined text-lg text-primary" aria-hidden="true">corporate_fare</span>
+                            <div>
+                                <p class="text-xs font-bold text-on-surface">{{ $assignedUnit->path_label }}</p>
+                                <p class="mt-0.5 text-[10px] text-on-surface-variant">Asignada por el administrador que emitió la invitación.</p>
+                            </div>
+                        </div>
+                        @else
                         <select name="organizational_unit_id" required class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
                             <option value="">Seleccionar unidad</option>
                             @foreach($organizationalUnits as $unit)
-                            <option value="{{ $unit->id }}" {{ (old('organizational_unit_id', $invitation->organizational_unit_id ?: $invitation->regional_id) == $unit->id) ? 'selected' : '' }}>
+                            <option value="{{ $unit->id }}" {{ old('organizational_unit_id') == $unit->id ? 'selected' : '' }}>
                                 {{ $unit->path_label }}
                             </option>
                             @endforeach
                         </select>
+                        @endif
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1.5">Cargo / Función</label>
