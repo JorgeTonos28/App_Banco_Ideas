@@ -328,8 +328,8 @@ class IdeaController extends Controller
      */
     public function show(
         string $slug,
-        IdeaHierarchyService $hierarchyService,
-        IdeaTreeService $treeService
+        IdeaTreeService $treeService,
+        GlobalIdeaSearchService $ideaSearch
     ): View {
         $idea = Idea::with([
             'user',
@@ -342,7 +342,11 @@ class IdeaController extends Controller
             'children.user',
             'children.category',
             'outgoingRelations.targetIdea.user',
+            'outgoingRelations.createdBy',
+            'outgoingRelations.reviewedBy',
             'incomingRelations.sourceIdea.user',
+            'incomingRelations.createdBy',
+            'incomingRelations.reviewedBy',
             'comments' => function ($query) {
                 $query->whereNull('parent_id')
                     ->with(['user', 'likes', 'replies.user', 'replies.likes'])
@@ -362,7 +366,7 @@ class IdeaController extends Controller
         }
 
         $idea->setRelation('outgoingRelations', $idea->outgoingRelations
-            ->filter(fn ($relation) => $relation->status === 'approved'
+            ->filter(fn ($relation) => ($relation->status === 'approved' || $viewer?->can('update', $relation))
                 && $relation->targetIdea
                 && $viewer?->can('view', $relation->targetIdea))
             ->values());
@@ -390,37 +394,18 @@ class IdeaController extends Controller
             ->get();
 
         $canOrganize = $viewer?->can('organize', $idea) ?? false;
-        $parentCandidates = collect();
         $relationCandidates = collect();
         $pendingRelationReviews = collect();
 
         if ($canOrganize) {
-            $excludedParentIds = $hierarchyService->descendantIds($idea)->push($idea->id);
-            $parentCandidates = Idea::query()
-                ->where('user_id', $viewer->id)
-                ->whereNotIn('id', $excludedParentIds)
-                ->orderBy('title')
-                ->limit(250)
-                ->with(['category', 'tags'])
-                ->get();
-
-            $relationCandidates = Idea::query()
-                ->whereKeyNot($idea->id)
-                ->when(! $viewer->isAdmin(), function ($query) use ($viewer): void {
-                    $query->where(function ($visible) use ($viewer): void {
-                        $visible->where('user_id', $viewer->id)->orWhere(fn ($published) => $published->published());
-                    });
-                })
-                ->orderBy('title')
-                ->limit(250)
-                ->get(['id', 'title', 'user_id', 'visibility', 'publication_status']);
+            $relationCandidates = $ideaSearch->accessibleCandidates($viewer, $idea->id);
         }
 
         if ($viewer) {
             $pendingRelationReviews = $idea->incomingRelations()
                 ->where('status', 'pending')
                 ->when(! $viewer->isAdmin(), fn ($query) => $query->whereHas('targetIdea', fn ($target) => $target->where('user_id', $viewer->id)))
-                ->with('sourceIdea.user')
+                ->with(['sourceIdea.user', 'createdBy', 'reviewedBy'])
                 ->get();
         }
 
@@ -457,7 +442,6 @@ class IdeaController extends Controller
             'idea',
             'relatedIdeas',
             'canOrganize',
-            'parentCandidates',
             'relationCandidates',
             'pendingRelationReviews',
             'traceIdeas',

@@ -10,6 +10,23 @@ use Illuminate\Support\Str;
 
 class GlobalIdeaSearchService
 {
+    public function accessibleCandidates(User $viewer, int $exceptIdeaId, int $limit = 250): Collection
+    {
+        $query = Idea::query()
+            ->whereKeyNot($exceptIdeaId)
+            ->with(['user', 'category'])
+            ->orderBy('title');
+
+        $this->applyAccessibleCandidateScope($query, $viewer);
+
+        return $query
+            ->limit(max($limit, 500))
+            ->get()
+            ->filter(fn (Idea $idea): bool => $viewer->can('view', $idea))
+            ->take($limit)
+            ->values();
+    }
+
     public function search(User $viewer, string $search, int $limit = 8): Collection
     {
         $needle = $this->normalize($search);

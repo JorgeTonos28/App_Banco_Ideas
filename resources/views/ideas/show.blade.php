@@ -46,12 +46,6 @@
             </a>
             @endif
             @if(auth()->id() === $idea->user_id && $idea->isEditableBy(auth()->user()))
-            <button type="button" @click="$dispatch('open-idea-organizer')"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-surface-container-lowest px-3 py-2 text-xs font-bold text-primary hover:bg-primary-fixed"
-                    title="Agregar o cambiar idea madre">
-                <span class="material-symbols-outlined text-base">arrow_upward</span>
-                <span class="hidden lg:inline">Agregar madre</span>
-            </button>
             <a href="{{ route('ideas.create', ['parent' => $idea->id]) }}"
                class="inline-flex items-center gap-1.5 rounded-xl bg-secondary-fixed px-3 py-2 text-xs font-bold text-on-secondary-fixed hover:bg-secondary-container"
                title="Crear una idea hija">
@@ -193,140 +187,141 @@
         @endif
     </div>
 
-    @if($idea->parentIdea || $idea->children->isNotEmpty() || $idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $canOrganize || $pendingRelationReviews->isNotEmpty())
-    <section id="mapa-idea" class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs overflow-hidden"
-             x-data="{ organizeOpen: false }"
-             @open-idea-organizer.window="organizeOpen = true; $nextTick(() => $el.scrollIntoView({ behavior: 'smooth', block: 'start' }))">
-        <div class="p-5 sm:p-6 border-b border-surface-container-high/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    @if($idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $canOrganize || $pendingRelationReviews->isNotEmpty())
+    <section id="relaciones-semanticas" class="overflow-hidden rounded-3xl border border-surface-container-high/80 bg-surface-container-lowest shadow-xs"
+             x-data="{ manageRelations: false }">
+        <div class="flex flex-col gap-3 border-b border-surface-container-high/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
-                <h2 class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">hub</span>
-                    Mapa de la idea
+                <h2 class="flex items-center gap-2 font-headline text-lg font-bold text-on-surface">
+                    <span class="material-symbols-outlined text-tertiary" aria-hidden="true">hub</span>
+                    Relaciones semánticas
                 </h2>
-                <p class="text-xs text-on-surface-variant mt-1">Jerarquía canónica y conexiones semánticas verificadas.</p>
+                <p class="mt-1 text-xs text-on-surface-variant">Conexiones conceptuales distintas de la jerarquía madre–hija, con autoría y revisión auditables.</p>
             </div>
             @if($canOrganize)
-            <button type="button" @click="organizeOpen = !organizeOpen" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-primary-fixed text-primary hover:bg-primary hover:text-white text-xs font-bold">
-                <span class="material-symbols-outlined text-base">account_tree</span>
-                Organizar conexiones
+            <button type="button" @click="manageRelations = !manageRelations"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary-fixed px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white"
+                    :aria-expanded="manageRelations.toString()">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">edit_note</span>
+                Gestionar relaciones
             </button>
             @endif
         </div>
 
-        <div class="p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="space-y-3">
-                <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Estructura madre e hijas</h3>
-
-                <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
-                @if($idea->parentIdea)
-                <a href="{{ route('ideas.show', $idea->parentIdea->slug) }}" class="flex items-center gap-3 p-3 rounded-2xl bg-primary-fixed/45 border border-primary/10 hover:border-primary/30 group">
-                    <div class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-lg">arrow_upward</span>
-                    </div>
-                    <div class="min-w-0">
-                        <span class="text-[10px] font-mono-tech font-bold uppercase text-primary">Idea madre</span>
-                        <p class="text-xs font-bold text-on-surface group-hover:text-primary truncate">{{ $idea->parentIdea->title }}</p>
-                    </div>
-                </a>
-                @else
-                <div class="p-3 rounded-2xl bg-surface-container-low text-xs text-on-surface-variant">Esta idea no depende de una idea madre.</div>
-                @endif
-
-                @if($idea->children->isNotEmpty())
-                <div class="space-y-2">
-                    @foreach($idea->children as $child)
-                    <a href="{{ route('ideas.show', $child->slug) }}" class="flex items-center justify-between gap-3 p-3 rounded-xl border border-surface-container-high hover:bg-surface-container-low group">
+        <div class="max-h-80 space-y-3 overflow-y-auto p-5 sm:p-6">
+            @forelse($idea->outgoingRelations as $relation)
+                <article x-data="{ editing: false }" class="rounded-2xl border border-surface-container-high bg-surface-container-low/60 p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
-                            <span class="text-[10px] font-mono-tech text-outline">Subidea</span>
-                            <p class="text-xs font-bold text-on-surface group-hover:text-primary truncate">{{ $child->title }}</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[10px] font-mono-tech font-bold uppercase text-tertiary">{{ $relation->type_label }}</span>
+                                <span class="rounded-full px-2 py-0.5 text-[9px] font-bold {{ $relation->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($relation->status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-error-container/40 text-error') }}">{{ $relation->status_label }}</span>
+                            </div>
+                            <a href="{{ route('ideas.show', $relation->targetIdea->slug) }}" class="mt-1 block truncate text-sm font-bold text-on-surface hover:text-primary">{{ $relation->targetIdea->title }}</a>
+                            @if($relation->rationale)<p class="mt-1 text-[11px] leading-relaxed text-on-surface-variant">{{ $relation->rationale }}</p>@endif
+                            <p class="mt-2 text-[9px] font-mono-tech text-outline">
+                                Registrada por {{ $relation->createdBy?->name ?: 'usuario no disponible' }}
+                                @if($relation->reviewedBy) · Revisada por {{ $relation->reviewedBy->name }}@endif
+                            </p>
                         </div>
-                        <span class="material-symbols-outlined text-base text-outline">arrow_forward</span>
-                    </a>
-                    @endforeach
-                </div>
+                        <div class="flex shrink-0 items-center gap-1">
+                            @can('update', $relation)
+                            <button type="button" @click="editing = !editing" class="rounded-lg p-1.5 text-outline hover:bg-primary-fixed hover:text-primary" title="Editar relación">
+                                <span class="material-symbols-outlined text-base" aria-hidden="true">edit</span>
+                            </button>
+                            @endcan
+                            @can('delete', $relation)
+                            <form action="{{ route('ideas.relations.destroy', $relation) }}" method="POST" onsubmit="return confirm('¿Eliminar esta relación semántica?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="rounded-lg p-1.5 text-outline hover:bg-error-container/40 hover:text-error" title="Eliminar relación"><span class="material-symbols-outlined text-base" aria-hidden="true">delete</span></button>
+                            </form>
+                            @endcan
+                        </div>
+                    </div>
+
+                    @can('update', $relation)
+                    <form x-show="editing" action="{{ route('ideas.relations.details.update', $relation) }}" method="POST" class="mt-4 space-y-3 border-t border-surface-container-high pt-4">
+                        @csrf
+                        @method('PATCH')
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1.5 block text-xs font-bold text-on-surface">Tipo de relación</label>
+                                <select name="type" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
+                                    @foreach(\App\Models\IdeaRelation::TYPES as $type)
+                                        <option value="{{ $type }}" {{ $relation->type === $type ? 'selected' : '' }}>{{ (new \App\Models\IdeaRelation(['type' => $type]))->type_label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1.5 block text-xs font-bold text-on-surface">Justificación</label>
+                                <input type="text" name="rationale" value="{{ $relation->rationale }}" maxlength="1000" class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                            <button type="button" @click="editing = false" class="px-3 py-2 text-xs font-bold text-outline">Cancelar</button>
+                            <button type="submit" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">Guardar relación</button>
+                        </div>
+                    </form>
+                    @endcan
+                </article>
+            @empty
+                @if($idea->incomingRelations->isEmpty())
+                <div class="rounded-2xl bg-surface-container-low p-5 text-center text-xs text-on-surface-variant">Aún no hay relaciones semánticas verificadas. El propietario o un administrador puede crear la primera.</div>
                 @endif
-                </div>
-            </div>
+            @endforelse
 
-            <div class="space-y-3">
-                <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Relaciones semánticas</h3>
-                <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
-                @forelse($idea->outgoingRelations as $relation)
-                    <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-surface-container-low">
-                        <div class="min-w-0">
-                            <span class="text-[10px] font-mono-tech font-bold text-tertiary">{{ $relation->type_label }}</span>
-                            <a href="{{ route('ideas.show', $relation->targetIdea->slug) }}" class="block text-xs font-bold text-on-surface hover:text-primary truncate">{{ $relation->targetIdea->title }}</a>
-                            @if($relation->rationale)<p class="text-[11px] text-on-surface-variant mt-1">{{ $relation->rationale }}</p>@endif
-                        </div>
-                        @can('delete', $relation)
-                        <form action="{{ route('ideas.relations.destroy', $relation) }}" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-1 text-outline hover:text-error" title="Eliminar relación"><span class="material-symbols-outlined text-base">close</span></button>
-                        </form>
-                        @endcan
-                    </div>
-                @empty
-                    @if($idea->incomingRelations->isEmpty())
-                    <div class="p-3 rounded-2xl bg-surface-container-low text-xs text-on-surface-variant">Aún no hay relaciones semánticas verificadas.</div>
-                    @endif
-                @endforelse
-
-                @foreach($idea->incomingRelations as $relation)
-                    <div class="p-3 rounded-xl border border-surface-container-high">
-                        <span class="text-[10px] font-mono-tech font-bold text-outline">Conexión entrante · {{ $relation->type_label }}</span>
-                        <a href="{{ route('ideas.show', $relation->sourceIdea->slug) }}" class="block text-xs font-bold text-on-surface hover:text-primary truncate">{{ $relation->sourceIdea->title }}</a>
-                    </div>
-                @endforeach
-                </div>
-            </div>
+            @foreach($idea->incomingRelations as $relation)
+                <article class="rounded-2xl border border-surface-container-high p-4">
+                    <span class="text-[10px] font-mono-tech font-bold uppercase text-outline">Conexión entrante · {{ $relation->type_label }}</span>
+                    <a href="{{ route('ideas.show', $relation->sourceIdea->slug) }}" class="mt-1 block truncate text-sm font-bold text-on-surface hover:text-primary">{{ $relation->sourceIdea->title }}</a>
+                    @if($relation->rationale)<p class="mt-1 text-[11px] text-on-surface-variant">{{ $relation->rationale }}</p>@endif
+                    <p class="mt-2 text-[9px] font-mono-tech text-outline">Registrada por {{ $relation->createdBy?->name ?: 'usuario no disponible' }}@if($relation->reviewedBy) · Revisada por {{ $relation->reviewedBy->name }}@endif</p>
+                </article>
+            @endforeach
         </div>
 
         @if($canOrganize)
-        <div x-show="organizeOpen" class="p-5 sm:p-6 border-t border-surface-container-high bg-surface-container-low/55 grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <form action="{{ route('ideas.hierarchy.update', $idea) }}" method="POST" class="space-y-3">
-                @csrf
-                @method('PUT')
-                <div>
-                    <label class="block text-xs font-bold text-on-surface mb-1.5">Ubicar bajo una idea madre</label>
-                    <x-idea-parent-picker :candidates="$parentCandidates" :selected-id="$idea->parent_idea_id" input-id="map_parent_idea_id" independent-label="Mantener como idea independiente" />
-                </div>
-                <input type="text" name="note" maxlength="1000" placeholder="Motivo del cambio, opcional" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
-                <button type="submit" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl">Guardar jerarquía</button>
-            </form>
-
+        <div x-show="manageRelations" class="border-t border-surface-container-high bg-surface-container-low/55 p-5 sm:p-6">
             <form action="{{ route('ideas.relations.store', $idea) }}" method="POST" class="space-y-3">
                 @csrf
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <span class="text-[10px] font-mono-tech font-bold uppercase text-primary">Nueva conexión manual</span>
+                    <p class="mt-1 text-xs text-on-surface-variant">Las conexiones con ideas de otro autor quedarán pendientes de su confirmación.</p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
-                        <label class="block text-xs font-bold text-on-surface mb-1.5">Tipo de relación</label>
-                        <select name="type" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                        <label class="mb-1.5 block text-xs font-bold text-on-surface">Tipo de relación</label>
+                        <select name="type" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
                             @foreach(\App\Models\IdeaRelation::TYPES as $type)
                                 <option value="{{ $type }}">{{ (new \App\Models\IdeaRelation(['type' => $type]))->type_label }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-on-surface mb-1.5">Idea conectada</label>
-                        <select name="target_idea_id" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
-                            <option value="">Seleccionar</option>
+                        <label class="mb-1.5 block text-xs font-bold text-on-surface">Idea conectada</label>
+                        <select name="target_idea_id" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
+                            <option value="">Selecciona una idea accesible</option>
                             @foreach($relationCandidates as $candidate)
-                                <option value="{{ $candidate->id }}">{{ $candidate->title }}</option>
+                                <option value="{{ $candidate->id }}">{{ $candidate->title }} · {{ $candidate->user->name }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
-                <input type="text" name="rationale" maxlength="1000" placeholder="Explica brevemente la conexión" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
-                <button type="submit" class="px-4 py-2 bg-tertiary text-white text-xs font-bold rounded-xl">Crear relación</button>
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold text-on-surface">Justificación de la conexión</label>
+                    <textarea name="rationale" rows="2" maxlength="1000" placeholder="Explica por qué existe esta relación" class="w-full resize-none rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs"></textarea>
+                </div>
+                <button type="submit" class="rounded-xl bg-tertiary px-4 py-2.5 text-xs font-bold text-white">Crear relación semántica</button>
             </form>
         </div>
         @endif
 
         @if($pendingRelationReviews->isNotEmpty())
-        <div class="p-5 sm:p-6 border-t border-secondary/20 bg-secondary-container/10 space-y-3">
+        <div class="space-y-3 border-t border-secondary/20 bg-secondary-container/10 p-5 sm:p-6">
             <h3 class="text-xs font-bold text-on-surface">Relaciones que esperan tu confirmación</h3>
             @foreach($pendingRelationReviews as $pendingRelation)
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl bg-surface-container-lowest border border-secondary/20">
+            <div class="flex flex-col gap-3 rounded-xl border border-secondary/20 bg-surface-container-lowest p-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-xs text-on-surface"><strong>{{ $pendingRelation->sourceIdea->title }}</strong> propone: {{ $pendingRelation->type_label }}.</p>
                 <div class="flex gap-2">
                     @foreach(['approved' => 'Aprobar', 'rejected' => 'Rechazar'] as $decision => $label)
@@ -334,7 +329,7 @@
                         @csrf
                         @method('PUT')
                         <input type="hidden" name="status" value="{{ $decision }}">
-                        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-bold {{ $decision === 'approved' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant' }}">{{ $label }}</button>
+                        <button type="submit" class="rounded-lg px-3 py-1.5 text-xs font-bold {{ $decision === 'approved' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant' }}">{{ $label }}</button>
                     </form>
                     @endforeach
                 </div>
