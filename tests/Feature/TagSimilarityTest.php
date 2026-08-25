@@ -16,6 +16,7 @@ class TagSimilarityTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Category $category;
 
     protected function setUp(): void
@@ -114,7 +115,7 @@ class TagSimilarityTest extends TestCase
             'title' => 'Plataforma con IA',
             'description' => 'Descripción detallada de la propuesta.',
             'category_id' => $this->category->id,
-            'visibility' => 'public',
+            'visibility' => 'private',
             'tags' => ['#inteligencia-artificial', 'Nueva Etiqueta'],
         ];
 

@@ -48,7 +48,7 @@ class TagSimilarityService
 
         // Plurals ending in 'ces' -> 'z' (e.g., luces -> luz, matrices -> matriz)
         if (str_ends_with($normalized, 'ces') && mb_strlen($normalized) > 4) {
-            return substr($normalized, 0, -3) . 'z';
+            return substr($normalized, 0, -3).'z';
         }
 
         // Plurals ending in 'es' after consonants (e.g., sensores -> sensor, talleres -> taller, innovaciones -> innovacion)
@@ -101,16 +101,21 @@ class TagSimilarityService
             if (str_contains($norm1, $norm2) || str_contains($norm2, $norm1)) {
                 $minLen = min(mb_strlen($norm1), mb_strlen($norm2));
                 $maxLen = max(mb_strlen($norm1), mb_strlen($norm2));
+
                 return max(0.80, $minLen / $maxLen);
             }
         }
 
         // Levenshtein distance calculation
         $maxLen = max(mb_strlen($norm1), mb_strlen($norm2));
-        if ($maxLen === 0) return 0.0;
+        if ($maxLen === 0) {
+            return 0.0;
+        }
 
         $lev = levenshtein($norm1, $norm2);
-        if ($lev < 0) return 0.0;
+        if ($lev < 0) {
+            return 0.0;
+        }
 
         $levScore = 1.0 - ($lev / $maxLen);
 
@@ -124,11 +129,9 @@ class TagSimilarityService
     /**
      * Find existing tags that are similar to the provided name.
      *
-     * @param string $name
-     * @param iterable|null $existingTags
-     * @param float $threshold Default 0.70 (70% similarity)
-     * @param int $limit Maximum results
-     * @return Collection
+     * @param  iterable|null  $existingTags
+     * @param  float  $threshold  Default 0.70 (70% similarity)
+     * @param  int  $limit  Maximum results
      */
     public static function findSimilar(string $name, ?iterable $tags = null, float $threshold = 0.70, int $limit = 5): Collection
     {
@@ -204,8 +207,11 @@ class TagSimilarityService
             }
         }
 
-        // 4. Create new Tag formatted neatly (Capitalized first letter of words)
-        $formattedName = Str::title($cleanName);
+        // 4. Preserve intentional casing such as IoT, IA or API while ensuring
+        // the visible label starts with an uppercase character.
+        $formattedName = mb_strtoupper(mb_substr($cleanName, 0, 1, 'UTF-8'), 'UTF-8')
+            .mb_substr($cleanName, 1, null, 'UTF-8');
+
         return Tag::create([
             'name' => $formattedName,
             'slug' => $slug,

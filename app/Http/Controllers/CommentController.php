@@ -8,7 +8,6 @@ use App\Models\IdeaComment;
 use App\Models\IdeaCommentLike;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
@@ -27,9 +26,12 @@ class CommentController extends Controller
 
     public function toggleLike(IdeaComment $comment): JsonResponse|RedirectResponse
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return redirect()->route('login');
         }
+
+        $this->authorize('view', $comment->idea);
+        abort_unless($comment->idea->isPublished(), 403);
 
         $existing = IdeaCommentLike::where('idea_comment_id', $comment->id)
             ->where('user_id', auth()->id())

@@ -8,11 +8,11 @@ use App\Models\IdeaComment;
 use App\Models\IdeaCommentLike;
 use App\Models\IdeaRating;
 use App\Models\IdeaStatusHistory;
+use App\Models\Regional;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
 
         $regionals = [];
         foreach ($regionalsData as $r) {
-            $regionals[$r['code']] = \App\Models\Regional::create($r);
+            $regionals[$r['code']] = Regional::create($r);
         }
 
         // 1. Create Users
@@ -209,9 +209,13 @@ class DatabaseSeeder extends Seeder
             'title' => 'Aulas Híbridas Móviles para Centros Tecnológicos',
             'summary' => 'Equipar carritos móviles con tecnología de videoconferencia para convertir cualquier aula regular en un espacio híbrido instantáneamente.',
             'description' => "Proponemos diseñar y ensamblar carritos móviles equipados con pantallas inteligentes, cámaras PTZ con seguimiento automático por voz y micrófonos omnidireccionales de alta fidelidad.\n\nEsto permitirá que cualquier taller o aula tradicional pueda transmitir clases a estudiantes remotos de otras regionales en cuestión de minutos, sin necesidad de realizar costosas remodelaciones fijas en cada salón.",
-            'problem_opportunity' => "Actualmente muchas asignaturas especializadas no cuentan con suficientes instructores en todas las regionales del país, lo que limita la oferta formativa fuera de Santo Domingo y Santiago. Equipar aulas fijas es costoso y toma meses.",
+            'problem_opportunity' => 'Actualmente muchas asignaturas especializadas no cuentan con suficientes instructores en todas las regionales del país, lo que limita la oferta formativa fuera de Santo Domingo y Santiago. Equipar aulas fijas es costoso y toma meses.',
             'status' => 'en_revision',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDays(5),
             'is_featured' => true,
             'priority' => 'alta',
             'assigned_to_user_id' => $admin->id,
@@ -246,10 +250,14 @@ class DatabaseSeeder extends Seeder
             'category_id' => $catSostenibilidad->id,
             'title' => 'Talleres Solares: Autogeneración y Práctica Técnica',
             'summary' => 'Instalar sistemas de paneles solares fotovoltaicos en los techos de los talleres para reducir consumo eléctrico y servir como laboratorio vivo.',
-            'description' => "Instalación de paneles solares fotovoltaicos en las naves industriales de los centros de formación. El sistema estará conectado a la red y a la vez funcionará como aula de práctica directa para los participantes de los cursos de Energías Renovables e Instalaciones Eléctricas Industriales.",
-            'problem_opportunity' => "Los talleres de maquinaria pesada y soldadura generan una factura eléctrica considerable. Al mismo tiempo, se requiere equipamiento moderno para capacitar en la creciente demanda de técnicos solares.",
+            'description' => 'Instalación de paneles solares fotovoltaicos en las naves industriales de los centros de formación. El sistema estará conectado a la red y a la vez funcionará como aula de práctica directa para los participantes de los cursos de Energías Renovables e Instalaciones Eléctricas Industriales.',
+            'problem_opportunity' => 'Los talleres de maquinaria pesada y soldadura generan una factura eléctrica considerable. Al mismo tiempo, se requiere equipamiento moderno para capacitar en la creciente demanda de técnicos solares.',
             'status' => 'priorizada',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDays(12),
             'is_featured' => true,
             'priority' => 'estrategica',
             'assigned_to_user_id' => $admin->id,
@@ -292,10 +300,14 @@ class DatabaseSeeder extends Seeder
             'category_id' => $catTecnologia->id,
             'title' => 'Optimización de Rutas de Supervisión y Entrega con IA',
             'summary' => 'Implementar un sistema de enrutamiento dinámico con inteligencia artificial para la flota de supervisión docente y entrega de materiales.',
-            'description' => "Desarrollar o integrar un motor de ruteo inteligente que calcule en tiempo real los traslados óptimos para los supervisores técnicos y vehículos de logística institucional, considerando tráfico, horarios de talleres y prioridades de visita.",
-            'problem_opportunity' => "Actualmente las visitas a centros operativos y empresas del programa dual se planifican manualmente en hojas de cálculo, generando sobrecostos de combustible y tiempos muertos en traslados.",
+            'description' => 'Desarrollar o integrar un motor de ruteo inteligente que calcule en tiempo real los traslados óptimos para los supervisores técnicos y vehículos de logística institucional, considerando tráfico, horarios de talleres y prioridades de visita.',
+            'problem_opportunity' => 'Actualmente las visitas a centros operativos y empresas del programa dual se planifican manualmente en hojas de cálculo, generando sobrecostos de combustible y tiempos muertos en traslados.',
             'status' => 'en_desarrollo',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDays(20),
             'is_featured' => true,
             'priority' => 'alta',
             'assigned_to_user_id' => $francisco->id,
@@ -313,10 +325,14 @@ class DatabaseSeeder extends Seeder
             'category_id' => $catTecnologia->id,
             'title' => 'Librería y Repositorio Digital Compartido de Manuales',
             'summary' => 'Repositorio institucional centralizado y accesible desde móviles con manuales técnicos actualizados, guías de taller y diagramas interactivos.',
-            'description' => "Creación de una plataforma digital donde los docentes y participantes puedan consultar y descargar todo el material técnico oficial sin depender de fotocopias o memorias USB.",
-            'problem_opportunity' => "Gran dispersión de versiones desactualizadas de manuales técnicos en fotocopias y retrasos para que los estudiantes accedan al contenido pedagógico oficial.",
+            'description' => 'Creación de una plataforma digital donde los docentes y participantes puedan consultar y descargar todo el material técnico oficial sin depender de fotocopias o memorias USB.',
+            'problem_opportunity' => 'Gran dispersión de versiones desactualizadas de manuales técnicos en fotocopias y retrasos para que los estudiantes accedan al contenido pedagógico oficial.',
             'status' => 'implementada',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDays(45),
             'is_featured' => true,
             'priority' => 'alta',
             'implemented_at' => now()->subDays(10),
@@ -348,10 +364,14 @@ class DatabaseSeeder extends Seeder
             'category_id' => $catColaborador->id,
             'title' => 'Pausas Activas Guiadas y Asesoría Ergonómica',
             'summary' => 'Micro-rutinas de estiramiento y ergonomía de 5 minutos integradas en el día a día para docentes de pie y personal administrativo.',
-            'description' => "Implementar un programa preventivo de salud ocupacional con cápsulas breves de ejercicios posturales para prevenir fatiga y lesiones por esfuerzo repetitivo en talleres y oficinas.",
-            'problem_opportunity' => "Altas quejas de dolores lumbares y fatiga muscular en instructores de talleres técnicos que pasan largas jornadas de pie.",
+            'description' => 'Implementar un programa preventivo de salud ocupacional con cápsulas breves de ejercicios posturales para prevenir fatiga y lesiones por esfuerzo repetitivo en talleres y oficinas.',
+            'problem_opportunity' => 'Altas quejas de dolores lumbares y fatiga muscular en instructores de talleres técnicos que pasan largas jornadas de pie.',
             'status' => 'nueva',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDay(),
             'is_featured' => false,
             'priority' => 'media',
             'views_count' => 95,
@@ -365,10 +385,14 @@ class DatabaseSeeder extends Seeder
             'category_id' => $catProcesos->id,
             'title' => 'Plataforma de Intercambio y Reutilización de Materiales entre Talleres',
             'summary' => 'Sistema digital para registrar y transferir excedentes de materia prima (maderas, metales, componentes) entre centros de formación.',
-            'description' => "Un catálogo en línea donde cada taller registra sobrantes útiles no aprovechados en sus prácticas para que otros centros puedan solicitarlos en lugar de comprar nuevo inventario.",
-            'problem_opportunity' => "Desperdicio de retazos útiles en talleres grandes mientras talleres satélites carecen de materiales para prácticas básicas.",
+            'description' => 'Un catálogo en línea donde cada taller registra sobrantes útiles no aprovechados en sus prácticas para que otros centros puedan solicitarlos en lugar de comprar nuevo inventario.',
+            'problem_opportunity' => 'Desperdicio de retazos útiles en talleres grandes mientras talleres satélites carecen de materiales para prácticas básicas.',
             'status' => 'en_revision',
             'visibility' => 'public',
+            'access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+            'published_at' => now()->subDays(4),
             'is_featured' => false,
             'priority' => 'media',
             'views_count' => 120,

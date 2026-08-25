@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminCategoryDimensionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminIdeaController;
+use App\Http\Controllers\Admin\AdminIdeaPublicationController;
 use App\Http\Controllers\Admin\AdminRegionalController;
 use App\Http\Controllers\Admin\AdminTagController;
 use App\Http\Controllers\Admin\AdminUserController;
@@ -11,6 +13,9 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\IdeaHierarchyController;
+use App\Http\Controllers\IdeaPublicationController;
+use App\Http\Controllers\IdeaRelationController;
 use App\Http\Controllers\MyIdeasController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OnboardingController;
@@ -71,6 +76,24 @@ Route::middleware('auth')->group(function () {
     Route::get('/ideas/{idea}/editar', [IdeaController::class, 'edit'])->name('ideas.edit');
     Route::put('/ideas/{idea}', [IdeaController::class, 'update'])->name('ideas.update');
     Route::delete('/ideas/{idea}', [IdeaController::class, 'destroy'])->name('ideas.destroy');
+    Route::put('/ideas/{idea}/jerarquia', [IdeaHierarchyController::class, 'update'])
+        ->name('ideas.hierarchy.update')
+        ->middleware('throttle:30,1');
+    Route::post('/ideas/{idea}/relaciones', [IdeaRelationController::class, 'store'])
+        ->name('ideas.relations.store')
+        ->middleware('throttle:30,1');
+    Route::put('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'update'])
+        ->name('ideas.relations.update')
+        ->middleware('throttle:30,1');
+    Route::delete('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'destroy'])
+        ->name('ideas.relations.destroy')
+        ->middleware('throttle:30,1');
+    Route::post('/ideas/{idea}/publicacion/solicitar', [IdeaPublicationController::class, 'store'])
+        ->name('ideas.publication.request')
+        ->middleware('throttle:5,1');
+    Route::delete('/ideas/{idea}/publicacion/solicitud', [IdeaPublicationController::class, 'destroy'])
+        ->name('ideas.publication.cancel')
+        ->middleware('throttle:5,1');
 
     // Voting & Favorites
     Route::post('/ideas/{idea}/votar', [IdeaController::class, 'vote'])->name('ideas.vote')->middleware('throttle:30,1');
@@ -106,6 +129,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/ideas', [AdminIdeaController::class, 'index'])->name('ideas.index');
         Route::get('/ideas/{idea}', [AdminIdeaController::class, 'show'])->name('ideas.show');
         Route::put('/ideas/{idea}', [AdminIdeaController::class, 'update'])->name('ideas.update');
+        Route::put('/ideas/{idea}/publicacion', [AdminIdeaPublicationController::class, 'update'])
+            ->name('ideas.publication.update')
+            ->middleware('throttle:30,1');
         Route::post('/ideas/{idea}/destacar', [AdminIdeaController::class, 'toggleFeatured'])->name('ideas.feature');
         Route::post('/ideas/acciones-masivas', [AdminIdeaController::class, 'batchAction'])->name('ideas.batch');
 
@@ -118,6 +144,9 @@ Route::middleware('auth')->group(function () {
 
         // Categories Administration
         Route::get('/categorias', [AdminCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/dimensiones-categoria', [AdminCategoryDimensionController::class, 'store'])->name('category-dimensions.store');
+        Route::put('/dimensiones-categoria/{categoryDimension}', [AdminCategoryDimensionController::class, 'update'])->name('category-dimensions.update');
+        Route::delete('/dimensiones-categoria/{categoryDimension}', [AdminCategoryDimensionController::class, 'destroy'])->name('category-dimensions.destroy');
         Route::post('/categorias', [AdminCategoryController::class, 'store'])->name('categories.store');
         Route::put('/categorias/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
         Route::delete('/categorias/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');

@@ -30,7 +30,14 @@
                 </span>
                 @endif
 
-                <x-status-badge :status="$idea->status" />
+                @if($idea->isPublished())
+                    <x-status-badge :status="$idea->status" />
+                @else
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold border border-tertiary/15">
+                        <span class="material-symbols-outlined text-xs">person</span>
+                        Visible en perfil
+                    </span>
+                @endif
             </div>
         </div>
 
@@ -45,6 +52,13 @@
         <p class="text-xs sm:text-sm text-on-surface-variant line-clamp-3 leading-relaxed mb-4">
             {{ $idea->summary ?: Str::limit(strip_tags($idea->description), 140) }}
         </p>
+
+        @if(($idea->published_children_count ?? 0) > 0)
+        <div class="mb-4 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-tertiary/10 border border-tertiary/15 text-tertiary text-xs font-bold">
+            <span class="material-symbols-outlined text-base">account_tree</span>
+            <span>{{ $idea->published_children_count }} {{ $idea->published_children_count === 1 ? 'microidea trazable' : 'microideas trazables' }}</span>
+        </div>
+        @endif
 
         <!-- Tags List -->
         @if($idea->tags->isNotEmpty())
@@ -86,6 +100,10 @@
                 <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">thumb_up</span>
                 <span>{{ $idea->votes_count }}</span>
             </div>
+
+            @if($idea->hasPreliminaryRatings())
+            <span class="hidden lg:inline text-[9px] font-bold uppercase text-tertiary" title="Valoración previa a la publicación comunitaria">Preliminar</span>
+            @endif
 
             <!-- Comments -->
             <div class="flex items-center gap-1 hover:text-on-surface transition-colors" title="{{ $idea->comments_count ?? $idea->comments->count() }} comentarios">

@@ -13,6 +13,7 @@ class IdeaStatusHistory extends Model
     protected $fillable = [
         'idea_id',
         'user_id',
+        'workflow',
         'old_status',
         'new_status',
         'comment',
@@ -30,22 +31,21 @@ class IdeaStatusHistory extends Model
 
     public function getOldStatusLabelAttribute(): ?string
     {
-        if (!$this->old_status) return null;
-        return match ($this->old_status) {
-            'nueva' => 'Nueva',
-            'en_revision' => 'En revisión',
-            'priorizada' => 'Priorizada',
-            'en_desarrollo' => 'En desarrollo',
-            'implementada' => 'Implementada',
-            'descartada' => 'Descartada',
-            'archivada' => 'Archivada',
-            default => ucfirst($this->old_status),
-        };
+        if (! $this->old_status) {
+            return null;
+        }
+
+        return $this->statusLabel($this->old_status);
     }
 
     public function getNewStatusLabelAttribute(): string
     {
-        return match ($this->new_status) {
+        return $this->statusLabel($this->new_status);
+    }
+
+    private function statusLabel(string $status): string
+    {
+        return match ($status) {
             'nueva' => 'Nueva',
             'en_revision' => 'En revisión',
             'priorizada' => 'Priorizada',
@@ -53,7 +53,21 @@ class IdeaStatusHistory extends Model
             'implementada' => 'Implementada',
             'descartada' => 'Descartada',
             'archivada' => 'Archivada',
-            default => ucfirst($this->new_status),
+            'capturada' => 'Capturada',
+            'en_clarificacion' => 'En clarificación',
+            'lista_para_actuar' => 'Lista para actuar',
+            'en_ejecucion' => 'En ejecución',
+            'completada' => 'Completada',
+            'en_pausa' => 'En pausa',
+            'not_submitted' => 'No enviada',
+            'pending_review' => 'Pendiente de revisión',
+            'changes_requested' => 'Cambios solicitados',
+            'published' => 'Publicada',
+            'rejected' => 'Rechazada',
+            'unpublished' => 'Retirada de comunidad',
+            'only_me' => 'Sólo yo',
+            'profile' => 'Visible en mi perfil',
+            default => ucfirst(str_replace('_', ' ', $status)),
         };
     }
 }

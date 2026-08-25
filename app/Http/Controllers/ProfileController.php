@@ -17,9 +17,9 @@ class ProfileController extends Controller
         $targetUser = $user && $user->exists ? $user : auth()->user();
 
         // User stats
-        $ideasCount = $targetUser->ideas()->where('visibility', 'public')->count();
-        $implementedCount = $targetUser->ideas()->where('status', 'implementada')->count();
-        $totalVotesReceived = $targetUser->ideas()->sum('votes_count');
+        $ideasCount = $targetUser->ideas()->visibleOnProfile()->count();
+        $implementedCount = $targetUser->ideas()->communityPublished()->where('status', 'implementada')->count();
+        $totalVotesReceived = $targetUser->ideas()->visibleOnProfile()->sum('votes_count');
         $ratingsGivenCount = $targetUser->ratings()->count();
 
         // Participation Score (calculated)
@@ -28,7 +28,21 @@ class ProfileController extends Controller
         // Recent public contributions
         $contributions = $targetUser->ideas()
             ->with(['category', 'tags'])
-            ->where('visibility', 'public')
+            ->withCount([
+                'comments',
+                'children as published_children_count' => function ($children): void {
+                    $children->where(function ($visible): void {
+                        $visible
+                            ->where('publication_status', 'published')
+                            ->orWhere(function ($shared): void {
+                                $shared
+                                    ->where('access_scope', 'profile')
+                                    ->where('visibility', '!=', 'draft');
+                            });
+                    });
+                },
+            ])
+            ->visibleOnProfile()
             ->latest()
             ->take(8)
             ->get();
@@ -68,31 +82,31 @@ class ProfileController extends Controller
             'avatar_cropped' => ['nullable', 'string'],
         ]);
 
-        if (!empty($validated['regional_id'])) {
+        if (! empty($validated['regional_id'])) {
             $reg = Regional::find($validated['regional_id']);
             $validated['regional'] = $reg?->full_name;
         }
 
         // Process cropped avatar from Interactive Canvas
-        if (!empty($request->avatar_cropped) && str_starts_with($request->avatar_cropped, 'data:image')) {
+        if (! empty($request->avatar_cropped) && str_starts_with($request->avatar_cropped, 'data:image')) {
             $imageData = $request->avatar_cropped;
-            @list($type, $data) = explode(';', $imageData);
-            @list(, $data)      = explode(',', $data);
-            
+            @[$type, $data] = explode(';', $imageData);
+            @[, $data] = explode(',', $data);
+
             if ($data) {
                 $decoded = base64_decode($data);
                 if ($decoded !== false) {
-                    $filename = 'avatars/' . Str::random(40) . '.jpg';
+                    $filename = 'avatars/'.Str::random(40).'.jpg';
                     Storage::disk('public')->put($filename, $decoded);
 
-                    if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
+                    if ($user->avatar && ! str_starts_with($user->avatar, 'http')) {
                         Storage::disk('public')->delete($user->avatar);
                     }
                     $validated['avatar'] = $filename;
                 }
             }
         } elseif ($request->hasFile('avatar')) {
-            if ($user->avatar && !str_starts_with($user->avatar, 'http')) {
+            if ($user->avatar && ! str_starts_with($user->avatar, 'http')) {
                 Storage::disk('public')->delete($user->avatar);
             }
             $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');

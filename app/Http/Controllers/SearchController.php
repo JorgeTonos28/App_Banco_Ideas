@@ -25,10 +25,10 @@ class SearchController extends Controller
         }
 
         $ideas = Idea::with(['user', 'category'])
-            ->where('visibility', 'public')
+            ->published()
             ->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('summary', 'like', "%{$query}%");
+                    ->orWhere('summary', 'like', "%{$query}%");
             })
             ->take(5)
             ->get()
@@ -44,8 +44,8 @@ class SearchController extends Controller
         $people = User::where('is_active', true)
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('job_title', 'like', "%{$query}%")
-                  ->orWhere('department', 'like', "%{$query}%");
+                    ->orWhere('job_title', 'like', "%{$query}%")
+                    ->orWhere('department', 'like', "%{$query}%");
             })
             ->take(5)
             ->get()

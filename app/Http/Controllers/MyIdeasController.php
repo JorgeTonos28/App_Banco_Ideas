@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Idea;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -14,22 +13,56 @@ class MyIdeasController extends Controller
 
         // Metrics
         $totalIdeas = $user->ideas()->count();
-        $inReviewCount = $user->ideas()->where('status', 'en_revision')->count();
-        $prioritizedCount = $user->ideas()->where('status', 'priorizada')->count();
-        $inDevelopmentCount = $user->ideas()->where('status', 'en_desarrollo')->count();
-        $implementedCount = $user->ideas()->where('status', 'implementada')->count();
+        $inReviewCount = $user->ideas()->where('publication_status', 'pending_review')->count();
+        $prioritizedCount = $user->ideas()->published()->where('status', 'priorizada')->count();
+        $inDevelopmentCount = $user->ideas()->where(function ($query) {
+            $query->where(fn ($published) => $published->published()->where('status', 'en_desarrollo'))
+                ->orWhere(fn ($private) => $private->where('visibility', 'private')->where('workspace_status', 'en_ejecucion'));
+        })->count();
+        $implementedCount = $user->ideas()->where(function ($query) {
+            $query->where(fn ($published) => $published->published()->where('status', 'implementada'))
+                ->orWhere(fn ($private) => $private->where('visibility', 'private')->where('workspace_status', 'completada'));
+        })->count();
 
-        $activeTab = $request->input('tab', 'publicadas');
+        $activeTab = $request->input('tab', 'privadas');
 
         $ideasQuery = match ($activeTab) {
             'borradores' => $user->ideas()->where('visibility', 'draft')->latest(),
-            'implementadas' => $user->ideas()->where('status', 'implementada')->latest(),
-            'archivadas' => $user->ideas()->whereIn('status', ['archivada', 'descartada'])->latest(),
+            'implementadas' => $user->ideas()->where(function ($query) {
+                $query->where(fn ($published) => $published->published()->where('status', 'implementada'))
+                    ->orWhere(fn ($private) => $private->where('visibility', 'private')->where('workspace_status', 'completada'));
+            })->latest(),
+            'archivadas' => $user->ideas()->where(function ($query) {
+                $query->where(fn ($published) => $published->published()->whereIn('status', ['archivada', 'descartada']))
+                    ->orWhere(fn ($private) => $private->whereIn('workspace_status', ['archivada', 'descartada']));
+            })->latest(),
             'guardadas' => $user->favoriteIdeas()->with(['user', 'category', 'tags'])->latest(),
-            default => $user->ideas()->where('visibility', 'public')->whereNotIn('status', ['archivada', 'descartada'])->latest(), // 'publicadas'
+            'publicadas' => $user->ideas()->published()->whereNotIn('status', ['archivada', 'descartada'])->latest(),
+            default => $user->ideas()
+                ->where('visibility', 'private')
+                ->whereNotIn('workspace_status', ['archivada', 'descartada'])
+                ->latest(),
         };
 
+        $treeIdeasQuery = clone $ideasQuery;
         $ideas = $ideasQuery->with(['category', 'tags'])->paginate(8)->withQueryString();
+
+        $treeIdeas = null;
+        $treeRoots = collect();
+        $treeByParent = collect();
+        $viewMode = $request->input('vista', $activeTab === 'guardadas' ? 'cards' : 'tree');
+
+        if ($viewMode === 'tree' && $activeTab !== 'guardadas') {
+            $treeIdeas = $treeIdeasQuery
+                ->reorder('title')
+                ->with(['category', 'parentIdea'])
+                ->withCount('children')
+                ->get();
+
+            $treeIds = $treeIdeas->modelKeys();
+            $treeRoots = $treeIdeas->filter(fn ($idea) => ! $idea->parent_idea_id || ! in_array($idea->parent_idea_id, $treeIds, true));
+            $treeByParent = $treeIdeas->whereNotNull('parent_idea_id')->groupBy('parent_idea_id');
+        }
 
         return view('my_ideas.index', compact(
             'totalIdeas',
@@ -38,7 +71,10 @@ class MyIdeasController extends Controller
             'inDevelopmentCount',
             'implementedCount',
             'activeTab',
-            'ideas'
+            'ideas',
+            'viewMode',
+            'treeRoots',
+            'treeByParent'
         ));
     }
 }

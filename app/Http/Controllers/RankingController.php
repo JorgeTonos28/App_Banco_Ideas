@@ -13,7 +13,7 @@ class RankingController extends Controller
     public function index(Request $request): View
     {
         $query = Idea::with(['user', 'category'])
-            ->where('visibility', 'public');
+            ->communityPublished();
 
         // Timeframe filter
         $periodo = $request->input('periodo', 'historico');

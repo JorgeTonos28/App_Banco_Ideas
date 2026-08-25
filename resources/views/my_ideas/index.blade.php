@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <h1 class="font-headline font-extrabold text-2xl sm:text-3xl text-on-surface">Mis Ideas</h1>
-            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Administra tus propuestas, borradores y sigue su ciclo de evolución</p>
+            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">Organiza tus ideas, decide cuáles compartir en tu perfil y cuáles enviar a la comunidad</p>
         </div>
 
         <a href="{{ route('ideas.create') }}" 
@@ -51,6 +51,7 @@
     <div class="flex items-center gap-2 border-b border-surface-container-high overflow-x-auto no-scrollbar pb-px">
         @php
         $tabs = [
+            'privadas' => 'Espacio personal',
             'publicadas' => 'Publicadas',
             'borradores' => 'Borradores',
             'implementadas' => 'Implementadas',
@@ -67,15 +68,46 @@
         @endforeach
     </div>
 
+    @if($activeTab !== 'guardadas')
+    <div class="flex items-center justify-between gap-3">
+        <div class="text-xs text-on-surface-variant">
+            <span class="font-bold text-on-surface">Vista de estructura</span>
+            <span class="hidden sm:inline"> para comprender cómo se agrupan y evolucionan tus ideas.</span>
+        </div>
+        <div class="inline-flex items-center rounded-xl bg-surface-container p-1 border border-surface-container-high">
+            <a href="{{ request()->fullUrlWithQuery(['vista' => 'tree']) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold {{ $viewMode === 'tree' ? 'bg-surface-container-lowest text-primary shadow-2xs' : 'text-on-surface-variant' }}">
+                <span class="material-symbols-outlined text-base">account_tree</span>
+                Árbol
+            </a>
+            <a href="{{ request()->fullUrlWithQuery(['vista' => 'cards']) }}"
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold {{ $viewMode === 'cards' ? 'bg-surface-container-lowest text-primary shadow-2xs' : 'text-on-surface-variant' }}">
+                <span class="material-symbols-outlined text-base">grid_view</span>
+                Tarjetas
+            </a>
+        </div>
+    </div>
+    @endif
+
     <!-- Ideas List -->
-    @if($ideas->isNotEmpty())
+    @if($viewMode === 'tree' && $activeTab !== 'guardadas' && $treeRoots->isNotEmpty())
+    <div class="space-y-4">
+        @foreach($treeRoots as $rootIdea)
+            <x-idea-tree-node :node="$rootIdea" :tree-by-parent="$treeByParent" />
+        @endforeach
+    </div>
+    @elseif($ideas->isNotEmpty())
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @foreach($ideas as $idea)
         <div class="bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high/80 shadow-2xs flex flex-col justify-between group">
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-semibold text-primary font-mono-tech">{{ $idea->category?->name ?: 'General' }}</span>
-                    <x-status-badge :status="$idea->status" />
+                    @if($idea->isPublished())
+                        <x-status-badge :status="$idea->status" />
+                    @else
+                        <span class="px-2 py-1 rounded-lg bg-surface-container text-[10px] font-bold text-on-surface-variant">{{ $idea->workspace_status_label }}</span>
+                    @endif
                 </div>
 
                 <a href="{{ route('ideas.show', $idea->slug) }}" class="block group-hover:text-primary transition-colors">
@@ -90,13 +122,17 @@
                     <span>★ {{ number_format($idea->average_rating, 1) }}</span>
                     <span>•</span>
                     <span>{{ $idea->votes_count }} votos</span>
+                    <span>•</span>
+                    <span>{{ $idea->isPublished() ? 'Comunidad' : $idea->access_scope_label }}</span>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    @if($idea->isEditableBy(auth()->user()))
+                    @can('update', $idea)
                     <a href="{{ route('ideas.edit', $idea->id) }}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors" title="Editar idea">
                         <span class="material-symbols-outlined text-base">edit</span>
                     </a>
+                    @endcan
+                    @can('delete', $idea)
                     <form action="{{ route('ideas.destroy', $idea->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar esta propuesta?');" class="inline">
                         @csrf
                         @method('DELETE')
@@ -104,7 +140,7 @@
                             <span class="material-symbols-outlined text-base">delete</span>
                         </button>
                     </form>
-                    @endif
+                    @endcan
                     <a href="{{ route('ideas.show', $idea->slug) }}" class="p-1.5 rounded-lg bg-primary-fixed text-primary hover:bg-primary-container hover:text-white transition-colors" title="Ver detalle">
                         <span class="material-symbols-outlined text-base">visibility</span>
                     </a>
@@ -114,9 +150,11 @@
         @endforeach
     </div>
 
+    @if($viewMode !== 'tree' || $activeTab === 'guardadas')
     <div class="pt-4">
         {{ $ideas->links() }}
     </div>
+    @endif
     @else
     <!-- Empty State -->
     <div class="bg-surface-container-lowest rounded-3xl p-12 text-center border border-surface-container-high max-w-md mx-auto my-8">

@@ -15,7 +15,9 @@ class AdminTagTest extends TestCase
     use RefreshDatabase;
 
     protected User $admin;
+
     protected User $regularUser;
+
     protected Category $category;
 
     protected function setUp(): void
@@ -64,7 +66,8 @@ class AdminTagTest extends TestCase
     public function test_regular_user_cannot_access_admin_tags(): void
     {
         $response = $this->actingAs($this->regularUser)->get(route('admin.tags.index'));
-        $response->assertStatus(403);
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('error');
     }
 
     public function test_admin_can_update_and_rename_tag(): void

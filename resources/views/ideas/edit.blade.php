@@ -397,8 +397,10 @@
                           class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y">{{ old('problem_opportunity', $idea->problem_opportunity) }}</textarea>
             </div>
 
-            <!-- Category & Visibility -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <x-classification-guidance />
+
+            <!-- Category, readiness & access -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div>
                     <label for="category_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                         Categoría <span class="text-error">*</span>
@@ -418,16 +420,68 @@
 
                 <div>
                     <label for="visibility" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
-                        Visibilidad <span class="text-error">*</span>
+                        Estado de preparación <span class="text-error">*</span>
                     </label>
-                    <select id="visibility" 
-                            name="visibility" 
+                    @if($idea->isPublished())
+                        <input type="hidden" name="visibility" value="public">
+                        <div class="w-full bg-primary-fixed/50 text-on-primary-fixed-variant text-sm rounded-2xl p-3.5 border border-primary/20">
+                            Completa · publicada por Innovación
+                        </div>
+                    @else
+                        <select id="visibility"
+                                name="visibility"
+                                class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="private" {{ old('visibility', $idea->visibility) == 'private' ? 'selected' : '' }}>Idea completa</option>
+                            <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
+                        </select>
+                    @endif
+                </div>
+
+                <div>
+                    <label for="access_scope" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                        Quién puede verla <span class="text-error">*</span>
+                    </label>
+                    <select id="access_scope"
+                            name="access_scope"
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="public" {{ old('visibility', $idea->visibility) == 'public' ? 'selected' : '' }}>Visible para toda la comunidad</option>
-                        <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Guardar como borrador privado</option>
+                        <option value="only_me" {{ old('access_scope', $idea->access_scope) === 'only_me' ? 'selected' : '' }}>Sólo yo</option>
+                        <option value="profile" {{ old('access_scope', $idea->access_scope) === 'profile' ? 'selected' : '' }}>Visible en mi perfil</option>
                     </select>
+                    <p class="mt-1.5 text-[11px] text-on-surface-variant">
+                        {{ $idea->isPublished() ? 'Se aplicará si la idea se retira de Comunidad.' : 'No modifica el estado de revisión editorial.' }}
+                    </p>
+                    @error('access_scope')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
+
+            @unless($idea->isPublished())
+            <div>
+                <label for="workspace_status" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                    Estado de trabajo privado
+                </label>
+                <select id="workspace_status" name="workspace_status" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    @foreach(['capturada' => 'Capturada', 'en_clarificacion' => 'En clarificación', 'lista_para_actuar' => 'Lista para actuar', 'en_ejecucion' => 'En ejecución', 'completada' => 'Completada', 'en_pausa' => 'En pausa', 'descartada' => 'Descartada', 'archivada' => 'Archivada'] as $value => $label)
+                        <option value="{{ $value }}" {{ old('workspace_status', $idea->workspace_status) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @endunless
+
+            <div>
+                <label for="parent_idea_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                    Idea madre <span class="text-outline normal-case tracking-normal">(opcional)</span>
+                </label>
+                <select id="parent_idea_id" name="parent_idea_id" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    <option value="">Mantener como idea independiente</option>
+                    @foreach($parentCandidates as $candidate)
+                        <option value="{{ $candidate->id }}" {{ (string) old('parent_idea_id', $idea->parent_idea_id) === (string) $candidate->id ? 'selected' : '' }}>{{ $candidate->title }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1.5 text-[11px] text-on-surface-variant">La jerarquía puede tener varios niveles y se valida para impedir ciclos.</p>
+                @error('parent_idea_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+            </div>
+
+            <x-idea-classification-fields :dimensions="$categoryDimensions" :selected="$selectedClassifications" />
 
             <!-- Tags Input with Chips, In-place Editing, Real-time Similarity Detection & Modal Explorer -->
             <div>

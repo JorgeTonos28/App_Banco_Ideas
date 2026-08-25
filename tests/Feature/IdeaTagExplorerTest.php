@@ -15,6 +15,7 @@ class IdeaTagExplorerTest extends TestCase
     use RefreshDatabase;
 
     protected User $user;
+
     protected Category $category;
 
     protected function setUp(): void
@@ -65,7 +66,7 @@ class IdeaTagExplorerTest extends TestCase
             'description' => 'Proponemos instalar sensores inteligentes en talleres y aulas técnicas.',
             'problem_opportunity' => 'Falta de visibilidad de uso de equipos.',
             'category_id' => $this->category->id,
-            'visibility' => 'public',
+            'visibility' => 'private',
             'tags' => ['Automatización', 'Sensores IoT'],
         ];
 
@@ -94,7 +95,7 @@ class IdeaTagExplorerTest extends TestCase
             'description' => "Primera línea de la propuesta.\nSegunda línea con \"comillas\" y 'apóstrofes'.\nTercera línea.",
             'problem_opportunity' => "Oportunidad con saltos\nde línea.",
             'status' => 'nueva',
-            'visibility' => 'public',
+            'visibility' => 'private',
         ]);
 
         $tag = Tag::create(['name' => 'E-learning', 'slug' => 'e-learning']);
@@ -106,7 +107,7 @@ class IdeaTagExplorerTest extends TestCase
         $response->assertSee('Explorador de Etiquetas');
         $response->assertSee('Ver todas las etiquetas');
         $response->assertSee('E-learning');
-        $response->assertSee("Plataforma d&#039;Innovación y &#039;Talleres&#039; INFOTEP", false);
+        $response->assertSee('Plataforma d&#039;Innovación y &#039;Talleres&#039; INFOTEP', false);
     }
 
     public function test_user_can_update_existing_idea_tags(): void
@@ -147,7 +148,7 @@ class IdeaTagExplorerTest extends TestCase
             'title' => 'Gestión Automatizada con IA',
             'description' => 'Descripción con múltiples etiquetas separadas por comas.',
             'category_id' => $this->category->id,
-            'visibility' => 'public',
+            'visibility' => 'private',
             'tags' => ['Inteligencia Artificial, Robótica, Machine Learning', '#BigData, Ciberseguridad'],
         ];
 
@@ -162,37 +163,5 @@ class IdeaTagExplorerTest extends TestCase
         $this->assertTrue($idea->tags->contains('name', 'Machine Learning'));
         $this->assertTrue($idea->tags->contains('name', 'BigData'));
         $this->assertTrue($idea->tags->contains('name', 'Ciberseguridad'));
-    }
-
-    public function test_user_can_update_existing_idea_tags(): void
-    {
-        $idea = Idea::create([
-            'user_id' => $this->user->id,
-            'category_id' => $this->category->id,
-            'title' => 'Idea en Evolución',
-            'summary' => 'Resumen',
-            'description' => 'Descripción inicial de la propuesta.',
-            'status' => 'en_revision',
-            'visibility' => 'public',
-        ]);
-
-        $initialTag = Tag::create(['name' => 'Inicial', 'slug' => 'inicial']);
-        $idea->tags()->attach($initialTag->id);
-
-        $payload = [
-            'title' => 'Idea en Evolución Actualizada',
-            'description' => 'Descripción mejorada con nuevas etiquetas.',
-            'category_id' => $this->category->id,
-            'visibility' => 'public',
-            'tags' => ['Inicial', 'NuevaEtiqueta1', 'NuevaEtiqueta2'],
-        ];
-
-        $response = $this->actingAs($this->user)->put(route('ideas.update', $idea->id), $payload);
-
-        $response->assertRedirect(route('ideas.show', $idea->slug));
-        $idea->refresh();
-        $this->assertCount(3, $idea->tags);
-        $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta1'));
-        $this->assertTrue($idea->tags->contains('name', 'NuevaEtiqueta2'));
     }
 }
