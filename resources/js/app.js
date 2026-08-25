@@ -27,6 +27,51 @@ Alpine.data('globalSearch', () => ({
     }
 }));
 
+const createIdeaTreeState = (branchTerms = []) => ({
+    query: '',
+    branchTerms,
+
+    normalizedQuery() {
+        return this.normalize(this.query);
+    },
+
+    normalize(value) {
+        return (value || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '');
+    },
+
+    branchMatches(searchTerms) {
+        const query = this.normalizedQuery();
+        return query === '' || (searchTerms || '').includes(query);
+    },
+
+    hasMatches() {
+        const query = this.normalizedQuery();
+        return query === '' || this.branchTerms.some((terms) => (terms || '').includes(query));
+    }
+});
+
+Alpine.data('ideaTree', createIdeaTreeState);
+
+Alpine.data('ideaParentPicker', (branchTerms, selectedId, selectedTitle, independentLabel) => ({
+    ...createIdeaTreeState(branchTerms),
+    open: false,
+    selectedId: selectedId ? selectedId.toString() : '',
+    selectedTitle: selectedTitle || independentLabel,
+
+    choose(id, title) {
+        this.selectedId = id ? id.toString() : '';
+        this.selectedTitle = title;
+        this.open = false;
+        this.query = '';
+        this.$dispatch('parent-idea-changed', { id: this.selectedId });
+    }
+}));
+
 // Star Rating Component
 Alpine.data('starRating', (ideaId, currentRating = 0, currentAverage = 0, currentVotes = 0) => ({
     ideaId: ideaId,

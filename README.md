@@ -39,7 +39,8 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 2. Descubrimiento y Colaboración
 - **Explorador con Filtros Multifactor**: Búsqueda global, filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
-- **Navegación estructural**: “Mis Ideas” dispone de vista de árbol y tarjetas; cada ficha muestra madre, subideas, clasificaciones y relaciones verificadas.
+- **Navegación estructural**: “Mis Ideas”, la trazabilidad de cada ficha y el selector de idea madre usan árboles cerrados al iniciar. Cada nivel se abre bajo demanda y el buscador ignora espacios, consulta título, descripción, problema, categoría y etiquetas, y conserva las ramas que contienen coincidencias.
+- **Creación contextual de microideas**: Los nodos propios muestran una acción para agregar una hija. La ficha de una idea permite crear una hija o agregar/cambiar su madre mediante un modal que sólo contiene ideas del usuario y excluye descendientes inválidos.
 - **Valoración preliminar y comunitaria (1 a 5 estrellas)**: Una idea madre visible en el perfil puede recibir votos antes de publicarse, con actualización inmediata del promedio y sin autovoto. Las microideas nunca reciben votos independientes.
 - **Continuidad de las valoraciones**: Los votos preliminares se conservan al publicar la idea, pero no activan Innovation Score ni participación en rankings antes de la aprobación editorial.
 - **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".

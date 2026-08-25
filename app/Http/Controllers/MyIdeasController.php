@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\IdeaTreeService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class MyIdeasController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, IdeaTreeService $treeService): View
     {
         $user = auth()->user();
 
@@ -50,18 +51,20 @@ class MyIdeasController extends Controller
         $treeIdeas = null;
         $treeRoots = collect();
         $treeByParent = collect();
+        $treeSearchTerms = collect();
         $viewMode = $request->input('vista', $activeTab === 'guardadas' ? 'cards' : 'tree');
 
         if ($viewMode === 'tree' && $activeTab !== 'guardadas') {
             $treeIdeas = $treeIdeasQuery
                 ->reorder('title')
-                ->with(['category', 'parentIdea'])
+                ->with(['category', 'parentIdea', 'tags'])
                 ->withCount('children')
                 ->get();
 
-            $treeIds = $treeIdeas->modelKeys();
-            $treeRoots = $treeIdeas->filter(fn ($idea) => ! $idea->parent_idea_id || ! in_array($idea->parent_idea_id, $treeIds, true));
-            $treeByParent = $treeIdeas->whereNotNull('parent_idea_id')->groupBy('parent_idea_id');
+            $tree = $treeService->prepare($treeIdeas);
+            $treeRoots = $tree['roots'];
+            $treeByParent = $tree['byParent'];
+            $treeSearchTerms = $tree['searchTerms'];
         }
 
         return view('my_ideas.index', compact(
@@ -74,7 +77,8 @@ class MyIdeasController extends Controller
             'ideas',
             'viewMode',
             'treeRoots',
-            'treeByParent'
+            'treeByParent',
+            'treeSearchTerms'
         ));
     }
 }

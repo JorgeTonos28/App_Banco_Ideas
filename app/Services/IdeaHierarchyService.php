@@ -5,11 +5,37 @@ namespace App\Services;
 use App\Models\Idea;
 use App\Models\IdeaHierarchyHistory;
 use App\Models\User;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class IdeaHierarchyService
 {
+    public function descendantIds(Idea $idea): Collection
+    {
+        $ids = collect();
+        $pendingIds = collect([$idea->id]);
+        $visited = [$idea->id => true];
+
+        while ($pendingIds->isNotEmpty()) {
+            $children = Idea::query()
+                ->whereIn('parent_idea_id', $pendingIds)
+                ->pluck('id');
+            $unvisitedIds = $children
+                ->reject(fn (int $id) => isset($visited[$id]))
+                ->values();
+
+            foreach ($unvisitedIds as $id) {
+                $visited[$id] = true;
+            }
+
+            $ids = $ids->concat($unvisitedIds);
+            $pendingIds = $unvisitedIds;
+        }
+
+        return $ids->unique()->values();
+    }
+
     public function move(Idea $idea, ?Idea $parent, User $actor, ?string $note = null): Idea
     {
         $this->validateMove($idea, $parent, $actor);

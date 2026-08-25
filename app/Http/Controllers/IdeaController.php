@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\IdeaClassificationService;
 use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
+use App\Services\IdeaTreeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -331,8 +332,11 @@ class IdeaController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $slug): View
-    {
+    public function show(
+        string $slug,
+        IdeaHierarchyService $hierarchyService,
+        IdeaTreeService $treeService
+    ): View {
         $idea = Idea::with([
             'user',
             'category',
@@ -397,9 +401,10 @@ class IdeaController extends Controller
         $pendingRelationReviews = collect();
 
         if ($canOrganize) {
+            $excludedParentIds = $hierarchyService->descendantIds($idea)->push($idea->id);
             $parentCandidates = Idea::query()
                 ->where('user_id', $viewer->id)
-                ->whereKeyNot($idea->id)
+                ->whereNotIn('id', $excludedParentIds)
                 ->orderBy('title')
                 ->limit(250)
                 ->with(['category', 'tags'])
@@ -425,37 +430,34 @@ class IdeaController extends Controller
                 ->get();
         }
 
-        $traceIdeas = collect([$idea]);
+        $traceRoot = $idea->rootIdea();
+        $traceRoot->loadMissing(['category', 'tags']);
+        $traceIdeas = collect([$traceRoot]);
+        $pendingParentIds = collect([$traceRoot->id]);
+        $visitedIds = [$traceRoot->id => true];
 
-        if (! $idea->parent_idea_id) {
-            $pendingParentIds = collect([$idea->id]);
-            $visitedIds = [$idea->id => true];
+        while ($pendingParentIds->isNotEmpty() && $traceIdeas->count() < 250) {
+            $remainingNodes = 250 - $traceIdeas->count();
+            $level = Idea::with(['category', 'tags'])
+                ->whereIn('parent_idea_id', $pendingParentIds)
+                ->orderBy('title')
+                ->limit($remainingNodes)
+                ->get();
 
-            while ($pendingParentIds->isNotEmpty() && $traceIdeas->count() < 250) {
-                $remainingNodes = 250 - $traceIdeas->count();
-                $level = Idea::with('category')
-                    ->whereIn('parent_idea_id', $pendingParentIds)
-                    ->orderBy('title')
-                    ->limit($remainingNodes)
-                    ->get();
+            $unvisitedLevel = $level->reject(fn (Idea $node) => isset($visitedIds[$node->id]));
 
-                $unvisitedLevel = $level->reject(fn (Idea $node) => isset($visitedIds[$node->id]));
-
-                foreach ($unvisitedLevel as $node) {
-                    $visitedIds[$node->id] = true;
-                }
-
-                $pendingParentIds = $unvisitedLevel->pluck('id');
-
-                $traceIdeas = $traceIdeas->concat(
-                    $unvisitedLevel->filter(fn (Idea $node) => $viewer?->can('view', $node))
-                );
+            foreach ($unvisitedLevel as $node) {
+                $visitedIds[$node->id] = true;
             }
+
+            $pendingParentIds = $unvisitedLevel->pluck('id');
+
+            $traceIdeas = $traceIdeas->concat(
+                $unvisitedLevel->filter(fn (Idea $node) => $viewer?->can('view', $node))
+            );
         }
 
-        $traceTreeByParent = $traceIdeas
-            ->whereNotNull('parent_idea_id')
-            ->groupBy('parent_idea_id');
+        $traceTree = $treeService->prepare($traceIdeas);
 
         return view('ideas.show', compact(
             'idea',
@@ -465,7 +467,8 @@ class IdeaController extends Controller
             'relationCandidates',
             'pendingRelationReviews',
             'traceIdeas',
-            'traceTreeByParent'
+            'traceRoot',
+            'traceTree'
         ));
     }
 
@@ -475,7 +478,8 @@ class IdeaController extends Controller
     public function edit(
         Idea $idea,
         IdeaClassificationService $classificationService,
-        IdeaCommunityService $communityService
+        IdeaCommunityService $communityService,
+        IdeaHierarchyService $hierarchyService
     ): View {
         $this->authorize('update', $idea);
 
@@ -485,8 +489,9 @@ class IdeaController extends Controller
             ->orderBy('name')
             ->get();
         $categoryDimensions = $this->activeCategoryDimensions();
+        $excludedParentIds = $hierarchyService->descendantIds($idea)->push($idea->id);
         $parentCandidates = auth()->user()->ideas()
-            ->whereKeyNot($idea->id)
+            ->whereNotIn('id', $excludedParentIds)
             ->orderBy('title')
             ->with(['category', 'tags'])
             ->get();

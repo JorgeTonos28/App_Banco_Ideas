@@ -1,16 +1,21 @@
-@props(['node', 'treeByParent', 'level' => 0])
+@props(['node', 'treeByParent', 'searchTerms', 'level' => 0, 'currentIdeaId' => null])
 
 @php
     $children = $treeByParent->get($node->id, collect());
     $hasChildren = $children->isNotEmpty();
+    $branchTerms = $searchTerms->get($node->id, '');
+    $isCurrent = (int) $currentIdeaId === (int) $node->id;
 @endphp
 
-<div class="{{ $level > 0 ? 'ml-4 sm:ml-8 border-l-2 border-primary/15 pl-3 sm:pl-5' : '' }}" x-data="{ expanded: true }">
-    <div class="bg-surface-container-lowest rounded-2xl border border-surface-container-high/80 shadow-2xs p-4 sm:p-5">
+<div class="{{ $level > 0 ? 'ml-4 sm:ml-8 border-l-2 border-primary/15 pl-3 sm:pl-5' : '' }}"
+     x-data="{ expanded: false }"
+     x-show="branchMatches(@js($branchTerms))">
+    <div class="bg-surface-container-lowest rounded-2xl border {{ $isCurrent ? 'border-primary/45 ring-2 ring-primary/10' : 'border-surface-container-high/80' }} shadow-2xs p-4 sm:p-5">
         <div class="flex items-start gap-3">
             <button type="button"
                     @if($hasChildren) @click="expanded = !expanded" @endif
                     class="mt-0.5 w-8 h-8 rounded-xl flex items-center justify-center shrink-0 {{ $hasChildren ? 'bg-primary-fixed text-primary hover:bg-primary hover:text-white' : 'bg-surface-container text-outline cursor-default' }}"
+                    :aria-expanded="{{ $hasChildren ? 'expanded.toString()' : 'false' }}"
                     aria-label="{{ $hasChildren ? 'Mostrar u ocultar ideas dependientes' : 'Idea sin dependencias' }}">
                 <span class="material-symbols-outlined text-lg" x-text="{{ $hasChildren ? "expanded ? 'expand_more' : 'chevron_right'" : "'lightbulb'" }}"></span>
             </button>
@@ -26,6 +31,10 @@
                                 </span>
                             @else
                                 <span class="text-[10px] font-mono-tech font-bold uppercase text-outline">Nivel {{ $level + 1 }}</span>
+                            @endif
+
+                            @if($isCurrent)
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold">Idea abierta</span>
                             @endif
 
                             <span class="text-[10px] font-mono-tech text-on-surface-variant">{{ $node->category?->name ?: 'Sin área' }}</span>
@@ -52,6 +61,12 @@
                             <span class="px-2 py-1 rounded-lg bg-surface-container text-[10px] font-mono-tech text-on-surface-variant">
                                 {{ $children->count() }} {{ $children->count() === 1 ? 'subidea' : 'subideas' }}
                             </span>
+                        @endif
+                        @if(auth()->id() === $node->user_id && $node->isEditableBy(auth()->user()))
+                            <a href="{{ route('ideas.create', ['parent' => $node->id]) }}" class="inline-flex items-center gap-1 rounded-lg bg-secondary-fixed/65 px-2 py-1.5 text-[10px] font-bold text-on-secondary-fixed hover:bg-secondary-container" title="Agregar una subidea">
+                                <span class="material-symbols-outlined text-base">add</span>
+                                <span class="hidden sm:inline">Hija</span>
+                            </a>
                         @endif
                         @can('update', $node)
                             <a href="{{ route('ideas.edit', $node) }}" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface" title="Editar idea">
@@ -80,9 +95,9 @@
     </div>
 
     @if($hasChildren)
-        <div x-show="expanded" class="mt-3 space-y-3">
+        <div x-show="expanded || normalizedQuery() !== ''" class="mt-3 space-y-3">
             @foreach($children as $child)
-                <x-idea-tree-node :node="$child" :tree-by-parent="$treeByParent" :level="$level + 1" />
+                <x-idea-tree-node :node="$child" :tree-by-parent="$treeByParent" :search-terms="$searchTerms" :level="$level + 1" :current-idea-id="$currentIdeaId" />
             @endforeach
         </div>
     @endif
