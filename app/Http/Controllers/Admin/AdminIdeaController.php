@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\AdminIdeaIndexRequest;
 use App\Http\Requests\Idea\AdminUpdateIdeaRequest;
 use App\Models\Category;
 use App\Models\Idea;
 use App\Models\IdeaStatusHistory;
 use App\Models\User;
+use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaClassificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,19 +19,27 @@ use Illuminate\View\View;
 
 class AdminIdeaController extends Controller
 {
-    public function index(Request $request): View
+    public function index(AdminIdeaIndexRequest $request, GlobalIdeaSearchService $ideaSearch): View
     {
+        $currentParent = $request->filled('parent')
+            ? Idea::query()->with('parentIdea')->findOrFail($request->integer('parent'))
+            : null;
+
         $query = Idea::with(['user', 'category', 'assignedTo', 'parentIdea'])
-            ->withCount('children');
+            ->withCount('children')
+            ->where('parent_idea_id', $currentParent?->id);
 
         // Search
-        if ($search = $request->input('q')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('id', $search)
-                    ->orWhereHas('user', function ($u) use ($search) {
-                        $u->where('name', 'like', "%{$search}%");
-                    });
+        if ($search = $request->string('q')->trim()->toString()) {
+            $query->where(function ($matches) use ($ideaSearch, $search): void {
+                if (ctype_digit($search)) {
+                    $matches->where('ideas.id', (int) $search);
+                }
+
+                $method = ctype_digit($search) ? 'orWhere' : 'where';
+                $matches->{$method}(function ($textMatches) use ($ideaSearch, $search): void {
+                    $ideaSearch->applyNormalizedSearch($textMatches, $search);
+                });
             });
         }
 
@@ -54,12 +64,21 @@ class AdminIdeaController extends Controller
             $query->where('assigned_to_user_id', $assignedId);
         }
 
-        $ideas = $query->latest()->paginate(15)->withQueryString();
+        $ideas = $query->orderBy('title')->paginate(15)->withQueryString();
 
-        $categories = Category::all();
-        $users = User::where('is_active', true)->get();
+        $categories = Category::orderBy('name')->get();
+        $users = User::where('is_active', true)->orderBy('name')->get();
+        $hierarchyPath = $currentParent
+            ? $currentParent->ancestors()->push($currentParent)
+            : collect();
 
-        return view('admin.ideas.index', compact('ideas', 'categories', 'users'));
+        return view('admin.ideas.index', compact(
+            'ideas',
+            'categories',
+            'users',
+            'currentParent',
+            'hierarchyPath'
+        ));
     }
 
     public function show(Idea $idea): JsonResponse

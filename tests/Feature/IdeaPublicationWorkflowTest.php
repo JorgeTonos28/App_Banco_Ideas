@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Idea;
+use App\Models\Regional;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -83,6 +84,7 @@ class IdeaPublicationWorkflowTest extends TestCase
         $idea->refresh();
 
         $this->assertSame('pending_review', $idea->publication_status);
+        $this->assertSame('only_me', $idea->pre_publication_access_scope);
         $this->assertSame('private', $idea->visibility);
         $this->assertSame($this->author->id, $idea->publication_requested_by_user_id);
         $this->assertNotNull($idea->publication_requested_at);
@@ -106,6 +108,7 @@ class IdeaPublicationWorkflowTest extends TestCase
     {
         $idea = $this->privateIdea();
         $this->actingAs($this->author)->post(route('ideas.publication.request', $idea));
+        $idea->update(['access_scope' => 'profile']);
 
         $response = $this->actingAs($this->admin)
             ->put(route('admin.ideas.publication.update', $idea), [
@@ -120,6 +123,7 @@ class IdeaPublicationWorkflowTest extends TestCase
         $this->assertSame('published', $idea->publication_status);
         $this->assertSame('standalone', $idea->community_display);
         $this->assertSame('public', $idea->visibility);
+        $this->assertSame('profile', $idea->pre_publication_access_scope);
         $this->assertSame($this->admin->id, $idea->publication_reviewed_by_user_id);
         $this->assertTrue($idea->usesCommunityLifecycle());
         $this->assertTrue(Idea::communityPublished()->whereKey($idea)->exists());
@@ -203,6 +207,92 @@ class IdeaPublicationWorkflowTest extends TestCase
 
         $this->assertTrue(Idea::published()->whereKey($child)->exists());
         $this->assertFalse(Idea::communityPublished()->whereKey($child)->exists());
+    }
+
+    public function test_reverting_a_publication_cascades_and_restores_each_previous_audience(): void
+    {
+        $unit = Regional::create([
+            'type' => 'department',
+            'code' => 'CONT',
+            'name' => 'Contabilidad',
+            'is_active' => true,
+            'order' => 1,
+        ]);
+        $root = Idea::factory()->for($this->author)->create([
+            'title' => 'Programa publicado que será revertido',
+            'visibility' => 'public',
+            'access_scope' => 'only_me',
+            'pre_publication_access_scope' => 'profile',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+        ]);
+        $child = Idea::factory()->for($this->author)->create([
+            'parent_idea_id' => $root->id,
+            'title' => 'Microidea con audiencia interna previa',
+            'visibility' => 'public',
+            'access_scope' => 'profile',
+            'pre_publication_access_scope' => 'organization',
+            'publication_status' => 'published',
+            'community_display' => 'represented_by_parent',
+        ]);
+        $child->communityUnits()->attach($unit->id, ['include_descendants' => false]);
+        $grandchild = Idea::factory()->for($this->author)->create([
+            'parent_idea_id' => $child->id,
+            'title' => 'Microidea sin audiencia histórica válida',
+            'visibility' => 'public',
+            'access_scope' => 'profile',
+            'pre_publication_access_scope' => null,
+            'publication_status' => 'published',
+            'community_display' => 'represented_by_parent',
+        ]);
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $root), [
+                'publication_status' => 'unpublished',
+                'publication_notes' => 'Se devuelve al espacio contextual para una nueva revisión.',
+            ])
+            ->assertRedirect()
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('profile', $root->fresh()->access_scope);
+        $this->assertSame('organization', $child->fresh()->access_scope);
+        $this->assertSame('only_me', $grandchild->fresh()->access_scope);
+
+        foreach ([$root, $child, $grandchild] as $idea) {
+            $idea->refresh();
+            $this->assertSame('unpublished', $idea->publication_status);
+            $this->assertSame('hidden', $idea->community_display);
+            $this->assertSame('private', $idea->visibility);
+            $this->assertDatabaseHas('idea_status_histories', [
+                'idea_id' => $idea->id,
+                'workflow' => 'publication',
+                'old_status' => 'published',
+                'new_status' => 'unpublished',
+            ]);
+        }
+
+        $this->assertDatabaseHas('idea_community_shares', [
+            'idea_id' => $child->id,
+            'organizational_unit_id' => $unit->id,
+        ]);
+        $this->assertFalse(Idea::published()->whereKey([$root->id, $child->id, $grandchild->id])->exists());
+    }
+
+    public function test_unpublish_decision_is_only_available_for_published_ideas(): void
+    {
+        $idea = $this->privateIdea();
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $idea), [
+                'publication_status' => 'unpublished',
+            ])
+            ->assertSessionHasErrors('publication_status');
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.ideas.index'))
+            ->assertOk()
+            ->assertSee('Revertir publicación general')
+            ->assertSee('retirará también todas las subideas publicadas');
     }
 
     public function test_private_workspace_status_changes_without_advancing_community_lifecycle(): void

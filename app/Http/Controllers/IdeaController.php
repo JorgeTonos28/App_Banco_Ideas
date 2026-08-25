@@ -13,6 +13,7 @@ use App\Models\IdeaRating;
 use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaClassificationService;
 use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
@@ -32,7 +33,7 @@ class IdeaController extends Controller
     /**
      * Display a listing of the resource (Explorar Ideas).
      */
-    public function index(Request $request): View
+    public function index(Request $request, GlobalIdeaSearchService $ideaSearch): View
     {
         $query = Idea::with(['user', 'category', 'tags'])
             ->withCount([
@@ -41,16 +42,8 @@ class IdeaController extends Controller
             ->communityPublished();
 
         // Search
-        if ($search = $request->input('q')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('summary', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('problem_opportunity', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($u) use ($search) {
-                        $u->where('name', 'like', "%{$search}%");
-                    });
-            });
+        if ($search = $request->string('q')->trim()->toString()) {
+            $ideaSearch->applyNormalizedSearch($query, $search);
         }
 
         // Filter by Category
@@ -108,14 +101,15 @@ class IdeaController extends Controller
         }
 
         // Sorting
-        $sort = $request->input('orden', 'recientes');
+        $sort = $request->input('orden', 'todas');
         match ($sort) {
             'mas_votadas' => $query->orderByDesc('votes_count')->orderByDesc('average_rating'),
             'tendencia' => $query->orderByDesc('innovation_score')->orderByDesc('votes_count'),
             'mas_comentadas' => $query->withCount('comments')->orderByDesc('comments_count'),
             'implementadas' => $query->where('status', 'implementada')->orderByDesc('implemented_at')->orderByDesc('created_at'),
             'mejor_valoradas' => $query->orderByDesc('average_rating')->orderByDesc('votes_count'),
-            default => $query->latest(), // 'recientes'
+            'recientes' => $query->latest(),
+            default => $query->orderBy('title'),
         };
 
         $ideas = $query->paginate(9)->withQueryString();
@@ -334,8 +328,8 @@ class IdeaController extends Controller
      */
     public function show(
         string $slug,
-        IdeaHierarchyService $hierarchyService,
-        IdeaTreeService $treeService
+        IdeaTreeService $treeService,
+        GlobalIdeaSearchService $ideaSearch
     ): View {
         $idea = Idea::with([
             'user',
@@ -348,7 +342,11 @@ class IdeaController extends Controller
             'children.user',
             'children.category',
             'outgoingRelations.targetIdea.user',
+            'outgoingRelations.createdBy',
+            'outgoingRelations.reviewedBy',
             'incomingRelations.sourceIdea.user',
+            'incomingRelations.createdBy',
+            'incomingRelations.reviewedBy',
             'comments' => function ($query) {
                 $query->whereNull('parent_id')
                     ->with(['user', 'likes', 'replies.user', 'replies.likes'])
@@ -368,7 +366,7 @@ class IdeaController extends Controller
         }
 
         $idea->setRelation('outgoingRelations', $idea->outgoingRelations
-            ->filter(fn ($relation) => $relation->status === 'approved'
+            ->filter(fn ($relation) => ($relation->status === 'approved' || $viewer?->can('update', $relation))
                 && $relation->targetIdea
                 && $viewer?->can('view', $relation->targetIdea))
             ->values());
@@ -396,37 +394,18 @@ class IdeaController extends Controller
             ->get();
 
         $canOrganize = $viewer?->can('organize', $idea) ?? false;
-        $parentCandidates = collect();
         $relationCandidates = collect();
         $pendingRelationReviews = collect();
 
         if ($canOrganize) {
-            $excludedParentIds = $hierarchyService->descendantIds($idea)->push($idea->id);
-            $parentCandidates = Idea::query()
-                ->where('user_id', $viewer->id)
-                ->whereNotIn('id', $excludedParentIds)
-                ->orderBy('title')
-                ->limit(250)
-                ->with(['category', 'tags'])
-                ->get();
-
-            $relationCandidates = Idea::query()
-                ->whereKeyNot($idea->id)
-                ->when(! $viewer->isAdmin(), function ($query) use ($viewer): void {
-                    $query->where(function ($visible) use ($viewer): void {
-                        $visible->where('user_id', $viewer->id)->orWhere(fn ($published) => $published->published());
-                    });
-                })
-                ->orderBy('title')
-                ->limit(250)
-                ->get(['id', 'title', 'user_id', 'visibility', 'publication_status']);
+            $relationCandidates = $ideaSearch->accessibleCandidates($viewer, $idea->id);
         }
 
         if ($viewer) {
             $pendingRelationReviews = $idea->incomingRelations()
                 ->where('status', 'pending')
                 ->when(! $viewer->isAdmin(), fn ($query) => $query->whereHas('targetIdea', fn ($target) => $target->where('user_id', $viewer->id)))
-                ->with('sourceIdea.user')
+                ->with(['sourceIdea.user', 'createdBy', 'reviewedBy'])
                 ->get();
         }
 
@@ -463,7 +442,6 @@ class IdeaController extends Controller
             'idea',
             'relatedIdeas',
             'canOrganize',
-            'parentCandidates',
             'relationCandidates',
             'pendingRelationReviews',
             'traceIdeas',
@@ -497,6 +475,8 @@ class IdeaController extends Controller
             ->get();
         $communityUnits = $communityService->availableUnitsFor(auth()->user());
         $selectedCommunityShare = $idea->communityUnits()->first();
+        $selectedCommunityUnitId = $selectedCommunityShare?->id;
+        $selectedCommunityIncludesDescendants = (bool) $selectedCommunityShare?->pivot?->include_descendants;
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -526,7 +506,8 @@ class IdeaController extends Controller
             'categoryDimensions',
             'parentCandidates',
             'communityUnits',
-            'selectedCommunityShare',
+            'selectedCommunityUnitId',
+            'selectedCommunityIncludesDescendants',
             'allTags',
             'popularTags',
             'tags',

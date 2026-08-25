@@ -52,6 +52,7 @@
         @php
         $tabs = [
             'privadas' => 'Espacio personal',
+            'internas' => 'Comunidades internas',
             'publicadas' => 'Publicadas',
             'borradores' => 'Borradores',
             'implementadas' => 'Implementadas',

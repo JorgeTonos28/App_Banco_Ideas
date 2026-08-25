@@ -49,6 +49,38 @@
         @endif
     </nav>
 
+    <section class="rounded-2xl border border-surface-container-high/80 bg-surface-container-lowest p-4 shadow-xs sm:p-5">
+        <x-community-search level="general" placeholder="Buscar en la comunidad general..." />
+        <p class="mt-2 text-[11px] text-on-surface-variant">Busca por contenido, categoría, etiqueta o autor entre las ideas aprobadas para toda la institución.</p>
+    </section>
+
+    @if($communitySearchIdeas !== null)
+        <section class="space-y-4">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <span class="text-[10px] font-mono-tech font-bold uppercase tracking-wider text-outline">Búsqueda en este nivel</span>
+                    <h2 class="mt-1 font-headline text-xl font-bold text-on-surface">Resultados para “{{ request('q') }}”</h2>
+                </div>
+                <span class="text-xs text-on-surface-variant">{{ $communitySearchIdeas->total() }} {{ Str::plural('coincidencia', $communitySearchIdeas->total()) }}</span>
+            </div>
+
+            @if($communitySearchIdeas->isNotEmpty())
+                <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    @foreach($communitySearchIdeas as $idea)
+                        <x-idea-card :idea="$idea" />
+                    @endforeach
+                </div>
+                <div class="pt-2">{{ $communitySearchIdeas->links() }}</div>
+            @else
+                <div class="rounded-3xl border border-dashed border-surface-container-high bg-surface-container-lowest px-6 py-12 text-center">
+                    <span class="material-symbols-outlined text-4xl text-outline" aria-hidden="true">search_off</span>
+                    <h3 class="mt-3 font-headline text-base font-bold text-on-surface">No hay coincidencias en la comunidad general</h3>
+                    <p class="mx-auto mt-1 max-w-md text-xs leading-relaxed text-on-surface-variant">Prueba con otros caracteres, categorías o etiquetas.</p>
+                </div>
+            @endif
+        </section>
+    @else
+
     <!-- Quick Stats Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Stat 1: Publicadas -->
@@ -256,5 +288,6 @@
 
     </div>
 
+    @endif
 </div>
 @endsection

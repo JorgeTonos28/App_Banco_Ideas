@@ -475,13 +475,13 @@
                             <select id="organizational_unit_id" name="organizational_unit_id" :required="accessScope === 'organization'" class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs text-on-surface">
                                 <option value="">Selecciona una comunidad</option>
                                 @foreach($communityUnits as $unit)
-                                    <option value="{{ $unit->id }}" {{ (string) old('organizational_unit_id', $selectedCommunityShare?->id) === (string) $unit->id ? 'selected' : '' }}>{{ $unit->path_label }}</option>
+                                    <option value="{{ $unit->id }}" {{ (string) old('organizational_unit_id', $selectedCommunityUnitId) === (string) $unit->id ? 'selected' : '' }}>{{ $unit->path_label }}</option>
                                 @endforeach
                             </select>
                             @error('organizational_unit_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                         </div>
                         <label class="flex cursor-pointer items-start gap-2.5 text-xs text-on-surface">
-                            <input type="checkbox" name="include_descendants" value="1" {{ old('include_descendants', $selectedCommunityShare?->pivot?->include_descendants) ? 'checked' : '' }} class="mt-0.5 rounded border-outline text-primary focus:ring-primary">
+                            <input type="checkbox" name="include_descendants" value="1" {{ old('include_descendants', $selectedCommunityIncludesDescendants) ? 'checked' : '' }} class="mt-0.5 rounded border-outline text-primary focus:ring-primary">
                             <span><strong class="block">Incluir niveles dependientes</strong><span class="mt-0.5 block text-[10px] text-on-surface-variant">Por ejemplo, una dirección podrá incluir a sus departamentos.</span></span>
                         </label>
                     </div>

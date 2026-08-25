@@ -81,7 +81,7 @@
 
                 <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] font-mono-tech text-outline">
                     <span class="inline-flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">{{ $node->isPublished() ? 'public' : ($node->access_scope === 'profile' ? 'person' : 'lock') }}</span>
+                        <span class="material-symbols-outlined text-sm">{{ $node->isPublished() ? 'public' : ($node->access_scope === 'organization' ? 'corporate_fare' : ($node->access_scope === 'profile' ? 'person' : 'lock')) }}</span>
                         {{ $node->isPublished() ? 'Comunidad' : $node->access_scope_label }}
                     </span>
                     <span class="inline-flex items-center gap-1">

@@ -124,6 +124,87 @@ class IdeaCommunityServiceTest extends TestCase
         $this->assertSame('standalone', $child->fresh()->requested_community_display);
     }
 
+    public function test_an_internal_child_of_a_published_mother_keeps_its_audience_and_requires_its_own_approval(): void
+    {
+        [$regional, $direction, $department] = $this->organizationTree();
+        $author = User::factory()->create([
+            'regional_id' => $regional->id,
+            'organizational_unit_id' => $department->id,
+        ]);
+        $outsider = User::factory()->create();
+        $parent = Idea::factory()->for($author)->create([
+            'title' => 'Programa institucional publicado',
+            'visibility' => 'public',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+        ]);
+
+        $this->actingAs($author)->post(route('ideas.store'), [
+            'title' => 'Validación contable de la microidea',
+            'description' => 'Validar el componente contable sólo con la comunidad interna antes de solicitar publicación general.',
+            'category_id' => $this->category()->id,
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+            'organizational_unit_id' => $direction->id,
+            'include_descendants' => '1',
+            'parent_idea_id' => $parent->id,
+        ])->assertRedirect();
+
+        $child = Idea::where('title', 'Validación contable de la microidea')->firstOrFail();
+        $this->assertSame($parent->id, $child->parent_idea_id);
+        $this->assertSame('not_submitted', $child->publication_status);
+        $this->assertSame('hidden', $child->community_display);
+        $this->assertDatabaseHas('idea_community_shares', [
+            'idea_id' => $child->id,
+            'organizational_unit_id' => $direction->id,
+            'include_descendants' => true,
+        ]);
+        $this->assertFalse(Idea::communityPublished()->whereKey($child)->exists());
+
+        $this->actingAs($outsider)
+            ->get(route('ideas.show', $child->slug))
+            ->assertForbidden();
+
+        $editResponse = $this->actingAs($author)->get(route('ideas.edit', $child));
+        $editResponse->assertOk();
+        $this->assertStringContainsString(
+            '<option value="'.$direction->id.'" selected>',
+            $editResponse->getContent()
+        );
+    }
+
+    public function test_my_ideas_separates_internal_shares_from_the_personal_workspace(): void
+    {
+        [$regional, $direction, $department] = $this->organizationTree();
+        $author = User::factory()->create([
+            'regional_id' => $regional->id,
+            'organizational_unit_id' => $department->id,
+        ]);
+        $personal = Idea::factory()->for($author)->create([
+            'title' => 'Idea exclusiva del espacio personal',
+            'visibility' => 'private',
+            'access_scope' => 'only_me',
+        ]);
+        $internal = Idea::factory()->for($author)->create([
+            'title' => 'Idea para la comunidad de contabilidad',
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+        ]);
+        $internal->communityUnits()->attach($direction->id, ['include_descendants' => true]);
+
+        $this->actingAs($author)
+            ->get(route('my-ideas.index'))
+            ->assertOk()
+            ->assertSee($personal->title)
+            ->assertDontSee($internal->title);
+
+        $this->actingAs($author)
+            ->get(route('my-ideas.index', ['tab' => 'internas']))
+            ->assertOk()
+            ->assertSee($internal->title)
+            ->assertDontSee($personal->title);
+    }
+
     private function category(): Category
     {
         return Category::create([

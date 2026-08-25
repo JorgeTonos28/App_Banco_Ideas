@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Idea;
+use App\Models\Regional;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,7 +37,56 @@ class GlobalIdeaSearchTest extends TestCase
         $this->assertTrue($ids->contains($published->id));
         $this->assertFalse($ids->contains($otherPrivate->id));
         $this->assertSame('Tu idea', collect($ideas)->firstWhere('id', $ownPrivate->id)['context']);
-        $this->assertSame('Comunidad', collect($ideas)->firstWhere('id', $published->id)['context']);
+        $this->assertSame('Comunidad general', collect($ideas)->firstWhere('id', $published->id)['context']);
+    }
+
+    public function test_search_includes_profile_and_authorized_internal_ideas_without_leaking_other_audiences(): void
+    {
+        $unit = Regional::create([
+            'type' => 'department',
+            'code' => 'CONT',
+            'name' => 'Contabilidad',
+            'is_active' => true,
+            'order' => 1,
+        ]);
+        $otherUnit = Regional::create([
+            'type' => 'department',
+            'code' => 'COMP',
+            'name' => 'Compras',
+            'is_active' => true,
+            'order' => 2,
+        ]);
+        $viewer = User::factory()->create(['organizational_unit_id' => $unit->id]);
+        $author = User::factory()->create();
+        $profileIdea = Idea::factory()->for($author)->create([
+            'title' => 'Control presupuestario compartido',
+            'visibility' => 'private',
+            'access_scope' => 'profile',
+        ]);
+        $internalIdea = Idea::factory()->for($author)->create([
+            'title' => 'Control presupuestario departamental',
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+        ]);
+        $internalIdea->communityUnits()->attach($unit->id, ['include_descendants' => false]);
+        $restrictedIdea = Idea::factory()->for($author)->create([
+            'title' => 'Control presupuestario reservado',
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+        ]);
+        $restrictedIdea->communityUnits()->attach($otherUnit->id, ['include_descendants' => false]);
+
+        $ideas = $this->actingAs($viewer)
+            ->getJson(route('api.search', ['q' => 'controlpresupuestario']))
+            ->assertOk()
+            ->json('ideas');
+
+        $ids = collect($ideas)->pluck('id');
+        $this->assertTrue($ids->contains($profileIdea->id));
+        $this->assertTrue($ids->contains($internalIdea->id));
+        $this->assertFalse($ids->contains($restrictedIdea->id));
+        $this->assertSame('Perfil visible', collect($ideas)->firstWhere('id', $profileIdea->id)['context']);
+        $this->assertSame('Comunidad interna', collect($ideas)->firstWhere('id', $internalIdea->id)['context']);
     }
 
     public function test_search_ignores_spaces_and_covers_description_category_and_tags(): void

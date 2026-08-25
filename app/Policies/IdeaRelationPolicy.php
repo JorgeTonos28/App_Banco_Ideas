@@ -19,6 +19,12 @@ class IdeaRelationPolicy
             && ($user->isAdmin() || $relation->targetIdea->user_id === $user->id);
     }
 
+    public function update(User $user, IdeaRelation $relation): bool
+    {
+        return $user->is_active
+            && ($user->isAdmin() || $relation->sourceIdea->user_id === $user->id);
+    }
+
     public function delete(User $user, IdeaRelation $relation): bool
     {
         return $user->is_active

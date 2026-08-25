@@ -108,6 +108,34 @@ class OrganizationalCommunityNavigationTest extends TestCase
             ->assertDontSee($private->title);
     }
 
+    public function test_community_search_is_live_and_scoped_to_the_current_level(): void
+    {
+        [$regional, $direction, $department] = $this->organizationTree();
+        $viewer = User::factory()->create([
+            'regional_id' => $regional->id,
+            'organizational_unit_id' => $department->id,
+        ]);
+        $visible = Idea::factory()->create([
+            'title' => 'Conciliación de inventario digital',
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+        ]);
+        $visible->communityUnits()->attach($direction->id, ['include_descendants' => true]);
+        $outside = Idea::factory()->create([
+            'title' => 'Conciliación de inventario externa',
+            'visibility' => 'private',
+            'access_scope' => 'organization',
+        ]);
+        $outside->communityUnits()->attach($regional->id, ['include_descendants' => false]);
+
+        $this->actingAs($viewer)
+            ->get(route('community', ['nivel' => $department->id, 'q' => 'inventariodigital']))
+            ->assertOk()
+            ->assertSee($visible->title)
+            ->assertDontSee($outside->title)
+            ->assertSee('@input.debounce.450ms="$refs.communitySearchForm.requestSubmit()"', false);
+    }
+
     private function organizationTree(): array
     {
         $regional = Regional::create([

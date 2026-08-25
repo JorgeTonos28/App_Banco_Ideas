@@ -41,16 +41,50 @@
         <x-admin-nav-tabs />
     </div>
 
+    <section class="rounded-2xl border border-surface-container-high/80 bg-surface-container-lowest p-4 shadow-2xs">
+        <nav aria-label="Nivel actual de ideas" class="flex flex-wrap items-center gap-1.5 text-[10px] font-mono-tech text-outline">
+            <a href="{{ route('admin.ideas.index') }}" class="font-bold hover:text-primary">Ideas madre</a>
+            @foreach($hierarchyPath as $pathIdea)
+                <span class="material-symbols-outlined text-sm" aria-hidden="true">chevron_right</span>
+                @if($pathIdea->is($currentParent))
+                    <span class="max-w-64 truncate font-bold text-on-surface">{{ $pathIdea->title }}</span>
+                @else
+                    <a href="{{ route('admin.ideas.index', ['parent' => $pathIdea->id]) }}" class="max-w-52 truncate hover:text-primary">{{ $pathIdea->title }}</a>
+                @endif
+            @endforeach
+        </nav>
+
+        <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="font-headline text-base font-bold text-on-surface">{{ $currentParent ? 'Subideas directas de '.$currentParent->title : 'Primer nivel de ideas madre' }}</h2>
+                <p class="mt-1 text-[11px] text-on-surface-variant">Abre una idea con descendientes para avanzar exactamente un nivel.</p>
+            </div>
+            @if($currentParent)
+                <a href="{{ route('admin.ideas.index', $currentParent->parent_idea_id ? ['parent' => $currentParent->parent_idea_id] : []) }}"
+                   class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-surface-container-high bg-surface-container-low px-3.5 py-2 text-xs font-bold text-on-surface hover:border-primary/30 hover:text-primary">
+                    <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_back</span>
+                    Volver al nivel anterior
+                </a>
+            @endif
+        </div>
+    </section>
+
     <!-- Filters & Search Toolbar -->
     <div class="bg-surface-container-lowest rounded-2xl p-4 border border-surface-container-high/80 shadow-2xs">
-        <form method="GET" action="{{ route('admin.ideas.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <form method="GET" action="{{ route('admin.ideas.index') }}" x-ref="adminIdeaFilters" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            @if($currentParent)
+                <input type="hidden" name="parent" value="{{ $currentParent->id }}">
+            @endif
             <!-- Search -->
             <div class="lg:col-span-2 relative">
                 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
                 <input type="text" 
                        name="q" 
                        value="{{ request('q') }}" 
-                       placeholder="Buscar por ID, título o autor..." 
+                       @input.debounce.450ms="$refs.adminIdeaFilters.requestSubmit()"
+                       @if(request()->filled('q')) autofocus @endif
+                       autocomplete="off"
+                       placeholder="Filtrar este nivel por ID, contenido o autor..."
                        class="w-full bg-surface-container-low text-xs rounded-xl py-2.5 pl-9 pr-3 border border-surface-container-high">
             </div>
 
@@ -160,14 +194,22 @@
                                 @if($idea->is_featured)
                                 <span class="material-symbols-outlined text-amber-500 text-sm" style="font-variation-settings: 'FILL' 1;" title="Destacada">star</span>
                                 @endif
-                                <a href="{{ route('ideas.show', $idea->slug) }}" class="hover:text-primary transition-colors line-clamp-1">
-                                    {{ $idea->title }}
-                                </a>
+                                @if($idea->children_count > 0)
+                                    <a href="{{ route('admin.ideas.index', ['parent' => $idea->id]) }}" class="line-clamp-1 hover:text-primary transition-colors" title="Abrir el siguiente nivel">
+                                        {{ $idea->title }}
+                                    </a>
+                                @else
+                                    <span class="line-clamp-1">{{ $idea->title }}</span>
+                                @endif
                             </div>
                             <span class="text-[10px] font-mono-tech text-outline">ID #{{ $idea->id }} • {{ $idea->created_at->translatedFormat('d M, Y') }}</span>
                             @if($idea->children_count > 0)
                                 <span class="block text-[10px] font-mono-tech text-tertiary mt-1">{{ $idea->children_count }} {{ $idea->children_count === 1 ? 'subidea' : 'subideas' }}</span>
                             @endif
+                            <a href="{{ route('ideas.show', $idea->slug) }}" class="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline">
+                                <span class="material-symbols-outlined text-sm" aria-hidden="true">open_in_new</span>
+                                Ver ficha
+                            </a>
                         </td>
                         <td class="py-4 px-4">
                             <span class="font-bold text-on-surface block text-xs truncate">{{ $idea->user->name }}</span>
@@ -210,7 +252,7 @@
                     @empty
                     <tr>
                         <td colspan="8" class="text-center py-10 text-on-surface-variant text-xs">
-                            No se encontraron ideas registradas con los filtros seleccionados.
+                            No hay ideas en este nivel que coincidan con los filtros seleccionados.
                         </td>
                     </tr>
                     @endforelse
@@ -295,11 +337,14 @@
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Decisión</label>
                             <select name="publication_status" x-model="editorialDecision" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
                                 <option value="">Sin decisión</option>
-                                <option value="published">Aprobar publicación</option>
-                                <option value="changes_requested">Solicitar cambios</option>
-                                <option value="rejected">Rechazar solicitud</option>
-                                <option value="unpublished">Retirar de la comunidad</option>
+                                <option value="published" :disabled="selectedIdea?.publication_status === 'published'">Aprobar publicación</option>
+                                <option value="changes_requested" :disabled="selectedIdea?.publication_status === 'published'">Solicitar cambios</option>
+                                <option value="rejected" :disabled="selectedIdea?.publication_status === 'published'">Rechazar solicitud</option>
+                                <option value="unpublished" :disabled="selectedIdea?.publication_status !== 'published'">Revertir publicación general</option>
                             </select>
+                            <p x-show="selectedIdea?.publication_status === 'published'" class="mt-2 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-900">
+                                La reversión retirará también todas las subideas publicadas bajo esta idea. Cada una recuperará su visibilidad contextual previa o quedará en “Sólo yo” si no existe una audiencia válida.
+                            </p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Representación en comunidad</label>
@@ -319,7 +364,7 @@
                             <textarea name="publication_notes" x-model="publicationNotes" :required="['changes_requested', 'rejected'].includes(editorialDecision)" rows="3" maxlength="2000" placeholder="Explica la decisión o los cambios requeridos" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high resize-none"></textarea>
                             <p x-show="['changes_requested', 'rejected'].includes(editorialDecision)" class="mt-1 text-[10px] font-semibold text-primary">La nota es obligatoria para explicar esta decisión al autor.</p>
                         </div>
-                        <button type="submit" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">Registrar decisión editorial</button>
+                        <button type="submit" :disabled="!editorialDecision" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50">Registrar decisión editorial</button>
                     </form>
 
                     <!-- Update Form -->

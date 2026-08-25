@@ -22,7 +22,7 @@ trait ValidatesIdeaAudience
             return;
         }
 
-        if ($scope !== 'organization' || $this->filled('parent_idea_id')) {
+        if ($scope !== 'organization') {
             return;
         }
 

@@ -39,8 +39,16 @@ class MyIdeasController extends Controller
             })->latest(),
             'guardadas' => $user->favoriteIdeas()->with(['user', 'category', 'tags'])->latest(),
             'publicadas' => $user->ideas()->published()->whereNotIn('status', ['archivada', 'descartada'])->latest(),
-            default => $user->ideas()
+            'internas' => $user->ideas()
+                ->where('publication_status', '!=', 'published')
                 ->where('visibility', 'private')
+                ->where('access_scope', 'organization')
+                ->whereNotIn('workspace_status', ['archivada', 'descartada'])
+                ->latest(),
+            default => $user->ideas()
+                ->where('publication_status', '!=', 'published')
+                ->where('visibility', 'private')
+                ->whereIn('access_scope', ['only_me', 'profile'])
                 ->whereNotIn('workspace_status', ['archivada', 'descartada'])
                 ->latest(),
         };
