@@ -26,10 +26,12 @@ class IdeaPublicationService
 
         return DB::transaction(function () use ($idea, $user): Idea {
             $oldStatus = $idea->publication_status;
+            $requestedDisplay = $idea->parent_idea_id ? 'represented_by_parent' : 'standalone';
 
             $idea->update([
                 'publication_status' => 'pending_review',
                 'community_display' => 'hidden',
+                'requested_community_display' => $requestedDisplay,
                 'publication_requested_at' => now(),
                 'publication_requested_by_user_id' => $user->id,
                 'publication_reviewed_at' => null,

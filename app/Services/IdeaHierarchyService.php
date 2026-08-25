@@ -21,7 +21,14 @@ class IdeaHierarchyService
         return DB::transaction(function () use ($idea, $parent, $actor, $note): Idea {
             $oldParentId = $idea->parent_idea_id;
 
-            $idea->update(['parent_idea_id' => $parent?->id]);
+            $idea->update([
+                'parent_idea_id' => $parent?->id,
+                'requested_community_display' => $parent ? 'represented_by_parent' : 'standalone',
+            ]);
+
+            if ($parent) {
+                $idea->communityUnits()->detach();
+            }
 
             IdeaHierarchyHistory::create([
                 'idea_id' => $idea->id,

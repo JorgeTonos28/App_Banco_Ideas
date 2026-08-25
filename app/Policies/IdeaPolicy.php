@@ -30,7 +30,7 @@ class IdeaPolicy
 
         return $user->isAdmin()
             || $idea->user_id === $user->id
-            || $idea->isAccessibleToAuthenticatedAudience();
+            || $idea->isAccessibleToAuthenticatedAudience($user);
     }
 
     /**

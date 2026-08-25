@@ -14,6 +14,7 @@ use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\IdeaClassificationService;
+use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -148,7 +149,7 @@ class IdeaController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create(Request $request, IdeaCommunityService $communityService): View
     {
         $categories = Category::where('is_active', true)
             ->whereHas('dimension', fn ($query) => $query->where('is_primary', true)->where('is_active', true))
@@ -157,10 +158,15 @@ class IdeaController extends Controller
             ->get();
         $categoryDimensions = $this->activeCategoryDimensions();
         $parentCandidates = Idea::query()
-            ->when(! auth()->user()->isAdmin(), fn ($query) => $query->where('user_id', auth()->id()))
+            ->where('user_id', auth()->id())
             ->whereNotIn('workspace_status', ['archivada', 'descartada'])
             ->orderBy('title')
-            ->get(['id', 'title', 'parent_idea_id']);
+            ->with(['category', 'tags'])
+            ->get();
+        $selectedParentId = $parentCandidates->contains('id', $request->integer('parent'))
+            ? $request->integer('parent')
+            : null;
+        $communityUnits = $communityService->availableUnitsFor($request->user());
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -181,7 +187,16 @@ class IdeaController extends Controller
         $popularTags = Tag::withCount('ideas')->orderByDesc('ideas_count')->take(8)->get();
         $tags = $popularTags;
 
-        return view('ideas.create', compact('categories', 'categoryDimensions', 'parentCandidates', 'allTags', 'popularTags', 'tags'));
+        return view('ideas.create', compact(
+            'categories',
+            'categoryDimensions',
+            'parentCandidates',
+            'selectedParentId',
+            'communityUnits',
+            'allTags',
+            'popularTags',
+            'tags'
+        ));
     }
 
     /**
@@ -190,7 +205,8 @@ class IdeaController extends Controller
     public function store(
         StoreIdeaRequest $request,
         IdeaClassificationService $classificationService,
-        IdeaHierarchyService $hierarchyService
+        IdeaHierarchyService $hierarchyService,
+        IdeaCommunityService $communityService
     ): RedirectResponse {
         DB::beginTransaction();
         try {
@@ -207,6 +223,9 @@ class IdeaController extends Controller
                 'workspace_status' => $request->input('workspace_status', 'capturada'),
                 'publication_status' => 'not_submitted',
                 'community_display' => 'hidden',
+                'requested_community_display' => $request->filled('parent_idea_id')
+                    ? 'represented_by_parent'
+                    : 'standalone',
             ]);
 
             $classificationService->sync(
@@ -223,6 +242,14 @@ class IdeaController extends Controller
                     'Jerarquía definida al crear la idea.',
                 );
             }
+
+            $idea->refresh();
+            $communityService->syncAudience(
+                $idea,
+                $request->user(),
+                $request->filled('organizational_unit_id') ? $request->integer('organizational_unit_id') : null,
+                $request->boolean('include_descendants'),
+            );
 
             // Handle Tags (create or normalize to existing, support comma-separated items)
             if ($request->filled('tags')) {
@@ -271,20 +298,23 @@ class IdeaController extends Controller
                 'workflow' => 'access',
                 'old_status' => null,
                 'new_status' => $idea->access_scope,
-                'comment' => $idea->access_scope === 'profile'
-                    ? 'La idea se compartió inicialmente desde el perfil de su autor.'
-                    : 'La idea se registró con acceso exclusivo para su autor.',
+                'comment' => match ($idea->access_scope) {
+                    'profile' => 'La idea se compartió inicialmente desde el perfil de su autor.',
+                    'organization' => 'La idea se compartió inicialmente en una comunidad interna.',
+                    default => 'La idea se registró con acceso exclusivo para su autor.',
+                },
             ]);
 
             $idea->recalculateRatingAndScore();
 
             DB::commit();
 
-            $message = $idea->visibility === 'draft'
-                ? 'Borrador guardado correctamente. Puedes completarlo cuando estés listo.'
-                : ($idea->access_scope === 'profile'
-                    ? 'Idea guardada y visible desde tu perfil. Cuando esté lista también podrás solicitar su publicación.'
-                    : 'Idea guardada sólo para ti. Cuando esté lista podrás compartirla o solicitar su publicación.');
+            $message = match (true) {
+                $idea->visibility === 'draft' => 'Borrador guardado correctamente. Puedes completarlo cuando estés listo.',
+                $idea->access_scope === 'profile' => 'Idea guardada y visible desde tu perfil. Cuando esté lista también podrás solicitar su publicación.',
+                $idea->access_scope === 'organization' => 'Idea guardada y compartida en la comunidad interna seleccionada.',
+                default => 'Idea guardada sólo para ti. Cuando esté lista podrás compartirla o solicitar su publicación.',
+            };
 
             return redirect()->route('ideas.show', $idea->slug)->with('success', $message);
         } catch (ValidationException $e) {
@@ -368,11 +398,12 @@ class IdeaController extends Controller
 
         if ($canOrganize) {
             $parentCandidates = Idea::query()
-                ->when(! $viewer->isAdmin(), fn ($query) => $query->where('user_id', $viewer->id))
+                ->where('user_id', $viewer->id)
                 ->whereKeyNot($idea->id)
                 ->orderBy('title')
                 ->limit(250)
-                ->get(['id', 'title', 'user_id', 'visibility', 'publication_status']);
+                ->with(['category', 'tags'])
+                ->get();
 
             $relationCandidates = Idea::query()
                 ->whereKeyNot($idea->id)
@@ -441,8 +472,11 @@ class IdeaController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Idea $idea, IdeaClassificationService $classificationService): View
-    {
+    public function edit(
+        Idea $idea,
+        IdeaClassificationService $classificationService,
+        IdeaCommunityService $communityService
+    ): View {
         $this->authorize('update', $idea);
 
         $categories = Category::where('is_active', true)
@@ -451,9 +485,13 @@ class IdeaController extends Controller
             ->orderBy('name')
             ->get();
         $categoryDimensions = $this->activeCategoryDimensions();
-        $parentCandidates = auth()->user()->isAdmin()
-            ? Idea::whereKeyNot($idea->id)->orderBy('title')->limit(250)->get(['id', 'title', 'parent_idea_id'])
-            : auth()->user()->ideas()->whereKeyNot($idea->id)->orderBy('title')->get(['id', 'title', 'parent_idea_id']);
+        $parentCandidates = auth()->user()->ideas()
+            ->whereKeyNot($idea->id)
+            ->orderBy('title')
+            ->with(['category', 'tags'])
+            ->get();
+        $communityUnits = $communityService->availableUnitsFor(auth()->user());
+        $selectedCommunityShare = $idea->communityUnits()->first();
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -477,7 +515,19 @@ class IdeaController extends Controller
 
         $selectedClassifications = $classificationService->currentSelections($idea->loadMissing('categories'));
 
-        return view('ideas.edit', compact('idea', 'categories', 'categoryDimensions', 'parentCandidates', 'allTags', 'popularTags', 'tags', 'selectedTags', 'selectedClassifications'));
+        return view('ideas.edit', compact(
+            'idea',
+            'categories',
+            'categoryDimensions',
+            'parentCandidates',
+            'communityUnits',
+            'selectedCommunityShare',
+            'allTags',
+            'popularTags',
+            'tags',
+            'selectedTags',
+            'selectedClassifications'
+        ));
     }
 
     /**
@@ -487,7 +537,8 @@ class IdeaController extends Controller
         UpdateIdeaRequest $request,
         Idea $idea,
         IdeaClassificationService $classificationService,
-        IdeaHierarchyService $hierarchyService
+        IdeaHierarchyService $hierarchyService,
+        IdeaCommunityService $communityService
     ): RedirectResponse {
         $this->authorize('update', $idea);
 
@@ -522,6 +573,14 @@ class IdeaController extends Controller
                 $hierarchyService->move($idea, $parent, $request->user(), 'Jerarquía actualizada desde la edición de la idea.');
             }
 
+            $idea->refresh();
+            $communityService->syncAudience(
+                $idea,
+                $request->user(),
+                $request->filled('organizational_unit_id') ? $request->integer('organizational_unit_id') : null,
+                $request->boolean('include_descendants'),
+            );
+
             if (! $idea->isPublished() && $oldWorkspaceStatus !== $newWorkspaceStatus) {
                 IdeaStatusHistory::create([
                     'idea_id' => $idea->id,
@@ -540,9 +599,11 @@ class IdeaController extends Controller
                     'workflow' => 'access',
                     'old_status' => $oldAccessScope,
                     'new_status' => $newAccessScope,
-                    'comment' => $newAccessScope === 'profile'
-                        ? 'La idea ahora es visible desde el perfil de su autor.'
-                        : 'El acceso a la idea quedó restringido a su autor.',
+                    'comment' => match ($newAccessScope) {
+                        'profile' => 'La idea ahora es visible desde el perfil de su autor.',
+                        'organization' => 'La idea ahora se comparte en una comunidad interna.',
+                        default => 'El acceso a la idea quedó restringido a su autor.',
+                    },
                 ]);
             }
 

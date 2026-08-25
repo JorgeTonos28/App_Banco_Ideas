@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Http\Requests\Concerns\ValidatesIdeaAudience;
 use App\Http\Requests\Concerns\ValidatesIdeaClassifications;
 use App\Http\Requests\Concerns\ValidatesIdeaParent;
 use App\Models\Idea;
@@ -11,6 +12,7 @@ use Illuminate\Validation\Validator;
 
 class StoreIdeaRequest extends FormRequest
 {
+    use ValidatesIdeaAudience;
     use ValidatesIdeaClassifications;
     use ValidatesIdeaParent;
 
@@ -34,6 +36,8 @@ class StoreIdeaRequest extends FormRequest
             'tags.*' => ['string', 'max:500'],
             'visibility' => ['required', 'in:private,draft'],
             'access_scope' => ['sometimes', 'required', Rule::in(Idea::ACCESS_SCOPES)],
+            'organizational_unit_id' => ['nullable', 'integer', 'exists:regionals,id'],
+            'include_descendants' => ['nullable', 'boolean'],
             'workspace_status' => ['nullable', Rule::in(Idea::WORKSPACE_STATUSES)],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'], // 10MB max
@@ -57,10 +61,8 @@ class StoreIdeaRequest extends FormRequest
                     $validator->errors()->add('tags', 'Cada etiqueta puede tener un máximo de 50 caracteres.');
                 }
 
-                if ($this->input('visibility') === 'draft' && $this->input('access_scope', 'only_me') === 'profile') {
-                    $validator->errors()->add('access_scope', 'Completa la idea antes de hacerla visible en tu perfil.');
-                }
             },
+            fn (Validator $validator) => $this->validateIdeaAudience($validator),
             fn (Validator $validator) => $this->validateIdeaClassifications($validator),
             fn (Validator $validator) => $this->validateIdeaParent($validator),
         ];
