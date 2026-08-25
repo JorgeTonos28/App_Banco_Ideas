@@ -16,7 +16,6 @@ class AdminIdeaPublicationController extends Controller
             $idea,
             $request->user(),
             $request->string('publication_status')->toString(),
-            $request->string('community_display', 'hidden')->toString(),
             $request->input('publication_notes'),
         );
 

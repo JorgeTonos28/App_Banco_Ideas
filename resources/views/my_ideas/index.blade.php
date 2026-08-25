@@ -91,10 +91,25 @@
 
     <!-- Ideas List -->
     @if($viewMode === 'tree' && $activeTab !== 'guardadas' && $treeRoots->isNotEmpty())
-    <div class="space-y-4">
-        @foreach($treeRoots as $rootIdea)
-            <x-idea-tree-node :node="$rootIdea" :tree-by-parent="$treeByParent" />
-        @endforeach
+    <div class="space-y-4" x-data="ideaTree(@js($treeSearchTerms->values()->all()))">
+        <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" aria-hidden="true">search</span>
+            <input type="search" x-model.debounce.60ms="query" placeholder="Buscar dentro de este árbol sin importar espacios..." class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest py-3 pl-10 pr-10 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <button x-show="query.length" type="button" @click="query = ''" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-outline hover:text-on-surface" aria-label="Limpiar búsqueda">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">close</span>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            @foreach($treeRoots as $rootIdea)
+                <x-idea-tree-node :node="$rootIdea" :tree-by-parent="$treeByParent" :search-terms="$treeSearchTerms" />
+            @endforeach
+        </div>
+
+        <div x-show="!hasMatches()" class="rounded-2xl border border-dashed border-surface-container-high bg-surface-container-lowest p-8 text-center">
+            <span class="material-symbols-outlined text-3xl text-outline" aria-hidden="true">search_off</span>
+            <p class="mt-2 text-xs font-bold text-on-surface">No hay coincidencias en este árbol</p>
+        </div>
     </div>
     @elseif($ideas->isNotEmpty())
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -27,6 +27,7 @@ class User extends Authenticatable
         'department',
         'regional',
         'regional_id',
+        'organizational_unit_id',
         'avatar',
         'bio',
         'is_active',
@@ -79,6 +80,16 @@ class User extends Authenticatable
     public function regionalModel(): BelongsTo
     {
         return $this->belongsTo(Regional::class, 'regional_id');
+    }
+
+    public function organizationalUnit(): BelongsTo
+    {
+        return $this->belongsTo(Regional::class, 'organizational_unit_id');
+    }
+
+    public function effectiveOrganizationalUnit(): ?Regional
+    {
+        return $this->organizationalUnit ?: $this->regionalModel;
     }
 
     public function ideas(): HasMany

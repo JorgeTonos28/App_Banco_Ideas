@@ -30,6 +30,25 @@
         </div>
     </div>
 
+    <nav aria-label="Niveles de comunidad" class="flex flex-col gap-3 rounded-2xl border border-surface-container-high/70 bg-surface-container-lowest p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-fixed text-primary">
+                <span class="material-symbols-outlined" aria-hidden="true">public</span>
+            </div>
+            <div>
+                <span class="block text-xs font-bold text-on-surface">Comunidad general de INFOTEP</span>
+                <span class="block text-[11px] text-on-surface-variant">Ideas aprobadas para todas las regionales y sedes.</span>
+            </div>
+        </div>
+        @if($downUnits->isNotEmpty())
+            <a href="{{ route('community', ['nivel' => $downUnits->first()->id]) }}"
+               class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-primary-fixed px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">arrow_downward</span>
+                Entrar a mi estructura
+            </a>
+        @endif
+    </nav>
+
     <!-- Quick Stats Grid -->
     <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Stat 1: Publicadas -->

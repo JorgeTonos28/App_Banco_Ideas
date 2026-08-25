@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Regional;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,9 +16,10 @@ class ProfileController extends Controller
         $targetUser = $user && $user->exists ? $user : auth()->user();
 
         // User stats
-        $ideasCount = $targetUser->ideas()->visibleOnProfile()->count();
+        $viewer = auth()->user();
+        $ideasCount = $targetUser->ideas()->visibleOnProfileFor($viewer)->count();
         $implementedCount = $targetUser->ideas()->communityPublished()->where('status', 'implementada')->count();
-        $totalVotesReceived = $targetUser->ideas()->visibleOnProfile()->sum('votes_count');
+        $totalVotesReceived = $targetUser->ideas()->visibleOnProfileFor($viewer)->sum('votes_count');
         $ratingsGivenCount = $targetUser->ratings()->count();
 
         // Participation Score (calculated)
@@ -36,13 +36,13 @@ class ProfileController extends Controller
                             ->where('publication_status', 'published')
                             ->orWhere(function ($shared): void {
                                 $shared
-                                    ->where('access_scope', 'profile')
+                                    ->whereIn('access_scope', ['profile', 'organization'])
                                     ->where('visibility', '!=', 'draft');
                             });
                     });
                 },
             ])
-            ->visibleOnProfile()
+            ->visibleOnProfileFor($viewer)
             ->latest()
             ->take(8)
             ->get();
@@ -63,9 +63,8 @@ class ProfileController extends Controller
     public function edit(): View
     {
         $user = auth()->user();
-        $regionals = Regional::where('is_active', true)->orderBy('order')->get();
 
-        return view('profile.edit', compact('user', 'regionals'));
+        return view('profile.edit', compact('user'));
     }
 
     public function update(Request $request): RedirectResponse
@@ -76,16 +75,10 @@ class ProfileController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'job_title' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
-            'regional_id' => ['nullable', 'exists:regionals,id'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5120'],
             'avatar_cropped' => ['nullable', 'string'],
         ]);
-
-        if (! empty($validated['regional_id'])) {
-            $reg = Regional::find($validated['regional_id']);
-            $validated['regional'] = $reg?->full_name;
-        }
 
         // Process cropped avatar from Interactive Canvas
         if (! empty($request->avatar_cropped) && str_starts_with($request->avatar_cropped, 'data:image')) {

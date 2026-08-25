@@ -21,7 +21,7 @@
         </nav>
 
         <!-- Quick actions: Favorite, Share, Edit -->
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-end gap-2">
             @auth
             <!-- Favorite button -->
             <form action="{{ route('ideas.favorite', $idea->id) }}" method="POST">
@@ -43,6 +43,20 @@
                title="Editar idea y etiquetas">
                 <span class="material-symbols-outlined text-base">edit</span>
                 <span>Editar Propuesta</span>
+            </a>
+            @endif
+            @if(auth()->id() === $idea->user_id && $idea->isEditableBy(auth()->user()))
+            <button type="button" @click="$dispatch('open-idea-organizer')"
+                    class="inline-flex items-center gap-1.5 rounded-xl border border-primary/20 bg-surface-container-lowest px-3 py-2 text-xs font-bold text-primary hover:bg-primary-fixed"
+                    title="Agregar o cambiar idea madre">
+                <span class="material-symbols-outlined text-base">arrow_upward</span>
+                <span class="hidden lg:inline">Agregar madre</span>
+            </button>
+            <a href="{{ route('ideas.create', ['parent' => $idea->id]) }}"
+               class="inline-flex items-center gap-1.5 rounded-xl bg-secondary-fixed px-3 py-2 text-xs font-bold text-on-secondary-fixed hover:bg-secondary-container"
+               title="Crear una idea hija">
+                <span class="material-symbols-outlined text-base">account_tree</span>
+                <span class="hidden lg:inline">Agregar hija</span>
             </a>
             @endif
             @endauth
@@ -91,7 +105,7 @@
 
         <div class="flex flex-wrap items-center gap-2 text-xs">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $idea->isPublished() ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : ($idea->isSharedOnProfile() ? 'bg-tertiary/10 text-tertiary border border-tertiary/20' : 'bg-surface-container text-on-surface-variant border border-surface-container-high') }} font-bold">
-                <span class="material-symbols-outlined text-sm">{{ $idea->isPublished() ? 'public' : ($idea->isSharedOnProfile() ? 'person' : 'lock') }}</span>
+                <span class="material-symbols-outlined text-sm">{{ $idea->isPublished() ? 'public' : ($idea->access_scope === 'organization' ? 'corporate_fare' : ($idea->isSharedOnProfile() ? 'person' : 'lock')) }}</span>
                 {{ $idea->isPublished() ? 'Publicada en la comunidad' : $idea->access_scope_label }}
             </span>
             <span class="font-mono-tech text-outline">Revisión editorial: {{ $idea->publication_status_label }}</span>
@@ -180,7 +194,9 @@
     </div>
 
     @if($idea->parentIdea || $idea->children->isNotEmpty() || $idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $canOrganize || $pendingRelationReviews->isNotEmpty())
-    <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs overflow-hidden" x-data="{ organizeOpen: false }">
+    <section id="mapa-idea" class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs overflow-hidden"
+             x-data="{ organizeOpen: false }"
+             @open-idea-organizer.window="organizeOpen = true; $nextTick(() => $el.scrollIntoView({ behavior: 'smooth', block: 'start' }))">
         <div class="p-5 sm:p-6 border-b border-surface-container-high/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h2 class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
@@ -201,6 +217,7 @@
             <div class="space-y-3">
                 <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Estructura madre e hijas</h3>
 
+                <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
                 @if($idea->parentIdea)
                 <a href="{{ route('ideas.show', $idea->parentIdea->slug) }}" class="flex items-center gap-3 p-3 rounded-2xl bg-primary-fixed/45 border border-primary/10 hover:border-primary/30 group">
                     <div class="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center shrink-0">
@@ -228,10 +245,12 @@
                     @endforeach
                 </div>
                 @endif
+                </div>
             </div>
 
             <div class="space-y-3">
                 <h3 class="text-[11px] font-mono-tech font-bold uppercase text-outline">Relaciones semánticas</h3>
+                <div class="max-h-56 space-y-2 overflow-y-auto pr-1">
                 @forelse($idea->outgoingRelations as $relation)
                     <div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-surface-container-low">
                         <div class="min-w-0">
@@ -259,6 +278,7 @@
                         <a href="{{ route('ideas.show', $relation->sourceIdea->slug) }}" class="block text-xs font-bold text-on-surface hover:text-primary truncate">{{ $relation->sourceIdea->title }}</a>
                     </div>
                 @endforeach
+                </div>
             </div>
         </div>
 
@@ -268,13 +288,8 @@
                 @csrf
                 @method('PUT')
                 <div>
-                    <label for="map_parent_idea_id" class="block text-xs font-bold text-on-surface mb-1.5">Ubicar bajo una idea madre</label>
-                    <select id="map_parent_idea_id" name="parent_idea_id" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
-                        <option value="">Sin idea madre</option>
-                        @foreach($parentCandidates as $candidate)
-                            <option value="{{ $candidate->id }}" {{ $idea->parent_idea_id === $candidate->id ? 'selected' : '' }}>{{ $candidate->title }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-xs font-bold text-on-surface mb-1.5">Ubicar bajo una idea madre</label>
+                    <x-idea-parent-picker :candidates="$parentCandidates" :selected-id="$idea->parent_idea_id" input-id="map_parent_idea_id" independent-label="Mantener como idea independiente" />
                 </div>
                 <input type="text" name="note" maxlength="1000" placeholder="Motivo del cambio, opcional" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
                 <button type="submit" class="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl">Guardar jerarquía</button>
@@ -330,25 +345,38 @@
     </section>
     @endif
 
-    @if(!$idea->parent_idea_id && $traceIdeas->count() > 1)
-    <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs p-5 sm:p-6 space-y-4">
+    @if($traceIdeas->count() > 1)
+    <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs p-5 sm:p-6 space-y-4"
+             x-data="ideaTree(@js($traceTree['searchTerms']->values()->all()))">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
                 <h2 class="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
                     <span class="material-symbols-outlined text-tertiary">schema</span>
                     Trazabilidad de microideas
                 </h2>
-                <p class="text-xs text-on-surface-variant mt-1">Recorrido multinivel visible desde esta idea madre. Los nodos restringidos no se exponen.</p>
+                <p class="text-xs text-on-surface-variant mt-1">Recorrido multinivel desde la idea raíz. Los nodos restringidos no se exponen.</p>
             </div>
             <span class="px-2.5 py-1 rounded-lg bg-tertiary/10 text-tertiary text-[10px] font-mono-tech font-bold">
                 {{ $traceIdeas->count() - 1 }} {{ $traceIdeas->count() === 2 ? 'microidea visible' : 'microideas visibles' }}
             </span>
         </div>
 
+        <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" aria-hidden="true">search</span>
+            <input type="search" x-model.debounce.60ms="query" placeholder="Buscar en la trazabilidad sin importar espacios..." class="w-full rounded-xl border border-surface-container-high bg-surface-container-low py-3 pl-10 pr-10 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <button x-show="query.length" type="button" @click="query = ''" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-outline hover:text-on-surface" aria-label="Limpiar búsqueda">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">close</span>
+            </button>
+        </div>
+
         <div class="space-y-3">
-            @foreach($traceTreeByParent->get($idea->id, collect()) as $traceChild)
-                <x-idea-tree-node :node="$traceChild" :tree-by-parent="$traceTreeByParent" :level="1" />
+            @foreach($traceTree['roots'] as $traceTreeRoot)
+                <x-idea-tree-node :node="$traceTreeRoot" :tree-by-parent="$traceTree['byParent']" :search-terms="$traceTree['searchTerms']" :current-idea-id="$idea->id" />
             @endforeach
+        </div>
+        <div x-show="!hasMatches()" class="rounded-2xl border border-dashed border-surface-container-high p-8 text-center">
+            <span class="material-symbols-outlined text-3xl text-outline" aria-hidden="true">search_off</span>
+            <p class="mt-2 text-xs font-bold text-on-surface">No hay coincidencias en esta trazabilidad</p>
         </div>
     </section>
     @endif

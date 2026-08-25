@@ -21,8 +21,12 @@
     },
     selectedIds: [],
     bulkAction: '',
+    editorialDecision: '',
+    publicationNotes: '',
     openDrawer(idea) {
         this.selectedIdea = idea;
+        this.editorialDecision = '';
+        this.publicationNotes = '';
         this.drawerOpen = true;
     }
 }">
@@ -283,12 +287,14 @@
                                 Estado actual: <strong x-text="selectedIdea?.publication_status_label || selectedIdea?.publication_status"></strong>
                             </p>
                             <p class="text-[10px] text-on-surface-variant mt-1">
-                                Acceso elegido por el autor: <strong x-text="selectedIdea?.access_scope === 'profile' ? 'Visible en su perfil' : 'Sólo el autor'"></strong>
+                                Acceso elegido por el autor:
+                                <strong x-text="selectedIdea?.access_scope === 'organization' ? 'Comunidad interna' : (selectedIdea?.access_scope === 'profile' ? 'Visible en su perfil' : 'Sólo el autor')"></strong>
                             </p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Decisión</label>
-                            <select name="publication_status" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                            <select name="publication_status" x-model="editorialDecision" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
+                                <option value="">Sin decisión</option>
                                 <option value="published">Aprobar publicación</option>
                                 <option value="changes_requested">Solicitar cambios</option>
                                 <option value="rejected">Rechazar solicitud</option>
@@ -297,17 +303,21 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Representación en comunidad</label>
-                            <select name="community_display" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
-                                <option value="standalone">Idea principal, crea una tarjeta</option>
-                                <option value="represented_by_parent">Subidea, se muestra dentro de su madre</option>
-                            </select>
+                            <div class="flex items-start gap-2.5 rounded-xl border border-surface-container-high bg-surface-container-lowest p-3">
+                                <span class="material-symbols-outlined text-lg text-primary" aria-hidden="true">account_tree</span>
+                                <div>
+                                    <p class="text-xs font-bold text-on-surface" x-text="selectedIdea?.parent_idea_id ? 'Subidea, se muestra dentro de su madre' : 'Idea principal, crea una tarjeta'"></p>
+                                    <p class="mt-0.5 text-[10px] leading-relaxed text-on-surface-variant">Se deriva automáticamente de la jerarquía definida por el autor y no puede alterarse durante la revisión.</p>
+                                </div>
+                            </div>
                             <p class="text-[10px] text-on-surface-variant mt-1" x-show="selectedIdea?.parent_idea">
                                 Madre actual: <span class="font-bold" x-text="selectedIdea?.parent_idea?.title"></span>
                             </p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Nota editorial</label>
-                            <textarea name="publication_notes" rows="3" maxlength="2000" placeholder="Explica la decisión o los cambios requeridos" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high resize-none"></textarea>
+                            <textarea name="publication_notes" x-model="publicationNotes" :required="['changes_requested', 'rejected'].includes(editorialDecision)" rows="3" maxlength="2000" placeholder="Explica la decisión o los cambios requeridos" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high resize-none"></textarea>
+                            <p x-show="['changes_requested', 'rejected'].includes(editorialDecision)" class="mt-1 text-[10px] font-semibold text-primary">La nota es obligatoria para explicar esta decisión al autor.</p>
                         </div>
                         <button type="submit" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">Registrar decisión editorial</button>
                     </form>

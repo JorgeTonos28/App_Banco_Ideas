@@ -113,7 +113,7 @@
                        class="w-full bg-surface-container-low text-on-surface text-sm rounded-xl py-2.5 px-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
             </div>
 
-            <!-- Department & Regional -->
+            <!-- Department & Organizational Community -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="department" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-1.5">
@@ -128,19 +128,13 @@
                 </div>
 
                 <div>
-                    <label for="regional_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-1.5">
-                        Dirección Regional
-                    </label>
-                    <select id="regional_id" 
-                            name="regional_id" 
-                            class="w-full bg-surface-container-low text-on-surface text-sm rounded-xl py-2.5 px-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        <option value="">Seleccionar Regional</option>
-                        @foreach($regionals as $r)
-                        <option value="{{ $r->id }}" {{ (old('regional_id', $user->regional_id) == $r->id) ? 'selected' : '' }}>
-                            {{ $r->code }} - {{ $r->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <span class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-1.5">
+                        Unidad organizacional
+                    </span>
+                    <div class="rounded-xl border border-surface-container-high bg-surface-container p-3 text-xs text-on-surface">
+                        {{ $user->effectiveOrganizationalUnit()?->path_label ?: 'Sin unidad organizacional asignada' }}
+                    </div>
+                    <p class="mt-1 text-[10px] text-on-surface-variant">Por seguridad, esta asignación la gestiona el equipo administrador.</p>
                 </div>
             </div>
 

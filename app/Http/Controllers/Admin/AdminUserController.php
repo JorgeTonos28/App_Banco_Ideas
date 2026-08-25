@@ -26,14 +26,14 @@ class AdminUserController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = User::with(['regionalModel'])->withCount('ideas');
+        $query = User::with(['regionalModel', 'organizationalUnit.parent'])->withCount('ideas');
 
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('job_title', 'like', "%{$search}%")
-                  ->orWhere('department', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('job_title', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%");
             });
         }
 
@@ -46,14 +46,26 @@ class AdminUserController extends Controller
         }
 
         if ($regionalId = $request->input('regional_id')) {
-            $query->where('regional_id', $regionalId);
+            $regional = Regional::find($regionalId);
+            $unitIds = $regional?->descendantIds(includeSelf: true) ?? collect([$regionalId]);
+
+            $query->where(function ($users) use ($regionalId, $unitIds): void {
+                $users
+                    ->where('regional_id', $regionalId)
+                    ->orWhereIn('organizational_unit_id', $unitIds);
+            });
         }
 
         $users = $query->latest()->paginate(15)->withQueryString();
-        $regionals = Regional::where('is_active', true)->orderBy('order')->get();
-        $pendingInvitations = UserInvitation::whereNull('registered_at')->where('expires_at', '>', now())->latest()->get();
+        $regionals = Regional::where('is_active', true)->where('type', 'regional')->orderBy('order')->get();
+        $organizationalUnits = Regional::where('is_active', true)->with('parent')->get()->sortBy('path_label')->values();
+        $pendingInvitations = UserInvitation::with('organizationalUnit')
+            ->whereNull('registered_at')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->get();
 
-        return view('admin.users.index', compact('users', 'regionals', 'pendingInvitations'));
+        return view('admin.users.index', compact('users', 'regionals', 'organizationalUnits', 'pendingInvitations'));
     }
 
     /**
@@ -71,7 +83,13 @@ class AdminUserController extends Controller
                 'job_title' => ['nullable', 'string', 'max:100'],
                 'department' => ['nullable', 'string', 'max:100'],
                 'regional_id' => ['nullable', 'exists:regionals,id'],
+                'organizational_unit_id' => ['nullable', 'exists:regionals,id'],
             ]);
+
+            [$organizationalUnit, $regional] = $this->resolveOrganization(
+                $validated['organizational_unit_id'] ?? null,
+                $validated['regional_id'] ?? null,
+            );
 
             $token = Str::random(64);
             $invitation = UserInvitation::create([
@@ -80,7 +98,8 @@ class AdminUserController extends Controller
                 'role' => $validated['role'],
                 'job_title' => $validated['job_title'] ?? null,
                 'department' => $validated['department'] ?? null,
-                'regional_id' => $validated['regional_id'] ?? null,
+                'regional_id' => $regional?->id,
+                'organizational_unit_id' => $organizationalUnit?->id,
                 'token' => $token,
                 'expires_at' => now()->addHours(72),
             ]);
@@ -112,11 +131,15 @@ class AdminUserController extends Controller
             'job_title' => ['nullable', 'string', 'max:100'],
             'department' => ['nullable', 'string', 'max:100'],
             'regional_id' => ['nullable', 'exists:regionals,id'],
+            'organizational_unit_id' => ['nullable', 'exists:regionals,id'],
             'bio' => ['nullable', 'string', 'max:500'],
             'is_active' => ['boolean'],
         ]);
 
-        $regional = !empty($validated['regional_id']) ? Regional::find($validated['regional_id']) : null;
+        [$organizationalUnit, $regional] = $this->resolveOrganization(
+            $validated['organizational_unit_id'] ?? null,
+            $validated['regional_id'] ?? null,
+        );
 
         $user = User::create([
             'name' => $validated['name'],
@@ -126,6 +149,7 @@ class AdminUserController extends Controller
             'job_title' => $validated['job_title'] ?? null,
             'department' => $validated['department'] ?? null,
             'regional_id' => $regional?->id,
+            'organizational_unit_id' => $organizationalUnit?->id,
             'regional' => $regional?->full_name,
             'bio' => $validated['bio'] ?? null,
             'is_active' => $request->boolean('is_active', true),
@@ -171,6 +195,7 @@ class AdminUserController extends Controller
     public function cancelInvitation(UserInvitation $invitation): RedirectResponse
     {
         $invitation->delete();
+
         return back()->with('success', 'Invitación cancelada correctamente.');
     }
 
@@ -186,13 +211,14 @@ class AdminUserController extends Controller
             'job_title' => ['nullable', 'string', 'max:100'],
             'department' => ['nullable', 'string', 'max:100'],
             'regional_id' => ['nullable', 'exists:regionals,id'],
+            'organizational_unit_id' => ['nullable', 'exists:regionals,id'],
             'bio' => ['nullable', 'string', 'max:500'],
             'password' => ['nullable', 'string', Password::min(8)],
             'is_active' => ['boolean'],
         ]);
 
         // Security check: Last active admin protection
-        if ($user->isAdmin() && ($validated['role'] !== 'admin' || !$request->boolean('is_active', true))) {
+        if ($user->isAdmin() && ($validated['role'] !== 'admin' || ! $request->boolean('is_active', true))) {
             $otherActiveAdmins = User::where('role', 'admin')
                 ->where('is_active', true)
                 ->where('id', '!=', $user->id)
@@ -203,10 +229,15 @@ class AdminUserController extends Controller
             }
         }
 
-        $regional = !empty($validated['regional_id']) ? Regional::find($validated['regional_id']) : null;
+        [$organizationalUnit, $regional] = $this->resolveOrganization(
+            $validated['organizational_unit_id'] ?? null,
+            $validated['regional_id'] ?? null,
+        );
+        $validated['regional_id'] = $regional?->id;
+        $validated['organizational_unit_id'] = $organizationalUnit?->id;
         $validated['regional'] = $regional?->full_name;
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
@@ -268,9 +299,10 @@ class AdminUserController extends Controller
             }
         }
 
-        $user->update(['is_active' => !$user->is_active]);
+        $user->update(['is_active' => ! $user->is_active]);
 
         $statusText = $user->is_active ? 'activada' : 'desactivada';
+
         return back()->with('success', "La cuenta de {$user->name} ha sido {$statusText}.");
     }
 
@@ -313,5 +345,22 @@ class AdminUserController extends Controller
         });
 
         return redirect()->route('admin.users.index')->with('success', "El usuario {$user->name} ha sido eliminado permanentemente.");
+    }
+
+    private function resolveOrganization(?int $organizationalUnitId, ?int $regionalId): array
+    {
+        $unit = $organizationalUnitId
+            ? Regional::find($organizationalUnitId)
+            : ($regionalId ? Regional::find($regionalId) : null);
+
+        if (! $unit) {
+            return [null, null];
+        }
+
+        $regional = $unit->type === 'regional'
+            ? $unit
+            : $unit->ancestors()->first(fn (Regional $ancestor) => $ancestor->type === 'regional');
+
+        return [$unit, $regional];
     }
 }

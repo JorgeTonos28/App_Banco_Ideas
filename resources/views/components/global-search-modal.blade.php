@@ -50,13 +50,13 @@
             </div>
 
             <!-- Empty / Initial State -->
-            <div x-show="!loading && query.length < 2" class="text-center py-8 text-on-surface-variant/80">
+            <div x-show="!loading && normalizedSearchQuery().length < 2" class="text-center py-8 text-on-surface-variant/80">
                 <span class="material-symbols-outlined text-4xl text-outline mb-2">travel_explore</span>
                 <p class="text-xs">Escribe al menos 2 letras para iniciar la búsqueda en toda la plataforma.</p>
             </div>
 
             <!-- No results -->
-            <div x-show="!loading && query.length >= 2 && results.ideas.length === 0 && results.people.length === 0 && results.categories.length === 0 && results.tags.length === 0" 
+            <div x-show="!loading && normalizedSearchQuery().length >= 2 && results.ideas.length === 0 && results.people.length === 0 && results.categories.length === 0 && results.tags.length === 0"
                  class="text-center py-8 text-on-surface-variant">
                 <span class="material-symbols-outlined text-4xl text-outline mb-2">sentiment_dissatisfied</span>
                 <p class="text-sm font-semibold">No se encontraron resultados</p>
@@ -77,7 +77,10 @@
                                         <p class="text-xs text-on-surface-variant line-clamp-1" x-text="idea.summary"></p>
                                     </div>
                                 </div>
-                                <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant ml-2 shrink-0" x-text="idea.status"></span>
+                                <div class="ml-2 flex shrink-0 flex-col items-end gap-1">
+                                    <span class="rounded-full bg-primary-fixed px-2 py-0.5 text-[9px] font-bold text-primary" x-text="idea.context"></span>
+                                    <span class="rounded-full bg-surface-container px-2 py-0.5 text-[10px] font-mono-tech text-on-surface-variant" x-text="idea.status"></span>
+                                </div>
                             </a>
                         </template>
                     </div>
@@ -125,7 +128,7 @@
 
         <!-- Footer Help -->
         <div class="flex items-center justify-between px-4 py-2 bg-surface-container-low text-[11px] text-on-surface-variant">
-            <span>Navega con <b>↑ ↓</b> y presiona <b>ESC</b> para cerrar</span>
+            <span>Busca sin importar espacios · <b>ESC</b> para cerrar</span>
             <span>INNOVATEP Ideas</span>
         </div>
     </div>

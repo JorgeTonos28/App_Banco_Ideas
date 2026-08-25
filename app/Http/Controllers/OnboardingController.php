@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ActivateInvitationRequest;
 use App\Models\Regional;
 use App\Models\User;
 use App\Models\UserInvitation;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class OnboardingController extends Controller
@@ -21,7 +20,7 @@ class OnboardingController extends Controller
     {
         $invitation = UserInvitation::where('token', $token)->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return redirect()->route('login')->with('error', 'El enlace de invitación no es válido.');
         }
 
@@ -33,15 +32,16 @@ class OnboardingController extends Controller
             return redirect()->route('login')->with('error', 'Este enlace de invitación ha expirado. Solicita a un administrador el reenvío de la invitación.');
         }
 
-        $regionals = Regional::where('is_active', true)->orderBy('order')->get();
+        $invitation->loadMissing(['organizationalUnit', 'regional']);
+        $organizationalUnits = Regional::where('is_active', true)->with('parent')->get()->sortBy('path_label')->values();
 
-        return view('onboarding.activate', compact('invitation', 'regionals'));
+        return view('onboarding.activate', compact('invitation', 'organizationalUnits'));
     }
 
     /**
      * Complete onboarding and create/activate user.
      */
-    public function activate(Request $request, string $token): RedirectResponse
+    public function activate(ActivateInvitationRequest $request, string $token): RedirectResponse
     {
         $invitation = UserInvitation::where('token', $token)->firstOrFail();
 
@@ -49,27 +49,29 @@ class OnboardingController extends Controller
             return redirect()->route('login')->with('error', 'La invitación ya no está disponible.');
         }
 
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'string', Password::min(8)->letters()->numbers(), 'confirmed'],
-            'job_title' => ['nullable', 'string', 'max:100'],
-            'department' => ['nullable', 'string', 'max:100'],
-            'regional_id' => ['nullable', 'exists:regionals,id'],
-            'bio' => ['nullable', 'string', 'max:500'],
-        ]);
+        $validated = $request->validated();
 
-        $regional = $request->filled('regional_id') ? Regional::find($request->regional_id) : $invitation->regional;
+        $unitId = $invitation->organizational_unit_id
+            ?? $invitation->regional_id
+            ?? ($validated['organizational_unit_id'] ?? null);
+        $organizationalUnit = $unitId
+            ? Regional::find($unitId)
+            : null;
+        $regional = $organizationalUnit?->type === 'regional'
+            ? $organizationalUnit
+            : $organizationalUnit?->ancestors()->first(fn (Regional $ancestor) => $ancestor->type === 'regional');
 
         $user = User::create([
-            'name' => $request->name,
+            'name' => $validated['name'],
             'email' => $invitation->email,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($validated['password']),
             'role' => $invitation->role,
-            'job_title' => $request->job_title ?? $invitation->job_title,
-            'department' => $request->department ?? $invitation->department,
+            'job_title' => $validated['job_title'] ?? $invitation->job_title,
+            'department' => $validated['department'] ?? $invitation->department,
             'regional_id' => $regional?->id,
+            'organizational_unit_id' => $organizationalUnit?->id,
             'regional' => $regional?->full_name,
-            'bio' => $request->bio,
+            'bio' => $validated['bio'] ?? null,
             'is_active' => true,
             'must_change_password' => false,
             'email_verified_at' => now(),

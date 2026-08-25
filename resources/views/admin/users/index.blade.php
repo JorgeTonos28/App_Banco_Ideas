@@ -7,7 +7,7 @@
     createModal: false, 
     editModal: false, 
     creationTab: 'invitation',
-    currentUser: { id: '', name: '', email: '', role: 'user', job_title: '', department: '', regional_id: '', is_active: 1 } 
+    currentUser: { id: '', name: '', email: '', role: 'user', job_title: '', department: '', organizational_unit_id: '', is_active: 1 }
 }">
 
     <!-- Header Section -->
@@ -75,6 +75,9 @@
                         </span>
                     </div>
                     <p class="text-[11px] font-mono-tech text-outline truncate">{{ $inv->email }}</p>
+                    @if($inv->organizationalUnit)
+                    <p class="text-[10px] text-primary mt-1">{{ $inv->organizationalUnit->path_label }}</p>
+                    @endif
                     <p class="text-[10px] text-on-surface-variant mt-1">Expira: {{ $inv->expires_at->diffForHumans() }}</p>
                 </div>
 
@@ -140,7 +143,7 @@
                     <tr>
                         <th class="py-3.5 px-4">Usuario</th>
                         <th class="py-3.5 px-4">Cargo / Área</th>
-                        <th class="py-3.5 px-4">Regional</th>
+                        <th class="py-3.5 px-4">Comunidad organizacional</th>
                         <th class="py-3.5 px-4 text-center">Seguridad 2FA</th>
                         <th class="py-3.5 px-4 text-center">Rol</th>
                         <th class="py-3.5 px-4 text-center">Ideas</th>
@@ -165,10 +168,13 @@
                             <span class="text-[10px] text-on-surface-variant block font-mono-tech">{{ $u->department ?: 'General' }}</span>
                         </td>
                         <td class="py-4 px-4 text-xs text-on-surface-variant">
-                            @if($u->regionalModel)
+                            @if($u->organizationalUnit)
                             <span class="px-2 py-0.5 rounded-md bg-surface-container text-primary font-mono-tech text-[11px] font-bold">
-                                {{ $u->regionalModel->code }}
+                                {{ $u->organizationalUnit->code }}
                             </span>
+                            <span class="block text-[10px] text-outline max-w-48">{{ $u->organizationalUnit->path_label }}</span>
+                            @elseif($u->regionalModel)
+                            <span class="px-2 py-0.5 rounded-md bg-surface-container text-primary font-mono-tech text-[11px] font-bold">{{ $u->regionalModel->code }}</span>
                             <span class="block text-[10px] text-outline">{{ $u->regionalModel->name }}</span>
                             @else
                             <span class="text-outline text-xs">{{ $u->regional ?: 'Sede Central' }}</span>
@@ -216,7 +222,7 @@
                                             role: '{{ $u->role }}', 
                                             job_title: '{{ addslashes($u->job_title) }}', 
                                             department: '{{ addslashes($u->department) }}', 
-                                            regional_id: '{{ $u->regional_id }}', 
+                                            organizational_unit_id: '{{ $u->organizational_unit_id ?: $u->regional_id }}',
                                             bio: '{{ addslashes($u->bio) }}', 
                                             is_active: {{ $u->is_active ? '1' : '0' }} 
                                         }; editModal = true;"
@@ -318,13 +324,14 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1">Dirección Regional</label>
-                        <select name="regional_id" class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
-                            <option value="">Seleccionar Regional</option>
-                            @foreach($regionals as $r)
-                            <option value="{{ $r->id }}">{{ $r->code }} - {{ $r->name }}</option>
+                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1">Unidad organizacional</label>
+                        <select name="organizational_unit_id" class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
+                            <option value="">Seleccionar unidad</option>
+                            @foreach($organizationalUnits as $unit)
+                            <option value="{{ $unit->id }}">{{ $unit->path_label }}</option>
                             @endforeach
                         </select>
+                        <p class="mt-1 text-[10px] text-on-surface-variant">Selecciona el nivel más específico del colaborador.</p>
                     </div>
                 </div>
 
@@ -389,11 +396,11 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1">Dirección Regional</label>
-                        <select name="regional_id" x-model="currentUser.regional_id" class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
-                            <option value="">Seleccionar Regional</option>
-                            @foreach($regionals as $r)
-                            <option value="{{ $r->id }}">{{ $r->code }} - {{ $r->name }}</option>
+                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1">Unidad organizacional</label>
+                        <select name="organizational_unit_id" x-model="currentUser.organizational_unit_id" class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
+                            <option value="">Seleccionar unidad</option>
+                            @foreach($organizationalUnits as $unit)
+                            <option value="{{ $unit->id }}">{{ $unit->path_label }}</option>
                             @endforeach
                         </select>
                     </div>

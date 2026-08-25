@@ -18,6 +18,7 @@ class Idea extends Model
     public const ACCESS_SCOPES = [
         'only_me',
         'profile',
+        'organization',
     ];
 
     public const WORKSPACE_STATUSES = [
@@ -85,6 +86,7 @@ class Idea extends Model
         'workspace_status',
         'publication_status',
         'community_display',
+        'requested_community_display',
         'publication_requested_at',
         'publication_requested_by_user_id',
         'publication_reviewed_at',
@@ -170,6 +172,13 @@ class Idea extends Model
         return $this->belongsToMany(Category::class, 'idea_category')->withTimestamps();
     }
 
+    public function communityUnits(): BelongsToMany
+    {
+        return $this->belongsToMany(Regional::class, 'idea_community_shares', 'idea_id', 'organizational_unit_id')
+            ->withPivot(['include_descendants', 'shared_by_user_id'])
+            ->withTimestamps();
+    }
+
     public function parentIdea(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_idea_id');
@@ -208,6 +217,11 @@ class Idea extends Model
         }
 
         return $ancestors;
+    }
+
+    public function rootIdea(): self
+    {
+        return $this->ancestors()->first() ?: $this;
     }
 
     public function tags(): BelongsToMany
@@ -259,9 +273,14 @@ class Idea extends Model
 
     public function scopeVisibleOnProfile(Builder $query): Builder
     {
+        return $query->visibleOnProfileFor(auth()->user());
+    }
+
+    public function scopeVisibleOnProfileFor(Builder $query, ?User $viewer): Builder
+    {
         return $query
             ->whereNull('parent_idea_id')
-            ->where(function (Builder $visible): void {
+            ->where(function (Builder $visible) use ($viewer): void {
                 $visible
                     ->where('publication_status', 'published')
                     ->orWhere(function (Builder $shared): void {
@@ -269,6 +288,38 @@ class Idea extends Model
                             ->where('access_scope', 'profile')
                             ->where('visibility', '!=', 'draft');
                     });
+
+                if ($viewer?->isAdmin()) {
+                    $visible->orWhere(function (Builder $internal): void {
+                        $internal
+                            ->where('access_scope', 'organization')
+                            ->where('visibility', '!=', 'draft')
+                            ->whereHas('communityUnits');
+                    });
+
+                    return;
+                }
+
+                $viewerUnit = $viewer?->effectiveOrganizationalUnit();
+
+                if ($viewerUnit) {
+                    $viewerPathIds = $viewerUnit->ancestorAndSelfIds();
+
+                    $visible->orWhere(function (Builder $internal) use ($viewerUnit, $viewerPathIds): void {
+                        $internal
+                            ->where('access_scope', 'organization')
+                            ->where('visibility', '!=', 'draft')
+                            ->whereHas('communityUnits', function (Builder $shares) use ($viewerUnit, $viewerPathIds): void {
+                                $shares
+                                    ->where('regionals.id', $viewerUnit->id)
+                                    ->orWhere(function (Builder $inherited) use ($viewerPathIds): void {
+                                        $inherited
+                                            ->whereIn('regionals.id', $viewerPathIds)
+                                            ->where('idea_community_shares.include_descendants', true);
+                                    });
+                            });
+                    });
+                }
             });
     }
 
@@ -295,10 +346,11 @@ class Idea extends Model
 
     public function isSharedOnProfile(): bool
     {
-        return $this->access_scope === 'profile' && $this->visibility !== 'draft';
+        return in_array($this->access_scope, ['profile', 'organization'], true)
+            && $this->visibility !== 'draft';
     }
 
-    public function isAccessibleToAuthenticatedAudience(): bool
+    public function isAccessibleToAuthenticatedAudience(?User $viewer = null): bool
     {
         if ($this->isPublished()) {
             return true;
@@ -308,9 +360,42 @@ class Idea extends Model
             return false;
         }
 
-        return $this->ancestors()->every(
-            fn (Idea $ancestor) => $ancestor->isPublished() || $ancestor->isSharedOnProfile()
-        );
+        $chain = $this->ancestors()->push($this);
+
+        if ($chain->contains(fn (Idea $node) => ! $node->isPublished() && ! $node->isSharedOnProfile())) {
+            return false;
+        }
+
+        if ($chain->contains(fn (Idea $node) => ! $node->isPublished() && $node->access_scope === 'organization')) {
+            $audienceIdea = $chain->first(fn (Idea $node) => ! $node->isPublished()) ?: $this;
+
+            return $viewer ? $audienceIdea->isSharedWithOrganization($viewer) : false;
+        }
+
+        return true;
+    }
+
+    public function isSharedWithOrganization(User $viewer): bool
+    {
+        $unit = $viewer->effectiveOrganizationalUnit();
+
+        if (! $unit || $this->access_scope !== 'organization' || $this->visibility === 'draft') {
+            return false;
+        }
+
+        $viewerPathIds = $unit->ancestorAndSelfIds();
+
+        return $this->communityUnits()
+            ->where(function (Builder $shares) use ($unit, $viewerPathIds): void {
+                $shares
+                    ->where('regionals.id', $unit->id)
+                    ->orWhere(function (Builder $descendantShares) use ($viewerPathIds): void {
+                        $descendantShares
+                            ->whereIn('regionals.id', $viewerPathIds)
+                            ->where('idea_community_shares.include_descendants', true);
+                    });
+            })
+            ->exists();
     }
 
     public function acceptsRatings(): bool
@@ -324,7 +409,7 @@ class Idea extends Model
                 && ! in_array($this->status, ['descartada', 'archivada'], true);
         }
 
-        return $this->isAccessibleToAuthenticatedAudience()
+        return $this->isAccessibleToAuthenticatedAudience(auth()->user())
             && ! in_array($this->workspace_status, ['descartada', 'archivada'], true);
     }
 
@@ -462,8 +547,16 @@ class Idea extends Model
     {
         return match ($this->access_scope) {
             'profile' => 'Visible en mi perfil',
+            'organization' => 'Compartida en comunidad interna',
             default => 'Sólo yo',
         };
+    }
+
+    public function getRequestedCommunityDisplayLabelAttribute(): string
+    {
+        return $this->requested_community_display === 'represented_by_parent'
+            ? 'Subidea, representada dentro de su madre'
+            : 'Idea principal, crea una tarjeta';
     }
 
     public function getStatusBadgeClassesAttribute(): array

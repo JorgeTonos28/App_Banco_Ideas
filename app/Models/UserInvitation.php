@@ -17,6 +17,7 @@ class UserInvitation extends Model
         'job_title',
         'department',
         'regional_id',
+        'organizational_unit_id',
         'token',
         'expires_at',
         'registered_at',
@@ -30,6 +31,11 @@ class UserInvitation extends Model
     public function regional(): BelongsTo
     {
         return $this->belongsTo(Regional::class);
+    }
+
+    public function organizationalUnit(): BelongsTo
+    {
+        return $this->belongsTo(Regional::class, 'organizational_unit_id');
     }
 
     public function isExpired(): bool

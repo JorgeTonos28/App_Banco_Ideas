@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Organization\StoreOrganizationalUnitRequest;
+use App\Http\Requests\Organization\UpdateOrganizationalUnitRequest;
 use App\Models\Regional;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AdminRegionalController extends Controller
@@ -16,50 +17,39 @@ class AdminRegionalController extends Controller
      */
     public function index(Request $request): View
     {
-        $regionals = Regional::withCount('users')
+        $regionals = Regional::with(['parent', 'children'])
+            ->withCount(['users', 'members', 'children'])
             ->orderBy('order')
             ->orderBy('code')
             ->get();
+        $treeRoots = $regionals->whereNull('parent_id');
+        $treeByParent = $regionals->whereNotNull('parent_id')->groupBy('parent_id');
 
-        return view('admin.regionals.index', compact('regionals'));
+        return view('admin.regionals.index', compact('regionals', 'treeRoots', 'treeByParent'));
     }
 
     /**
      * Store a newly created regional.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(StoreOrganizationalUnitRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'max:20', 'unique:regionals,code'],
-            'name' => ['required', 'string', 'max:100'],
-            'order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $validated['code'] = strtoupper(trim($validated['code']));
+        $validated = $request->validated();
         $validated['order'] = $validated['order'] ?? (Regional::max('order') + 1);
         $validated['is_active'] = true;
 
-        Regional::create($validated);
+        $unit = Regional::create($validated);
 
-        return back()->with('success', "Regional {$validated['code']} - {$validated['name']} creada exitosamente.");
+        return back()->with('success', "{$unit->type_label} {$unit->full_name} creada correctamente.");
     }
 
     /**
      * Update the specified regional.
      */
-    public function update(Request $request, Regional $regional): RedirectResponse
+    public function update(UpdateOrganizationalUnitRequest $request, Regional $regional): RedirectResponse
     {
-        $validated = $request->validate([
-            'code' => ['required', 'string', 'max:20', Rule::unique('regionals', 'code')->ignore($regional->id)],
-            'name' => ['required', 'string', 'max:100'],
-            'order' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $regional->update($request->validated());
 
-        $validated['code'] = strtoupper(trim($validated['code']));
-
-        $regional->update($validated);
-
-        return back()->with('success', "Regional {$regional->full_name} actualizada exitosamente.");
+        return back()->with('success', "{$regional->type_label} {$regional->full_name} actualizada correctamente.");
     }
 
     /**
@@ -67,9 +57,14 @@ class AdminRegionalController extends Controller
      */
     public function toggleStatus(Regional $regional): RedirectResponse
     {
-        $regional->update(['is_active' => !$regional->is_active]);
+        if ($regional->is_active && $regional->children()->where('is_active', true)->exists()) {
+            return back()->with('error', 'Inhabilita primero las unidades dependientes activas.');
+        }
+
+        $regional->update(['is_active' => ! $regional->is_active]);
 
         $statusText = $regional->is_active ? 'habilitada' : 'inhabilitada';
+
         return back()->with('success', "La regional {$regional->full_name} ha sido {$statusText}.");
     }
 
@@ -78,12 +73,16 @@ class AdminRegionalController extends Controller
      */
     public function destroy(Regional $regional): RedirectResponse
     {
-        if ($regional->users()->count() > 0) {
-            return back()->with('error', "No se puede eliminar la regional {$regional->code} porque tiene colaboradores vinculados. Puedes inhabilitarla.");
+        if ($regional->children()->exists()) {
+            return back()->with('error', 'No se puede eliminar una unidad que todavía tiene niveles dependientes.');
+        }
+
+        if ($regional->members()->exists() || $regional->users()->exists()) {
+            return back()->with('error', "No se puede eliminar {$regional->full_name} porque tiene colaboradores vinculados. Puedes inhabilitarla.");
         }
 
         $regional->delete();
 
-        return back()->with('success', "Regional eliminada correctamente.");
+        return back()->with('success', 'Regional eliminada correctamente.');
     }
 }

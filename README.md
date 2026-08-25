@@ -12,13 +12,14 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 1. Captura, Organización y Publicación Editorial
 - **Captura personal y sin fricción**: Registro rápido con título, propuesta, oportunidad detectada, clasificación, etiquetas dinámicas y adjuntos (PDFs, imágenes o documentos). El autor decide por separado si el contenido está completo o sigue como borrador y quién puede consultarlo.
-- **Acceso independiente de la publicación**: Una idea completa puede quedar como `Sólo yo` o `Visible en mi perfil`. La segunda opción permite que usuarios autenticados la consulten mediante el perfil o un enlace directo, pero no la incorpora al explorador, la búsqueda global, el ranking ni la Comunidad.
+- **Acceso independiente de la publicación**: Una idea completa puede quedar como `Sólo yo`, `Visible en mi perfil` o compartirse en una comunidad interna. El acceso interno se vincula a una unidad organizacional concreta y puede limitarse a ese nivel o incluir sus niveles dependientes; no activa el ciclo oficial ni incorpora la idea a la comunidad general.
 - **Borradores siempre restringidos**: Un borrador no puede compartirse desde el perfil hasta marcarse como idea completa.
 - **Flujo de trabajo privado independiente**: Las ideas no publicadas utilizan los estados `Capturada`, `En clarificación`, `Lista para actuar`, `En ejecución`, `Completada`, `En pausa`, `Descartada` y `Archivada`. Este flujo organiza el trabajo personal y no altera el ciclo comunitario.
-- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea conserva el acceso `Sólo yo` o `Visible en mi perfil` elegido por el autor.
+- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea conserva el acceso elegido por el autor. El formulario administrativo inicia en `Sin decisión` y la representación comunitaria se deriva de la jerarquía: sólo las raíces crean tarjetas y las microideas se muestran dentro de su madre.
 - **Ciclo comunitario después de publicar**: Sólo las ideas aprobadas utilizan `Nueva`, `En revisión`, `Priorizada`, `En desarrollo`, `Implementada`, `Descartada` y `Archivada`.
 - **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea puede restringir su propio acceso, pero nunca superar el acceso efectivo de sus ancestros.
+- **Comunidades organizacionales jerárquicas**: Regionales o sedes, direcciones funcionales y departamentos forman un árbol navegable. Las ideas internas declaran audiencias exactas o con descendientes, mientras la comunidad general de INFOTEP continúa reservada para publicaciones aprobadas editorialmente.
 - **Grafo de relaciones semánticas**: Las ideas pueden conectarse como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. Las propuestas entre autores requieren confirmación.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Guía contextual de clasificación**: Los formularios de creación y edición incluyen una ayuda desplegable que diferencia categoría, dimensiones y etiquetas, recomienda entre 4 y 7 etiquetas y muestra ejemplos de términos útiles o duplicados que deben evitarse.
@@ -37,8 +38,9 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Línea de tiempo por flujo**: Historial separado para trabajo privado, revisión editorial y ciclo comunitario, con actor y observaciones.
 
 ### 2. Descubrimiento y Colaboración
-- **Explorador con Filtros Multifactor**: Búsqueda global, filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
-- **Navegación estructural**: “Mis Ideas” dispone de vista de árbol y tarjetas; cada ficha muestra madre, subideas, clasificaciones y relaciones verificadas.
+- **Explorador con Filtros Multifactor**: La búsqueda global ignora espacios y consulta título, resumen, descripción, problema, categoría y etiquetas exclusivamente sobre todas las ideas del usuario y las ideas publicadas en la comunidad. El explorador añade filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento, y ordenamiento por más votadas, recientes, en tendencia, más comentadas o implementadas.
+- **Navegación estructural**: “Mis Ideas”, la trazabilidad de cada ficha y el selector de idea madre usan árboles cerrados al iniciar. Cada nivel se abre bajo demanda y el buscador ignora espacios, consulta título, descripción, problema, categoría y etiquetas, y conserva las ramas que contienen coincidencias.
+- **Creación contextual de microideas**: Los nodos propios muestran una acción para agregar una hija. La ficha de una idea permite crear una hija o agregar/cambiar su madre mediante un modal que sólo contiene ideas del usuario y excluye descendientes inválidos.
 - **Valoración preliminar y comunitaria (1 a 5 estrellas)**: Una idea madre visible en el perfil puede recibir votos antes de publicarse, con actualización inmediata del promedio y sin autovoto. Las microideas nunca reciben votos independientes.
 - **Continuidad de las valoraciones**: Los votos preliminares se conservan al publicar la idea, pero no activan Innovation Score ni participación en rankings antes de la aprobación editorial.
 - **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".
@@ -51,7 +53,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 4. Gestión Personal, Seguridad y 2FA
 - **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona ideas exclusivas, compartidas en perfil, árboles de microideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
-- **Comunidad (Feed de Innovación)**: Ecosistema colaborativo que muestra sólo ideas principales aprobadas, junto con la cantidad de subideas integradas.
+- **Comunidades por nivel**: Al entrar en Comunidad, cada colaborador llega a su unidad más específica y puede subir hacia dirección, regional/sede y comunidad general, o bajar a niveles dependientes cuando corresponda. Las comunidades internas muestran sólo ideas madre habilitadas para su audiencia; la comunidad general mantiene exclusivamente publicaciones aprobadas.
 - **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
 - **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
 - **Autenticación en Dos Pasos (2FA)**:
@@ -63,13 +65,16 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 5. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
-- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar ideas principales, representar subideas, solicitar cambios, asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
+- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar, solicitar cambios o rechazar sin alterar la representación jerárquica definida por el autor; también permite asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
 - **Control Integral de Usuarios y Onboarding**:
   - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
   - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.
   - **Regla de Protección de Administrador Único**: Bloqueo estricto para impedir eliminar, desactivar o degradar al último administrador general activo.
-- **Gestión Configurable de Regionales INFOTEP**:
-  - Mantenimiento completo de direcciones regionales (`ONA - Oficina Nacional`, `DRM - Regional Metropolitana`, `DRO`, `DRV`, `DRCS`, `DRE`, `DRCN`, `DRCNE`, `DRS`).
+- **Gestión de estructura organizacional**:
+  - Árbol administrable de regionales o sedes, direcciones funcionales y departamentos, con validación de niveles superiores, prevención de ciclos y bloqueo de eliminación cuando existen miembros o dependencias.
+  - El directorio, las invitaciones y el onboarding asignan a cada colaborador su unidad más específica y conservan automáticamente la regional raíz para compatibilidad.
+  - Cuando una invitación ya tiene unidad organizacional, el colaborador la ve como dato informativo y el servidor impide sustituirla durante la activación.
+  - La unidad organizacional se muestra en el perfil, pero sólo puede ser modificada desde Administración para evitar ampliaciones de acceso no autorizadas.
 - **Taxonomía Multidimensional Administrable**:
   - Dimensiones configurables con modo único o múltiple, obligatoriedad, activación y orden.
   - Términos controlados con icono, color, jerarquía padre-hijo y protección cuando están en uso.
@@ -187,6 +192,8 @@ En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh
 `php artisan migrate --force` crea automáticamente la dimensión principal **Área de innovación**, asigna las categorías existentes a esa dimensión y migra cada `ideas.category_id` a la tabla multidimensional `idea_category`. No es necesario modificar previamente los registros actuales.
 
 La migración de acceso agrega `ideas.access_scope` sin convertir ideas privadas en visibles. Las publicaciones existentes se inicializan con acceso de perfil para que, si luego se retiran de Comunidad, continúen siendo localizables desde el perfil de su autor; el autor puede cambiar posteriormente ese acceso a `Sólo yo`.
+
+La migración de comunidades organizacionales amplía `regionals` con `parent_id` y `type`, agrega la unidad organizacional más específica a usuarios e invitaciones, y crea `idea_community_shares`. Los usuarios existentes conservan su regional como unidad inicial. Cada audiencia interna registra si aplica sólo a la unidad seleccionada o también a sus descendientes.
 
 Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
 

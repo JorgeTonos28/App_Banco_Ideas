@@ -191,7 +191,7 @@ class IdeaHierarchyAndRelationTest extends TestCase
         $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $child), [
             'publication_status' => 'published',
             'community_display' => 'represented_by_parent',
-        ])->assertSessionHasErrors('community_display');
+        ])->assertSessionHasErrors('publication_status');
 
         $this->publishThroughWorkflow($parent);
 
@@ -245,7 +245,7 @@ class IdeaHierarchyAndRelationTest extends TestCase
         $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $middle), [
             'publication_status' => 'published',
             'community_display' => 'standalone',
-        ])->assertSessionHasErrors('community_display');
+        ])->assertSessionHasErrors('publication_status');
 
         $this->publishThroughWorkflow($root);
         $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $middle), [

@@ -13,6 +13,8 @@
         selectedCategoryFilter: null,
         selectedLetter: 'ALL',
         selectedCategoryId: '{{ old('category_id', $idea->category_id) }}',
+        accessScope: @js(old('access_scope', $idea->access_scope)),
+        visibilityState: @js(old('visibility', $idea->visibility)),
         titleText: '',
         descriptionText: '',
         editingTagIdx: null,
@@ -430,6 +432,7 @@
                     @else
                         <select id="visibility"
                                 name="visibility"
+                                x-model="visibilityState"
                                 class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             <option value="private" {{ old('visibility', $idea->visibility) == 'private' ? 'selected' : '' }}>Idea completa</option>
                             <option value="draft" {{ old('visibility', $idea->visibility) == 'draft' ? 'selected' : '' }}>Borrador incompleto</option>
@@ -443,9 +446,13 @@
                     </label>
                     <select id="access_scope"
                             name="access_scope"
+                            x-model="accessScope"
                             class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         <option value="only_me" {{ old('access_scope', $idea->access_scope) === 'only_me' ? 'selected' : '' }}>Sólo yo</option>
                         <option value="profile" {{ old('access_scope', $idea->access_scope) === 'profile' ? 'selected' : '' }}>Visible en mi perfil</option>
+                        @if($communityUnits->isNotEmpty())
+                        <option value="organization" {{ old('access_scope', $idea->access_scope) === 'organization' ? 'selected' : '' }}>Mi comunidad interna</option>
+                        @endif
                     </select>
                     <p class="mt-1.5 text-[11px] text-on-surface-variant">
                         {{ $idea->isPublished() ? 'Se aplicará si la idea se retira de Comunidad.' : 'No modifica el estado de revisión editorial.' }}
@@ -453,6 +460,34 @@
                     @error('access_scope')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
                 </div>
             </div>
+
+            @if($communityUnits->isNotEmpty())
+            <div x-show="accessScope === 'organization'" x-cloak class="rounded-2xl border border-primary/15 bg-primary-fixed/25 p-4 sm:p-5">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined mt-0.5 text-xl text-primary" aria-hidden="true">corporate_fare</span>
+                    <div class="min-w-0 flex-1 space-y-4">
+                        <div>
+                            <h3 class="text-xs font-bold text-on-surface">Audiencia de la comunidad interna</h3>
+                            <p class="mt-1 text-[11px] leading-relaxed text-on-surface-variant">Puedes compartir sólo con el nivel elegido o incluir sus niveles dependientes.</p>
+                        </div>
+                        <div>
+                            <label for="organizational_unit_id" class="mb-1.5 block text-xs font-bold text-on-surface">Comunidad visible</label>
+                            <select id="organizational_unit_id" name="organizational_unit_id" :required="accessScope === 'organization'" class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs text-on-surface">
+                                <option value="">Selecciona una comunidad</option>
+                                @foreach($communityUnits as $unit)
+                                    <option value="{{ $unit->id }}" {{ (string) old('organizational_unit_id', $selectedCommunityShare?->id) === (string) $unit->id ? 'selected' : '' }}>{{ $unit->path_label }}</option>
+                                @endforeach
+                            </select>
+                            @error('organizational_unit_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
+                        </div>
+                        <label class="flex cursor-pointer items-start gap-2.5 text-xs text-on-surface">
+                            <input type="checkbox" name="include_descendants" value="1" {{ old('include_descendants', $selectedCommunityShare?->pivot?->include_descendants) ? 'checked' : '' }} class="mt-0.5 rounded border-outline text-primary focus:ring-primary">
+                            <span><strong class="block">Incluir niveles dependientes</strong><span class="mt-0.5 block text-[10px] text-on-surface-variant">Por ejemplo, una dirección podrá incluir a sus departamentos.</span></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             @unless($idea->isPublished())
             <div>
@@ -468,15 +503,10 @@
             @endunless
 
             <div>
-                <label for="parent_idea_id" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
+                <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                     Idea madre <span class="text-outline normal-case tracking-normal">(opcional)</span>
                 </label>
-                <select id="parent_idea_id" name="parent_idea_id" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                    <option value="">Mantener como idea independiente</option>
-                    @foreach($parentCandidates as $candidate)
-                        <option value="{{ $candidate->id }}" {{ (string) old('parent_idea_id', $idea->parent_idea_id) === (string) $candidate->id ? 'selected' : '' }}>{{ $candidate->title }}</option>
-                    @endforeach
-                </select>
+                <x-idea-parent-picker :candidates="$parentCandidates" :selected-id="$idea->parent_idea_id" independent-label="Mantener como idea independiente" />
                 <p class="mt-1.5 text-[11px] text-on-surface-variant">La jerarquía puede tener varios niveles y se valida para impedir ciclos.</p>
                 @error('parent_idea_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
             </div>
