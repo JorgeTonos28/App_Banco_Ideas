@@ -8,21 +8,43 @@ Alpine.data('globalSearch', () => ({
     query: '',
     results: { ideas: [], people: [], categories: [], tags: [] },
     loading: false,
+    searchController: null,
+
+    normalizedSearchQuery() {
+        return (this.query || '')
+            .toString()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '');
+    },
 
     async search() {
-        if (this.query.trim().length < 2) {
+        if (this.normalizedSearchQuery().length < 2) {
+            this.searchController?.abort();
             this.results = { ideas: [], people: [], categories: [], tags: [] };
+            this.loading = false;
             return;
         }
 
+        this.searchController?.abort();
+        const controller = new AbortController();
+        this.searchController = controller;
         this.loading = true;
+
         try {
-            const response = await fetch(`/api/search?q=${encodeURIComponent(this.query)}`);
+            const response = await fetch(`/api/search?q=${encodeURIComponent(this.query)}`, {
+                signal: controller.signal,
+                headers: { Accept: 'application/json' }
+            });
+
+            if (!response.ok) throw new Error(`Search request failed with ${response.status}`);
+
             this.results = await response.json();
         } catch (e) {
-            console.error('Search error:', e);
+            if (e.name !== 'AbortError') console.error('Search error:', e);
         } finally {
-            this.loading = false;
+            if (this.searchController === controller) this.loading = false;
         }
     }
 }));

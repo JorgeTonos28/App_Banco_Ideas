@@ -55,7 +55,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/cambiar-password-obligatorio', [ForcePasswordChangeController::class, 'update'])->name('password.force-update');
 
     // Global Search API
-    Route::get('/api/search', [SearchController::class, 'globalSearch'])->name('api.search');
+    Route::get('/api/search', [SearchController::class, 'globalSearch'])
+        ->name('api.search')
+        ->middleware('throttle:60,1');
 
     // Core Platform Routes
     // Root landing module: Mis Ideas

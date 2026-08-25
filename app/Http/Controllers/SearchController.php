@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GlobalSearchRequest;
 use App\Models\Category;
 use App\Models\Idea;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\GlobalIdeaSearchService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class SearchController extends Controller
 {
-    public function globalSearch(Request $request): JsonResponse
+    public function globalSearch(GlobalSearchRequest $request, GlobalIdeaSearchService $ideaSearch): JsonResponse
     {
-        $query = trim($request->input('q', ''));
+        $query = trim((string) ($request->validated('q') ?? ''));
+        $normalizedQuery = $ideaSearch->normalize($query);
 
-        if (strlen($query) < 2) {
+        if (mb_strlen($normalizedQuery) < 2) {
             return response()->json([
                 'ideas' => [],
                 'people' => [],
@@ -24,21 +27,15 @@ class SearchController extends Controller
             ]);
         }
 
-        $ideas = Idea::with(['user', 'category'])
-            ->published()
-            ->where(function ($q) use ($query) {
-                $q->where('title', 'like', "%{$query}%")
-                    ->orWhere('summary', 'like', "%{$query}%");
-            })
-            ->take(5)
-            ->get()
-            ->map(fn ($i) => [
-                'id' => $i->id,
-                'title' => $i->title,
-                'summary' => $i->summary,
-                'url' => route('ideas.show', $i->slug),
-                'category' => $i->category?->name,
-                'status' => $i->status_label,
+        $ideas = $ideaSearch->search($request->user(), $query)
+            ->map(fn (Idea $idea) => [
+                'id' => $idea->id,
+                'title' => $idea->title,
+                'summary' => $idea->summary ?: Str::limit(strip_tags($idea->description), 120),
+                'url' => route('ideas.show', $idea->slug),
+                'category' => $idea->category?->name,
+                'status' => $idea->isPublished() ? $idea->status_label : $idea->workspace_status_label,
+                'context' => $idea->user_id === $request->user()->id ? 'Tu idea' : 'Comunidad',
             ]);
 
         $people = User::where('is_active', true)
