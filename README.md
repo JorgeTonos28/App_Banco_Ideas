@@ -69,8 +69,10 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
   - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.
   - **Regla de Protección de Administrador Único**: Bloqueo estricto para impedir eliminar, desactivar o degradar al último administrador general activo.
-- **Gestión Configurable de Regionales INFOTEP**:
-  - Mantenimiento completo de direcciones regionales (`ONA - Oficina Nacional`, `DRM - Regional Metropolitana`, `DRO`, `DRV`, `DRCS`, `DRE`, `DRCN`, `DRCNE`, `DRS`).
+- **Gestión de estructura organizacional**:
+  - Árbol administrable de regionales o sedes, direcciones funcionales y departamentos, con validación de niveles superiores, prevención de ciclos y bloqueo de eliminación cuando existen miembros o dependencias.
+  - El directorio, las invitaciones y el onboarding asignan a cada colaborador su unidad más específica y conservan automáticamente la regional raíz para compatibilidad.
+  - La unidad organizacional se muestra en el perfil, pero sólo puede ser modificada desde Administración para evitar ampliaciones de acceso no autorizadas.
 - **Taxonomía Multidimensional Administrable**:
   - Dimensiones configurables con modo único o múltiple, obligatoriedad, activación y orden.
   - Términos controlados con icono, color, jerarquía padre-hijo y protección cuando están en uso.

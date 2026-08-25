@@ -20,11 +20,11 @@
         <span>Usuarios</span>
     </a>
 
-    <!-- Tab 4: Regionales INFOTEP -->
+    <!-- Tab 4: Estructura organizacional -->
     <a href="{{ route('admin.regionals.index') }}" 
        class="px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 {{ request()->routeIs('admin.regionals.*') ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface hover:border-surface-container-high' }}">
         <span class="material-symbols-outlined text-lg" style="{{ request()->routeIs('admin.regionals.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">location_city</span>
-        <span>Regionales</span>
+        <span>Estructura</span>
     </a>
 
     <!-- Tab 5: Categorías -->

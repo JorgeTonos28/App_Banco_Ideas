@@ -58,15 +58,15 @@
                     </div>
                 </div>
 
-                <!-- Regional, Job Title & Department -->
+                <!-- Organizational unit, Job Title & Department -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1.5">Dirección Regional <span class="text-error">*</span></label>
-                        <select name="regional_id" required class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
-                            <option value="">Seleccionar Regional</option>
-                            @foreach($regionals as $r)
-                            <option value="{{ $r->id }}" {{ (old('regional_id', $invitation->regional_id) == $r->id) ? 'selected' : '' }}>
-                                {{ $r->code }} - {{ $r->name }}
+                        <label class="block text-xs font-bold text-on-surface uppercase font-mono-tech mb-1.5">Unidad organizacional <span class="text-error">*</span></label>
+                        <select name="organizational_unit_id" required class="w-full bg-surface-container-low text-xs rounded-xl p-3 border border-surface-container-high">
+                            <option value="">Seleccionar unidad</option>
+                            @foreach($organizationalUnits as $unit)
+                            <option value="{{ $unit->id }}" {{ (old('organizational_unit_id', $invitation->organizational_unit_id ?: $invitation->regional_id) == $unit->id) ? 'selected' : '' }}>
+                                {{ $unit->path_label }}
                             </option>
                             @endforeach
                         </select>

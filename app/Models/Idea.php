@@ -273,9 +273,14 @@ class Idea extends Model
 
     public function scopeVisibleOnProfile(Builder $query): Builder
     {
+        return $query->visibleOnProfileFor(auth()->user());
+    }
+
+    public function scopeVisibleOnProfileFor(Builder $query, ?User $viewer): Builder
+    {
         return $query
             ->whereNull('parent_idea_id')
-            ->where(function (Builder $visible): void {
+            ->where(function (Builder $visible) use ($viewer): void {
                 $visible
                     ->where('publication_status', 'published')
                     ->orWhere(function (Builder $shared): void {
@@ -283,6 +288,38 @@ class Idea extends Model
                             ->where('access_scope', 'profile')
                             ->where('visibility', '!=', 'draft');
                     });
+
+                if ($viewer?->isAdmin()) {
+                    $visible->orWhere(function (Builder $internal): void {
+                        $internal
+                            ->where('access_scope', 'organization')
+                            ->where('visibility', '!=', 'draft')
+                            ->whereHas('communityUnits');
+                    });
+
+                    return;
+                }
+
+                $viewerUnit = $viewer?->effectiveOrganizationalUnit();
+
+                if ($viewerUnit) {
+                    $viewerPathIds = $viewerUnit->ancestorAndSelfIds();
+
+                    $visible->orWhere(function (Builder $internal) use ($viewerUnit, $viewerPathIds): void {
+                        $internal
+                            ->where('access_scope', 'organization')
+                            ->where('visibility', '!=', 'draft')
+                            ->whereHas('communityUnits', function (Builder $shares) use ($viewerUnit, $viewerPathIds): void {
+                                $shares
+                                    ->where('regionals.id', $viewerUnit->id)
+                                    ->orWhere(function (Builder $inherited) use ($viewerPathIds): void {
+                                        $inherited
+                                            ->whereIn('regionals.id', $viewerPathIds)
+                                            ->where('idea_community_shares.include_descendants', true);
+                                    });
+                            });
+                    });
+                }
             });
     }
 

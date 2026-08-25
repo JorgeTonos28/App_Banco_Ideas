@@ -21,7 +21,7 @@ class OnboardingController extends Controller
     {
         $invitation = UserInvitation::where('token', $token)->first();
 
-        if (!$invitation) {
+        if (! $invitation) {
             return redirect()->route('login')->with('error', 'El enlace de invitación no es válido.');
         }
 
@@ -33,9 +33,10 @@ class OnboardingController extends Controller
             return redirect()->route('login')->with('error', 'Este enlace de invitación ha expirado. Solicita a un administrador el reenvío de la invitación.');
         }
 
-        $regionals = Regional::where('is_active', true)->orderBy('order')->get();
+        $regionals = Regional::where('is_active', true)->where('type', 'regional')->orderBy('order')->get();
+        $organizationalUnits = Regional::where('is_active', true)->with('parent')->get()->sortBy('path_label')->values();
 
-        return view('onboarding.activate', compact('invitation', 'regionals'));
+        return view('onboarding.activate', compact('invitation', 'regionals', 'organizationalUnits'));
     }
 
     /**
@@ -55,10 +56,17 @@ class OnboardingController extends Controller
             'job_title' => ['nullable', 'string', 'max:100'],
             'department' => ['nullable', 'string', 'max:100'],
             'regional_id' => ['nullable', 'exists:regionals,id'],
+            'organizational_unit_id' => ['nullable', 'exists:regionals,id'],
             'bio' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $regional = $request->filled('regional_id') ? Regional::find($request->regional_id) : $invitation->regional;
+        $unitId = $request->input('organizational_unit_id', $invitation->organizational_unit_id);
+        $organizationalUnit = $unitId
+            ? Regional::find($unitId)
+            : ($request->filled('regional_id') ? Regional::find($request->regional_id) : $invitation->regional);
+        $regional = $organizationalUnit?->type === 'regional'
+            ? $organizationalUnit
+            : $organizationalUnit?->ancestors()->first(fn (Regional $ancestor) => $ancestor->type === 'regional');
 
         $user = User::create([
             'name' => $request->name,
@@ -68,6 +76,7 @@ class OnboardingController extends Controller
             'job_title' => $request->job_title ?? $invitation->job_title,
             'department' => $request->department ?? $invitation->department,
             'regional_id' => $regional?->id,
+            'organizational_unit_id' => $organizationalUnit?->id,
             'regional' => $regional?->full_name,
             'bio' => $request->bio,
             'is_active' => true,
