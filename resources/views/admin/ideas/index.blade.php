@@ -295,11 +295,14 @@
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Decisión</label>
                             <select name="publication_status" x-model="editorialDecision" required class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high">
                                 <option value="">Sin decisión</option>
-                                <option value="published">Aprobar publicación</option>
-                                <option value="changes_requested">Solicitar cambios</option>
-                                <option value="rejected">Rechazar solicitud</option>
-                                <option value="unpublished">Retirar de la comunidad</option>
+                                <option value="published" :disabled="selectedIdea?.publication_status === 'published'">Aprobar publicación</option>
+                                <option value="changes_requested" :disabled="selectedIdea?.publication_status === 'published'">Solicitar cambios</option>
+                                <option value="rejected" :disabled="selectedIdea?.publication_status === 'published'">Rechazar solicitud</option>
+                                <option value="unpublished" :disabled="selectedIdea?.publication_status !== 'published'">Revertir publicación general</option>
                             </select>
+                            <p x-show="selectedIdea?.publication_status === 'published'" class="mt-2 rounded-xl border border-amber-300/70 bg-amber-50 px-3 py-2 text-[10px] leading-relaxed text-amber-900">
+                                La reversión retirará también todas las subideas publicadas bajo esta idea. Cada una recuperará su visibilidad contextual previa o quedará en “Sólo yo” si no existe una audiencia válida.
+                            </p>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-on-surface mb-1.5">Representación en comunidad</label>
@@ -319,7 +322,7 @@
                             <textarea name="publication_notes" x-model="publicationNotes" :required="['changes_requested', 'rejected'].includes(editorialDecision)" rows="3" maxlength="2000" placeholder="Explica la decisión o los cambios requeridos" class="w-full bg-surface-container-lowest text-xs rounded-xl p-3 border border-surface-container-high resize-none"></textarea>
                             <p x-show="['changes_requested', 'rejected'].includes(editorialDecision)" class="mt-1 text-[10px] font-semibold text-primary">La nota es obligatoria para explicar esta decisión al autor.</p>
                         </div>
-                        <button type="submit" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container">Registrar decisión editorial</button>
+                        <button type="submit" :disabled="!editorialDecision" class="w-full px-5 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50">Registrar decisión editorial</button>
                     </form>
 
                     <!-- Update Form -->

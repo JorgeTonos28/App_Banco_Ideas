@@ -30,6 +30,7 @@ class IdeaPublicationService
 
             $idea->update([
                 'publication_status' => 'pending_review',
+                'pre_publication_access_scope' => $idea->access_scope,
                 'community_display' => 'hidden',
                 'requested_community_display' => $requestedDisplay,
                 'publication_requested_at' => now(),
@@ -75,6 +76,22 @@ class IdeaPublicationService
             ]);
         }
 
+        if ($idea->isPublished() && $status !== 'unpublished') {
+            throw ValidationException::withMessages([
+                'publication_status' => 'Una idea ya publicada sólo admite la reversión de su publicación general.',
+            ]);
+        }
+
+        if (! $idea->isPublished() && $status === 'unpublished') {
+            throw ValidationException::withMessages([
+                'publication_status' => 'Sólo puede revertirse una idea que esté publicada en la comunidad general.',
+            ]);
+        }
+
+        if ($status === 'unpublished') {
+            return $this->unpublishTree($idea, $reviewer, $notes);
+        }
+
         $display = $idea->parent_idea_id ? 'represented_by_parent' : 'standalone';
 
         if ($status === 'published' && $display === 'represented_by_parent') {
@@ -109,8 +126,14 @@ class IdeaPublicationService
             $oldStatus = $idea->publication_status;
             $isPublished = $status === 'published';
 
+            $prePublicationAccessScope = $idea->pre_publication_access_scope;
+            if ($isPublished && ! in_array($prePublicationAccessScope, Idea::ACCESS_SCOPES, true)) {
+                $prePublicationAccessScope = $idea->access_scope;
+            }
+
             $idea->update([
                 'publication_status' => $status,
+                'pre_publication_access_scope' => $prePublicationAccessScope,
                 'community_display' => $isPublished ? $display : 'hidden',
                 'requested_community_display' => $display,
                 'visibility' => $isPublished ? 'public' : 'private',
@@ -145,6 +168,77 @@ class IdeaPublicationService
             'new_status' => $newStatus,
             'comment' => $comment,
         ]);
+    }
+
+    private function unpublishTree(Idea $idea, User $reviewer, ?string $notes): Idea
+    {
+        return DB::transaction(function () use ($idea, $reviewer, $notes): Idea {
+            $treeIds = collect([$idea->id]);
+            $pendingIds = collect([$idea->id]);
+            $visited = [$idea->id => true];
+
+            while ($pendingIds->isNotEmpty()) {
+                $children = Idea::query()
+                    ->whereIn('parent_idea_id', $pendingIds)
+                    ->pluck('id')
+                    ->reject(fn (int $id): bool => isset($visited[$id]))
+                    ->values();
+
+                foreach ($children as $childId) {
+                    $visited[$childId] = true;
+                }
+
+                $treeIds = $treeIds->concat($children);
+                $pendingIds = $children;
+            }
+
+            $publishedIdeas = Idea::query()
+                ->whereKey($treeIds->unique())
+                ->published()
+                ->orderBy('id')
+                ->get();
+
+            foreach ($publishedIdeas as $publishedIdea) {
+                $restoredScope = in_array($publishedIdea->pre_publication_access_scope, Idea::ACCESS_SCOPES, true)
+                    ? $publishedIdea->pre_publication_access_scope
+                    : 'only_me';
+
+                if ($restoredScope === 'organization' && ! $publishedIdea->communityUnits()->exists()) {
+                    $restoredScope = 'only_me';
+                }
+
+                if ($restoredScope !== 'organization') {
+                    $publishedIdea->communityUnits()->detach();
+                }
+
+                $isRequestedIdea = $publishedIdea->is($idea);
+                $comment = $isRequestedIdea
+                    ? ($notes ?: 'Publicación general revertida; se restauró la visibilidad contextual anterior.')
+                    : 'Publicación revertida automáticamente al retirar una idea superior de la comunidad general.';
+
+                $publishedIdea->update([
+                    'publication_status' => 'unpublished',
+                    'community_display' => 'hidden',
+                    'visibility' => 'private',
+                    'access_scope' => $restoredScope,
+                    'publication_reviewed_at' => now(),
+                    'publication_reviewed_by_user_id' => $reviewer->id,
+                    'publication_notes' => $comment,
+                ]);
+
+                $this->recordTransition(
+                    $publishedIdea,
+                    $reviewer,
+                    'publication',
+                    'published',
+                    'unpublished',
+                    $comment
+                );
+                $publishedIdea->recalculateRatingAndScore();
+            }
+
+            return $idea->refresh();
+        });
     }
 
     private function hasPublishedDescendants(Idea $idea): bool

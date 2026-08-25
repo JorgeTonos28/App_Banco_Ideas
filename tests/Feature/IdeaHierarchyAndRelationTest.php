@@ -265,12 +265,16 @@ class IdeaHierarchyAndRelationTest extends TestCase
 
         $this->actingAs($this->admin)->put(route('admin.ideas.publication.update', $root), [
             'publication_status' => 'unpublished',
-        ])->assertSessionHasErrors('publication_status');
+        ])->assertSessionDoesntHaveErrors();
+
+        $this->assertFalse($root->fresh()->isPublished());
+        $this->assertFalse($middle->fresh()->isPublished());
+        $this->assertFalse($leaf->fresh()->isPublished());
 
         $otherRoot = $this->privateIdea($this->author);
         $this->actingAs($this->admin)->put(route('ideas.hierarchy.update', $root), [
             'parent_idea_id' => $otherRoot->id,
-        ])->assertSessionHasErrors('parent_idea_id');
+        ])->assertSessionDoesntHaveErrors();
     }
 
     private function privateIdea(User $user): Idea
