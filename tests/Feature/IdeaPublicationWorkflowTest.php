@@ -108,6 +108,7 @@ class IdeaPublicationWorkflowTest extends TestCase
     {
         $idea = $this->privateIdea();
         $this->actingAs($this->author)->post(route('ideas.publication.request', $idea));
+        $idea->update(['access_scope' => 'profile']);
 
         $response = $this->actingAs($this->admin)
             ->put(route('admin.ideas.publication.update', $idea), [
@@ -122,6 +123,7 @@ class IdeaPublicationWorkflowTest extends TestCase
         $this->assertSame('published', $idea->publication_status);
         $this->assertSame('standalone', $idea->community_display);
         $this->assertSame('public', $idea->visibility);
+        $this->assertSame('profile', $idea->pre_publication_access_scope);
         $this->assertSame($this->admin->id, $idea->publication_reviewed_by_user_id);
         $this->assertTrue($idea->usesCommunityLifecycle());
         $this->assertTrue(Idea::communityPublished()->whereKey($idea)->exists());

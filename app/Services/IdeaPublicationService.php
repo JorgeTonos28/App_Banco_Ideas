@@ -126,10 +126,9 @@ class IdeaPublicationService
             $oldStatus = $idea->publication_status;
             $isPublished = $status === 'published';
 
-            $prePublicationAccessScope = $idea->pre_publication_access_scope;
-            if ($isPublished && ! in_array($prePublicationAccessScope, Idea::ACCESS_SCOPES, true)) {
-                $prePublicationAccessScope = $idea->access_scope;
-            }
+            $prePublicationAccessScope = $isPublished
+                ? $idea->access_scope
+                : $idea->pre_publication_access_scope;
 
             $idea->update([
                 'publication_status' => $status,
