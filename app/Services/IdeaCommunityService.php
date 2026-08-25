@@ -17,7 +17,7 @@ class IdeaCommunityService
         ?int $organizationalUnitId,
         bool $includeDescendants = false
     ): void {
-        if ($idea->parent_idea_id || $idea->access_scope !== 'organization') {
+        if ($idea->access_scope !== 'organization') {
             $idea->communityUnits()->detach();
 
             return;

@@ -491,6 +491,8 @@ class IdeaController extends Controller
             ->get();
         $communityUnits = $communityService->availableUnitsFor(auth()->user());
         $selectedCommunityShare = $idea->communityUnits()->first();
+        $selectedCommunityUnitId = $selectedCommunityShare?->id;
+        $selectedCommunityIncludesDescendants = (bool) $selectedCommunityShare?->pivot?->include_descendants;
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -520,7 +522,8 @@ class IdeaController extends Controller
             'categoryDimensions',
             'parentCandidates',
             'communityUnits',
-            'selectedCommunityShare',
+            'selectedCommunityUnitId',
+            'selectedCommunityIncludesDescendants',
             'allTags',
             'popularTags',
             'tags',

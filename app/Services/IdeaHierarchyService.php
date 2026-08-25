@@ -52,10 +52,6 @@ class IdeaHierarchyService
                 'requested_community_display' => $parent ? 'represented_by_parent' : 'standalone',
             ]);
 
-            if ($parent) {
-                $idea->communityUnits()->detach();
-            }
-
             IdeaHierarchyHistory::create([
                 'idea_id' => $idea->id,
                 'old_parent_idea_id' => $oldParentId,
