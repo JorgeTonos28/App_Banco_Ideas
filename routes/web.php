@@ -87,6 +87,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'update'])
         ->name('ideas.relations.update')
         ->middleware('throttle:30,1');
+    Route::patch('/relaciones/{ideaRelation}/detalles', [IdeaRelationController::class, 'updateDetails'])
+        ->name('ideas.relations.details.update')
+        ->middleware('throttle:30,1');
     Route::delete('/relaciones/{ideaRelation}', [IdeaRelationController::class, 'destroy'])
         ->name('ideas.relations.destroy')
         ->middleware('throttle:30,1');

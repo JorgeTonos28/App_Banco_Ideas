@@ -178,6 +178,65 @@ class IdeaHierarchyAndRelationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_source_owner_can_edit_a_relation_and_cross_author_changes_require_new_review(): void
+    {
+        $source = $this->publishedIdea($this->author);
+        $target = $this->publishedIdea($this->otherAuthor);
+
+        $this->actingAs($this->author)->post(route('ideas.relations.store', $source), [
+            'target_idea_id' => $target->id,
+            'type' => 'related_to',
+            'rationale' => 'Conexión inicial.',
+        ]);
+        $relation = IdeaRelation::firstOrFail();
+        $this->actingAs($this->otherAuthor)
+            ->put(route('ideas.relations.update', $relation), ['status' => 'approved']);
+
+        $this->actingAs($this->author)
+            ->patch(route('ideas.relations.details.update', $relation), [
+                'type' => 'complements',
+                'rationale' => 'La segunda idea completa el alcance operativo de la primera.',
+            ])
+            ->assertRedirect()
+            ->assertSessionDoesntHaveErrors();
+
+        $relation->refresh();
+        $this->assertSame('complements', $relation->type);
+        $this->assertSame('pending', $relation->status);
+        $this->assertNull($relation->reviewed_by_user_id);
+        $this->assertNull($relation->reviewed_at);
+    }
+
+    public function test_only_source_owner_or_admin_can_edit_relation_details(): void
+    {
+        $source = $this->publishedIdea($this->author);
+        $target = $this->publishedIdea($this->otherAuthor);
+        $relation = IdeaRelation::create([
+            'source_idea_id' => $source->id,
+            'target_idea_id' => $target->id,
+            'type' => 'related_to',
+            'status' => 'approved',
+            'created_by_user_id' => $this->author->id,
+        ]);
+        $unrelated = User::factory()->create();
+
+        $this->actingAs($unrelated)
+            ->patch(route('ideas.relations.details.update', $relation), [
+                'type' => 'enables',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($this->admin)
+            ->patch(route('ideas.relations.details.update', $relation), [
+                'type' => 'enables',
+                'rationale' => 'Curaduría administrativa.',
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('approved', $relation->fresh()->status);
+        $this->assertSame('enables', $relation->fresh()->type);
+    }
+
     public function test_represented_publication_requires_a_published_community_parent_and_cannot_be_detached(): void
     {
         $parent = $this->privateIdea($this->author);

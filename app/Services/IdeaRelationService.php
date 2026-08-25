@@ -65,4 +65,32 @@ class IdeaRelationService
             return $relation->refresh();
         });
     }
+
+    public function updateDetails(
+        IdeaRelation $relation,
+        User $actor,
+        string $type,
+        ?string $rationale = null
+    ): IdeaRelation {
+        return DB::transaction(function () use ($relation, $actor, $type, $rationale): IdeaRelation {
+            $detailsChanged = $relation->type !== $type || $relation->rationale !== $rationale;
+
+            if (! $detailsChanged) {
+                return $relation;
+            }
+
+            $crossAuthorRelation = $relation->sourceIdea->user_id !== $relation->targetIdea->user_id;
+            $requiresConfirmation = $crossAuthorRelation && ! $actor->isAdmin();
+
+            $relation->update([
+                'type' => $type,
+                'rationale' => $rationale,
+                'status' => $requiresConfirmation ? 'pending' : 'approved',
+                'reviewed_by_user_id' => $requiresConfirmation ? null : $actor->id,
+                'reviewed_at' => $requiresConfirmation ? null : now(),
+            ]);
+
+            return $relation->refresh();
+        });
+    }
 }

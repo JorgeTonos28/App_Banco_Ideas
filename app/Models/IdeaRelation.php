@@ -75,4 +75,14 @@ class IdeaRelation extends Model
             default => ucfirst(str_replace('_', ' ', $this->type)),
         };
     }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'approved' => 'Verificada',
+            'pending' => 'Pendiente de confirmación',
+            'rejected' => 'Rechazada',
+            default => ucfirst($this->status),
+        };
+    }
 }
