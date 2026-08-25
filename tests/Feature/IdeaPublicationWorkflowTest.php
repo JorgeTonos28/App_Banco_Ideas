@@ -125,6 +125,56 @@ class IdeaPublicationWorkflowTest extends TestCase
         $this->assertTrue(Idea::communityPublished()->whereKey($idea)->exists());
     }
 
+    public function test_editorial_form_starts_neutral_and_does_not_allow_changing_hierarchy_representation(): void
+    {
+        $parent = $this->privateIdea();
+        $child = $this->privateIdea();
+
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $parent));
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $parent), [
+                'publication_status' => 'published',
+                'community_display' => 'represented_by_parent',
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->actingAs($this->author)->put(route('ideas.hierarchy.update', $child), [
+            'parent_idea_id' => $parent->id,
+        ]);
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $child));
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $child), [
+                'publication_status' => 'published',
+                'community_display' => 'standalone',
+            ])
+            ->assertSessionDoesntHaveErrors();
+
+        $this->assertSame('standalone', $parent->fresh()->community_display);
+        $this->assertSame('represented_by_parent', $child->fresh()->community_display);
+
+        $this->actingAs($this->admin)
+            ->get(route('admin.ideas.index'))
+            ->assertOk()
+            ->assertSee('<option value="">Sin decisión</option>', false)
+            ->assertDontSee('name="community_display"', false)
+            ->assertSee('Se deriva automáticamente de la jerarquía definida por el autor');
+    }
+
+    public function test_empty_editorial_decision_is_rejected_without_mutating_the_idea(): void
+    {
+        $idea = $this->privateIdea();
+        $this->actingAs($this->author)->post(route('ideas.publication.request', $idea));
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.ideas.publication.update', $idea), [
+                'publication_status' => '',
+            ])
+            ->assertSessionHasErrors('publication_status');
+
+        $this->assertSame('pending_review', $idea->fresh()->publication_status);
+    }
+
     public function test_published_child_can_be_represented_by_a_published_parent_without_appearing_as_a_community_card(): void
     {
         $parent = $this->privateIdea();

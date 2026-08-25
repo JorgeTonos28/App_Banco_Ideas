@@ -19,10 +19,6 @@ class ReviewIdeaPublicationRequest extends FormRequest
     {
         return [
             'publication_status' => ['required', Rule::in(Idea::PUBLICATION_REVIEW_STATUSES)],
-            'community_display' => [
-                Rule::requiredIf($this->input('publication_status') === 'published'),
-                Rule::in(['standalone', 'represented_by_parent']),
-            ],
             'publication_notes' => [
                 Rule::requiredIf(in_array($this->input('publication_status'), ['changes_requested', 'rejected'], true)),
                 'nullable',

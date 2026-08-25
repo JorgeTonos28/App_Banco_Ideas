@@ -15,7 +15,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Acceso independiente de la publicación**: Una idea completa puede quedar como `Sólo yo`, `Visible en mi perfil` o compartirse en una comunidad interna. El acceso interno se vincula a una unidad organizacional concreta y puede limitarse a ese nivel o incluir sus niveles dependientes; no activa el ciclo oficial ni incorpora la idea a la comunidad general.
 - **Borradores siempre restringidos**: Un borrador no puede compartirse desde el perfil hasta marcarse como idea completa.
 - **Flujo de trabajo privado independiente**: Las ideas no publicadas utilizan los estados `Capturada`, `En clarificación`, `Lista para actuar`, `En ejecución`, `Completada`, `En pausa`, `Descartada` y `Archivada`. Este flujo organiza el trabajo personal y no altera el ciclo comunitario.
-- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea conserva el acceso `Sólo yo` o `Visible en mi perfil` elegido por el autor.
+- **Revisión editorial humana**: El autor solicita publicación y el equipo de innovación puede aprobar, solicitar cambios, rechazar o retirar la idea. Mientras la solicitud está pendiente, la idea conserva el acceso elegido por el autor. El formulario administrativo inicia en `Sin decisión` y la representación comunitaria se deriva de la jerarquía: sólo las raíces crean tarjetas y las microideas se muestran dentro de su madre.
 - **Ciclo comunitario después de publicar**: Sólo las ideas aprobadas utilizan `Nueva`, `En revisión`, `Priorizada`, `En desarrollo`, `Implementada`, `Descartada` y `Archivada`.
 - **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea puede restringir su propio acceso, pero nunca superar el acceso efectivo de sus ancestros.
@@ -65,7 +65,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 5. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
-- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar ideas principales, representar subideas, solicitar cambios, asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
+- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar, solicitar cambios o rechazar sin alterar la representación jerárquica definida por el autor; también permite asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
 - **Control Integral de Usuarios y Onboarding**:
   - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
   - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.

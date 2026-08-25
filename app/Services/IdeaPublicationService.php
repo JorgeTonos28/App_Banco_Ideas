@@ -67,7 +67,7 @@ class IdeaPublicationService
         });
     }
 
-    public function review(Idea $idea, User $reviewer, string $status, string $display, ?string $notes): Idea
+    public function review(Idea $idea, User $reviewer, string $status, ?string $notes): Idea
     {
         if (! in_array($status, Idea::PUBLICATION_REVIEW_STATUSES, true)) {
             throw ValidationException::withMessages([
@@ -75,30 +75,26 @@ class IdeaPublicationService
             ]);
         }
 
-        if ($status === 'published' && $display === 'standalone' && $idea->parent_idea_id) {
-            throw ValidationException::withMessages([
-                'community_display' => 'Una idea con madre debe publicarse como subidea representada. Desvincúlala primero si debe ser una idea principal.',
-            ]);
-        }
+        $display = $idea->parent_idea_id ? 'represented_by_parent' : 'standalone';
 
         if ($status === 'published' && $display === 'represented_by_parent') {
             $ancestors = $idea->ancestors();
 
             if ($ancestors->isEmpty()) {
                 throw ValidationException::withMessages([
-                    'community_display' => 'Asigna una idea madre antes de publicar esta idea como representada.',
+                    'publication_status' => 'La idea está configurada como subidea, pero no tiene una idea madre válida.',
                 ]);
             }
 
             if ($ancestors->contains(fn (Idea $ancestor) => ! $ancestor->isPublished())) {
                 throw ValidationException::withMessages([
-                    'community_display' => 'Todas las ideas superiores deben publicarse antes que esta subidea.',
+                    'publication_status' => 'Todas las ideas superiores deben publicarse antes que esta subidea.',
                 ]);
             }
 
             if (! $ancestors->first()->isPublishedToCommunity()) {
                 throw ValidationException::withMessages([
-                    'community_display' => 'La raíz de la jerarquía debe estar publicada como idea principal en la comunidad.',
+                    'publication_status' => 'La raíz de la jerarquía debe estar publicada como idea principal en la comunidad.',
                 ]);
             }
         }
@@ -116,6 +112,7 @@ class IdeaPublicationService
             $idea->update([
                 'publication_status' => $status,
                 'community_display' => $isPublished ? $display : 'hidden',
+                'requested_community_display' => $display,
                 'visibility' => $isPublished ? 'public' : 'private',
                 'publication_reviewed_at' => now(),
                 'publication_reviewed_by_user_id' => $reviewer->id,
