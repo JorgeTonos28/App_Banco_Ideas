@@ -194,6 +194,8 @@ En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh
 
 La migración de acceso agrega `ideas.access_scope` sin convertir ideas privadas en visibles. Las publicaciones existentes se inicializan con acceso de perfil para que, si luego se retiran de Comunidad, continúen siendo localizables desde el perfil de su autor; el autor puede cambiar posteriormente ese acceso a `Sólo yo`.
 
+La migración de reversión editorial agrega `ideas.pre_publication_access_scope`. Para publicaciones ya existentes toma como punto de restauración su `access_scope` actual; en solicitudes nuevas captura automáticamente la audiencia vigente antes de que el equipo de innovación publique la idea.
+
 La migración de comunidades organizacionales amplía `regionals` con `parent_id` y `type`, agrega la unidad organizacional más específica a usuarios e invitaciones, y crea `idea_community_shares`. Los usuarios existentes conservan su regional como unidad inicial. Cada audiencia interna registra si aplica sólo a la unidad seleccionada o también a sus descendientes.
 
 Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
