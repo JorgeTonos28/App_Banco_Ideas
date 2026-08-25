@@ -34,8 +34,8 @@
                     <x-status-badge :status="$idea->status" />
                 @else
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary text-[10px] font-bold border border-tertiary/15">
-                        <span class="material-symbols-outlined text-xs">person</span>
-                        Visible en perfil
+                        <span class="material-symbols-outlined text-xs">{{ $idea->access_scope === 'organization' ? 'corporate_fare' : 'person' }}</span>
+                        {{ $idea->access_scope === 'organization' ? 'Comunidad interna' : 'Visible en perfil' }}
                     </span>
                 @endif
             </div>

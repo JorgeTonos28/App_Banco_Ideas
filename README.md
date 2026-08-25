@@ -52,7 +52,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 4. Gestión Personal, Seguridad y 2FA
 - **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona ideas exclusivas, compartidas en perfil, árboles de microideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
-- **Comunidad (Feed de Innovación)**: Ecosistema colaborativo que muestra sólo ideas principales aprobadas, junto con la cantidad de subideas integradas.
+- **Comunidades por nivel**: Al entrar en Comunidad, cada colaborador llega a su unidad más específica y puede subir hacia dirección, regional/sede y comunidad general, o bajar a niveles dependientes cuando corresponda. Las comunidades internas muestran sólo ideas madre habilitadas para su audiencia; la comunidad general mantiene exclusivamente publicaciones aprobadas.
 - **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
 - **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
 - **Autenticación en Dos Pasos (2FA)**:
