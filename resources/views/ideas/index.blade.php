@@ -21,7 +21,7 @@
 
     <!-- Filter and Search Toolbar -->
     <div class="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 border border-surface-container-high/80 shadow-2xs space-y-4">
-        <form method="GET" action="{{ route('ideas.index') }}" class="space-y-4">
+        <form method="GET" action="{{ route('ideas.index') }}" class="space-y-4" x-ref="exploreSearchForm">
             <div class="flex flex-col md:flex-row items-center gap-3">
                 <!-- Search input -->
                 <div class="relative flex-1 w-full">
@@ -29,13 +29,18 @@
                     <input type="text" 
                            name="q" 
                            value="{{ request('q') }}" 
-                           placeholder="Buscar por título, problema o autor..." 
+                           @input.debounce.450ms="$refs.exploreSearchForm.requestSubmit()"
+                           @if(request()->filled('q')) autofocus @endif
+                           autocomplete="off"
+                           aria-label="Buscar en las ideas publicadas"
+                           placeholder="Buscar por contenido, categoría, etiqueta o autor..."
                            class="w-full bg-surface-container-low text-on-surface text-sm rounded-xl py-2.5 pl-10 pr-4 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                 </div>
 
                 <!-- Sort dropdown -->
                 <div class="w-full md:w-56">
                     <select name="orden" onchange="this.form.submit()" class="w-full bg-surface-container-low text-on-surface text-sm rounded-xl py-2.5 px-3 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <option value="todas" {{ $sort === 'todas' ? 'selected' : '' }}>Todas las ideas</option>
                         <option value="recientes" {{ request('orden') == 'recientes' ? 'selected' : '' }}>Más recientes</option>
                         <option value="mas_votadas" {{ request('orden') == 'mas_votadas' ? 'selected' : '' }}>Más votadas</option>
                         <option value="tendencia" {{ request('orden') == 'tendencia' ? 'selected' : '' }}>En tendencia</option>

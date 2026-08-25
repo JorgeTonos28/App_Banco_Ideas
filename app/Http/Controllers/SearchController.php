@@ -35,7 +35,13 @@ class SearchController extends Controller
                 'url' => route('ideas.show', $idea->slug),
                 'category' => $idea->category?->name,
                 'status' => $idea->isPublished() ? $idea->status_label : $idea->workspace_status_label,
-                'context' => $idea->user_id === $request->user()->id ? 'Tu idea' : 'Comunidad',
+                'context' => match (true) {
+                    $idea->user_id === $request->user()->id => 'Tu idea',
+                    $idea->isPublished() => 'Comunidad general',
+                    $idea->access_scope === 'organization' => 'Comunidad interna',
+                    $idea->access_scope === 'profile' => 'Perfil visible',
+                    default => 'Administración',
+                },
             ]);
 
         $people = User::where('is_active', true)

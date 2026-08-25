@@ -7,6 +7,7 @@ use App\Models\Idea;
 use App\Models\IdeaRating;
 use App\Models\Regional;
 use App\Models\User;
+use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaCommunityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,8 +26,11 @@ class HomeController extends Controller
             : redirect()->route('login');
     }
 
-    public function index(Request $request, IdeaCommunityService $communityService): View|RedirectResponse
-    {
+    public function index(
+        Request $request,
+        IdeaCommunityService $communityService,
+        GlobalIdeaSearchService $ideaSearch
+    ): View|RedirectResponse {
         $requestedLevel = $request->string('nivel')->toString();
         $user = $request->user();
         $userUnit = $user->effectiveOrganizationalUnit();
@@ -38,7 +42,7 @@ class HomeController extends Controller
         }
 
         if ($requestedLevel !== 'general') {
-            return $this->organizationalCommunity($request, $communityService, $requestedLevel);
+            return $this->organizationalCommunity($request, $communityService, $ideaSearch, $requestedLevel);
         }
 
         // 1. Overall Platform Stats
@@ -105,6 +109,16 @@ class HomeController extends Controller
             ? collect([$userUnit->ancestors()->first() ?: $userUnit])
             : collect();
 
+        $communitySearchIdeas = null;
+        if ($search = $request->string('q')->trim()->toString()) {
+            $searchQuery = Idea::query()
+                ->with(['user', 'category', 'tags'])
+                ->withCount(['children as published_children_count' => fn ($query) => $query->published()->where('community_display', 'represented_by_parent')])
+                ->communityPublished();
+            $ideaSearch->applyNormalizedSearch($searchQuery, $search);
+            $communitySearchIdeas = $searchQuery->orderBy('title')->paginate(9)->withQueryString();
+        }
+
         return view('home', compact(
             'totalIdeas',
             'thisMonthIdeas',
@@ -120,13 +134,15 @@ class HomeController extends Controller
             'currentCommunity',
             'communityPath',
             'upUnit',
-            'downUnits'
+            'downUnits',
+            'communitySearchIdeas'
         ));
     }
 
     private function organizationalCommunity(
         Request $request,
         IdeaCommunityService $communityService,
+        GlobalIdeaSearchService $ideaSearch,
         string $requestedLevel
     ): View {
         abort_unless(ctype_digit($requestedLevel), 404);
@@ -155,7 +171,12 @@ class HomeController extends Controller
             ->whereIn('organizational_unit_id', $participantUnitIds)
             ->count();
 
-        $ideas = $baseQuery
+        $ideasQuery = clone $baseQuery;
+        if ($search = $request->string('q')->trim()->toString()) {
+            $ideaSearch->applyNormalizedSearch($ideasQuery, $search);
+        }
+
+        $ideas = $ideasQuery
             ->with(['user.organizationalUnit', 'category', 'tags'])
             ->withCount(['comments', 'children as visible_children_count'])
             ->latest()

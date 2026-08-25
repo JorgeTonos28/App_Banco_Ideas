@@ -13,6 +13,7 @@ use App\Models\IdeaRating;
 use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaClassificationService;
 use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
@@ -32,7 +33,7 @@ class IdeaController extends Controller
     /**
      * Display a listing of the resource (Explorar Ideas).
      */
-    public function index(Request $request): View
+    public function index(Request $request, GlobalIdeaSearchService $ideaSearch): View
     {
         $query = Idea::with(['user', 'category', 'tags'])
             ->withCount([
@@ -41,16 +42,8 @@ class IdeaController extends Controller
             ->communityPublished();
 
         // Search
-        if ($search = $request->input('q')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('summary', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('problem_opportunity', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($u) use ($search) {
-                        $u->where('name', 'like', "%{$search}%");
-                    });
-            });
+        if ($search = $request->string('q')->trim()->toString()) {
+            $ideaSearch->applyNormalizedSearch($query, $search);
         }
 
         // Filter by Category
@@ -108,14 +101,15 @@ class IdeaController extends Controller
         }
 
         // Sorting
-        $sort = $request->input('orden', 'recientes');
+        $sort = $request->input('orden', 'todas');
         match ($sort) {
             'mas_votadas' => $query->orderByDesc('votes_count')->orderByDesc('average_rating'),
             'tendencia' => $query->orderByDesc('innovation_score')->orderByDesc('votes_count'),
             'mas_comentadas' => $query->withCount('comments')->orderByDesc('comments_count'),
             'implementadas' => $query->where('status', 'implementada')->orderByDesc('implemented_at')->orderByDesc('created_at'),
             'mejor_valoradas' => $query->orderByDesc('average_rating')->orderByDesc('votes_count'),
-            default => $query->latest(), // 'recientes'
+            'recientes' => $query->latest(),
+            default => $query->orderBy('title'),
         };
 
         $ideas = $query->paginate(9)->withQueryString();

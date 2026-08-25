@@ -67,6 +67,13 @@
         </div>
     </section>
 
+    <section class="rounded-2xl border border-surface-container-high/80 bg-surface-container-lowest p-4 shadow-xs sm:p-5">
+        <x-community-search
+            :level="$currentCommunity->id"
+            placeholder="Buscar dentro de {{ $currentCommunity->community_name }}..." />
+        <p class="mt-2 text-[11px] text-on-surface-variant">Filtra automáticamente sólo las ideas disponibles en este nivel.</p>
+    </section>
+
     <section aria-label="Resumen de la comunidad" class="grid grid-cols-2 gap-3 lg:grid-cols-5">
         @foreach([
             ['label' => 'Ideas visibles', 'value' => $totalIdeas, 'icon' => 'lightbulb', 'color' => 'text-primary'],
@@ -91,7 +98,13 @@
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h2 class="font-headline text-xl font-bold text-on-surface">Ideas de esta comunidad</h2>
-                <p class="mt-1 text-xs text-on-surface-variant">Sólo aparecen ideas madre habilitadas para este nivel.</p>
+                <p class="mt-1 text-xs text-on-surface-variant">
+                    @if(request()->filled('q'))
+                        Resultados para “{{ request('q') }}” dentro de este nivel.
+                    @else
+                        Sólo aparecen ideas madre habilitadas para este nivel.
+                    @endif
+                </p>
             </div>
             <a href="{{ route('ideas.create') }}" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white hover:bg-primary-container">
                 <span class="material-symbols-outlined text-lg" aria-hidden="true">add_circle</span>
@@ -109,8 +122,8 @@
         @else
             <div class="rounded-3xl border border-dashed border-surface-container-high bg-surface-container-lowest px-6 py-12 text-center">
                 <span class="material-symbols-outlined text-4xl text-outline" aria-hidden="true">domain_disabled</span>
-                <h3 class="mt-3 font-headline text-base font-bold text-on-surface">Todavía no hay ideas compartidas aquí</h3>
-                <p class="mx-auto mt-1 max-w-md text-xs leading-relaxed text-on-surface-variant">Una idea madre aparecerá cuando su autor seleccione esta comunidad como audiencia interna.</p>
+                <h3 class="mt-3 font-headline text-base font-bold text-on-surface">{{ request()->filled('q') ? 'No hay coincidencias en esta comunidad' : 'Todavía no hay ideas compartidas aquí' }}</h3>
+                <p class="mx-auto mt-1 max-w-md text-xs leading-relaxed text-on-surface-variant">{{ request()->filled('q') ? 'Prueba con otros caracteres, categorías o etiquetas.' : 'Una idea madre aparecerá cuando su autor seleccione esta comunidad como audiencia interna.' }}</p>
             </div>
         @endif
     </section>
