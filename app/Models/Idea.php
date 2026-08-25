@@ -83,6 +83,7 @@ class Idea extends Model
         'status',
         'visibility',
         'access_scope',
+        'pre_publication_access_scope',
         'workspace_status',
         'publication_status',
         'community_display',
