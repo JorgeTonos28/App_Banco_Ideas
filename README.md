@@ -66,7 +66,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 
 ### 5. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
-- **Gestión Editorial y de Ciclo de Vida**: Tabla interactiva con filtro de publicación y panel lateral para aprobar, solicitar cambios o rechazar sin alterar la representación jerárquica definida por el autor; también permite asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
+- **Gestión Editorial y de Ciclo de Vida**: La administración comienza con una lista del primer nivel de ideas madre y permite avanzar o retroceder un nivel por vez, con una acción separada para abrir cada ficha. La búsqueda filtra automáticamente el nivel actual; el panel lateral permite decidir publicaciones sin alterar la jerarquía, asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
 - **Control Integral de Usuarios y Onboarding**:
   - Modo 1: **Invitación por Correo**: Despacho de enlace de onboarding seguro con expiración de 72 horas para autoconfiguración del colaborador.
   - Modo 2: **Contraseña Temporal**: Creación directa forzando al usuario a cambiar su contraseña de manera obligatoria en su primer inicio de sesión.
