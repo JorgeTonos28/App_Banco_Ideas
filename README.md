@@ -211,6 +211,21 @@ Las dimensiones y términos adicionales pueden gestionarse desde **Administraci�
 
 ---
 
+## 🤖 Auditoría y planificación del asistente de IA
+
+La Fase 0 del asistente de captura por voz y organización de ideas está documentada en [`docs/ai`](docs/ai/README.md). Incluye el playbook de clasificación, recomendaciones de taxonomía, el informe de inconsistencias y scripts reproducibles para validar exportaciones, el Gold Standard y los casos de evaluación.
+
+El Gold Standard y los casos derivados de producción se almacenan exclusivamente en `storage/app/private/ai-audit/`, una ruta excluida de Git. No deben publicarse ni moverse a una carpeta versionada sin revisión institucional de privacidad.
+
+```bash
+node scripts/ai/audit-planning-context.mjs /ruta/ai-planning-context.json
+node scripts/ai/validate-ai-audit-artifacts.mjs /ruta/ai-planning-context.json storage/app/private/ai-audit/AI_GOLD_STANDARD_V1.json storage/app/private/ai-audit/AI_EVAL_CASES_V1.json
+```
+
+Esta fase es analítica: no modifica producción ni habilita todavía endpoints o proveedores de IA.
+
+---
+
 ## 🔐 Cuentas de Demostración Preconfiguradas
 
 | Rol | Correo Electrónico | Contraseña | Cargo / Departamento |
