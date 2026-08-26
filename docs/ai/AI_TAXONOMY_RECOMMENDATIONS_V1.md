@@ -196,10 +196,8 @@ Antes de enviar la taxonomía a un proveedor:
 6. aplicar una lista de etiquetas no sugeribles para términos genéricos;
 7. exigir revisión humana para cualquier etiqueta nueva o recomendación que requiera activar una categoría.
 
-## 7. Decisiones pendientes antes de congelar V1
+## 7. Decisiones humanas aprobadas
 
-- Aprobar o rechazar la reactivación de `12 · Comunicación y Marca Institucional`.
-- Decidir si `summary` será un campo editable o seguirá derivándose de `description`.
-- Confirmar si el sistema de tareas de la idea 17 es producto autónomo o sólo módulo del Banco de Ideas.
-- Confirmar si la red pública de la idea 20 conserva jerarquía bajo la idea 10 o se gestiona como producto raíz relacionado.
-- Definir si registros de prueba 30 y 31 serán archivados, eliminados o conservados fuera del corpus.
+El 25 de agosto de 2026 se aprobó reactivar la categoría 12, tratar la idea 17 como producto raíz complementario de la idea 10, conservar la idea 20 bajo la idea 10 y archivar los registros de prueba 30 y 31 fuera del corpus positivo.
+
+Fuera de esas cuatro decisiones editoriales, `summary` conserva por compatibilidad técnica el comportamiento actual: se deriva de `description` y no se incorpora como campo editable independiente. Esto no se presenta como una quinta decisión aprobada.

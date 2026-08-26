@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Idea;
 
+use App\Http\Requests\Concerns\ValidatesAiRelations;
 use App\Http\Requests\Concerns\ValidatesIdeaAudience;
 use App\Http\Requests\Concerns\ValidatesIdeaClassifications;
 use App\Http\Requests\Concerns\ValidatesIdeaParent;
@@ -12,6 +13,7 @@ use Illuminate\Validation\Validator;
 
 class UpdateIdeaRequest extends FormRequest
 {
+    use ValidatesAiRelations;
     use ValidatesIdeaAudience;
     use ValidatesIdeaClassifications;
     use ValidatesIdeaParent;
@@ -25,7 +27,7 @@ class UpdateIdeaRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['required', 'string', 'min:20', 'max:10000'],
             'problem_opportunity' => ['nullable', 'string', 'max:5000'],
@@ -45,7 +47,7 @@ class UpdateIdeaRequest extends FormRequest
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'],
             'delete_attachments' => ['nullable', 'array'],
             'delete_attachments.*' => ['integer', 'exists:idea_attachments,id'],
-        ];
+        ], $this->aiRelationRules());
     }
 
     public function after(): array
@@ -69,6 +71,7 @@ class UpdateIdeaRequest extends FormRequest
             fn (Validator $validator) => $this->validateIdeaAudience($validator),
             fn (Validator $validator) => $this->validateIdeaClassifications($validator),
             fn (Validator $validator) => $this->validateIdeaParent($validator, $this->route('idea')),
+            fn (Validator $validator) => $this->validateAiRelations($validator, $this->route('idea')),
         ];
     }
 }

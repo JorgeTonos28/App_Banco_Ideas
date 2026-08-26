@@ -35,3 +35,12 @@ node scripts/ai/validate-ai-audit-artifacts.mjs `
 ```
 
 La validación estructural no reemplaza la aprobación humana de redacción, jerarquía, taxonomía y relaciones.
+
+## Decisiones aprobadas el 25 de agosto de 2026
+
+- reactivar `12 · Comunicación y Marca Institucional`;
+- convertir la idea 17 en raíz y relacionarla como `complements` con la idea 10;
+- conservar la idea 20 como rama evolutiva bajo la idea 10;
+- archivar las ideas de prueba 30 y 31 y excluirlas del corpus positivo.
+
+El comando `php artisan ideas:apply-ai-audit-decisions` muestra una vista previa. Sólo modifica la base con `--apply`, valida IDs y títulos antes de iniciar la transacción y es idempotente.

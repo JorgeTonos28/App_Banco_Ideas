@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\AI\Services\ConfirmedAiRelationService;
 use App\Http\Requests\Idea\StoreIdeaRequest;
 use App\Http\Requests\Idea\UpdateIdeaRequest;
 use App\Models\Category;
@@ -201,7 +202,8 @@ class IdeaController extends Controller
         StoreIdeaRequest $request,
         IdeaClassificationService $classificationService,
         IdeaHierarchyService $hierarchyService,
-        IdeaCommunityService $communityService
+        IdeaCommunityService $communityService,
+        ConfirmedAiRelationService $confirmedRelationService
     ): RedirectResponse {
         DB::beginTransaction();
         try {
@@ -261,6 +263,12 @@ class IdeaController extends Controller
                 }
                 $idea->tags()->sync(array_values(array_unique($tagIds)));
             }
+
+            $confirmedRelationService->createApproved(
+                $idea,
+                $request->user(),
+                $request->input('ai_relations', []),
+            );
 
             // Handle Attachments
             if ($request->hasFile('attachments')) {
@@ -524,7 +532,8 @@ class IdeaController extends Controller
         Idea $idea,
         IdeaClassificationService $classificationService,
         IdeaHierarchyService $hierarchyService,
-        IdeaCommunityService $communityService
+        IdeaCommunityService $communityService,
+        ConfirmedAiRelationService $confirmedRelationService
     ): RedirectResponse {
         $this->authorize('update', $idea);
 
@@ -610,6 +619,12 @@ class IdeaController extends Controller
             } else {
                 $idea->tags()->detach();
             }
+
+            $confirmedRelationService->createApproved(
+                $idea,
+                $request->user(),
+                $request->input('ai_relations', []),
+            );
 
             // Delete requested attachments
             if ($request->filled('delete_attachments')) {

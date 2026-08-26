@@ -3,7 +3,8 @@
 @section('title', 'Compartir una Idea - INNOVATEP')
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6" 
+<div class="max-w-3xl mx-auto space-y-6"
+     @ai-tags-suggested.window="$event.detail.names.forEach(name => { if (!tagsList.includes(name)) tagsList.push(name) })"
      x-data="{ 
         tagsList: {{ json_encode(array_values(old('tags', []))) }}, 
         tagInput: '',
@@ -357,6 +358,8 @@
 
         <form action="{{ route('ideas.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
+
+            <x-ai-idea-assistant />
 
             <!-- Title -->
             <div>

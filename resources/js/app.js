@@ -1,6 +1,8 @@
 import Alpine from 'alpinejs';
+import registerIdeaAiAssistant from './idea-ai-assistant';
 
 window.Alpine = Alpine;
+registerIdeaAiAssistant(Alpine);
 
 // Global Search Component
 Alpine.data('globalSearch', () => ({
@@ -84,6 +86,12 @@ Alpine.data('ideaParentPicker', (branchTerms, selectedId, selectedTitle, indepen
     open: false,
     selectedId: selectedId ? selectedId.toString() : '',
     selectedTitle: selectedTitle || independentLabel,
+
+    init() {
+        window.addEventListener('ai-parent-suggested', (event) => {
+            this.choose(event.detail.id, event.detail.title || independentLabel);
+        });
+    },
 
     choose(id, title) {
         this.selectedId = id ? id.toString() : '';

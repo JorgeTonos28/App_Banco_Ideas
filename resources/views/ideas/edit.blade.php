@@ -3,7 +3,8 @@
 @section('title', 'Editar Idea - INNOVATEP')
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6" 
+<div class="max-w-3xl mx-auto space-y-6"
+     @ai-tags-suggested.window="$event.detail.names.forEach(name => { if (!tagsList.includes(name)) tagsList.push(name) })"
      x-data="{ 
         tagsList: {{ json_encode(array_values(old('tags', $selectedTags ?? []))) }}, 
         tagInput: '',
@@ -358,6 +359,10 @@
         <form action="{{ route('ideas.update', $idea->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
             @method('PUT')
+
+            @if($idea->user_id === auth()->id())
+                <x-ai-idea-assistant :current-idea-id="$idea->id" />
+            @endif
 
             <!-- Title -->
             <div>

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminAiSettingsController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminCategoryDimensionController;
 use App\Http\Controllers\Admin\AdminDashboardController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\IdeaAiController;
 use App\Http\Controllers\IdeaController;
 use App\Http\Controllers\IdeaHierarchyController;
 use App\Http\Controllers\IdeaPublicationController;
@@ -75,6 +77,12 @@ Route::middleware('auth')->group(function () {
     // Idea Creation & Management
     Route::get('/nueva-idea', [IdeaController::class, 'create'])->name('ideas.create');
     Route::post('/ideas', [IdeaController::class, 'store'])->name('ideas.store');
+    Route::post('/api/ai/ideas/transcribe', [IdeaAiController::class, 'transcribe'])
+        ->name('api.ai.ideas.transcribe')->middleware('throttle:10,1');
+    Route::post('/api/ai/ideas/organize', [IdeaAiController::class, 'organize'])
+        ->name('api.ai.ideas.organize')->middleware('throttle:20,1');
+    Route::post('/api/ai/ideas/relations', [IdeaAiController::class, 'relations'])
+        ->name('api.ai.ideas.relations')->middleware('throttle:20,1');
     Route::get('/ideas/{idea}/editar', [IdeaController::class, 'edit'])->name('ideas.edit');
     Route::put('/ideas/{idea}', [IdeaController::class, 'update'])->name('ideas.update');
     Route::delete('/ideas/{idea}', [IdeaController::class, 'destroy'])->name('ideas.destroy');
@@ -129,6 +137,11 @@ Route::middleware('auth')->group(function () {
     // ==========================================
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/inteligencia-artificial', [AdminAiSettingsController::class, 'index'])->name('ai.index');
+        Route::put('/inteligencia-artificial', [AdminAiSettingsController::class, 'update'])->name('ai.update');
+        Route::post('/inteligencia-artificial/probar', [AdminAiSettingsController::class, 'test'])
+            ->name('ai.test')->middleware('throttle:5,1');
 
         // Ideas Administration
         Route::get('/ideas', [AdminIdeaController::class, 'index'])->name('ideas.index');
