@@ -653,6 +653,8 @@
                 </div>
             </div>
 
+            <x-idea-relation-editor :candidates="$relationCandidates" />
+
             <!-- Attachments Upload Area -->
             <div>
                 <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">

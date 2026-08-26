@@ -673,6 +673,8 @@
                 </div>
             </div>
 
+            <x-idea-relation-editor :candidates="$relationCandidates" :relations="$existingRelations" />
+
             <!-- Existing Attachments & Deletion -->
             @if($idea->attachments->isNotEmpty())
             <div>

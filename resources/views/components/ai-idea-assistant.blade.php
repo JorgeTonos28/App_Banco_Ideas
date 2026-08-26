@@ -7,6 +7,7 @@
         relationsUrl: @js(route('api.ai.ideas.relations')),
         currentIdeaId: @js($currentIdeaId)
     })"
+    @semantic-relations-changed.window="syncConfirmedRelations($event.detail.relations)"
     class="overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary-fixed/45 via-surface-container-lowest to-tertiary-fixed/25"
 >
     <div class="p-5 sm:p-6">
@@ -110,12 +111,5 @@
             </div>
         </div>
 
-        <template x-for="(relation, index) in confirmedRelations" :key="`${relation.target_idea_id}:${relation.type}`">
-            <div>
-                <input type="hidden" :name="`ai_relations[${index}][target_idea_id]`" :value="relation.target_idea_id">
-                <input type="hidden" :name="`ai_relations[${index}][type]`" :value="relation.type">
-                <input type="hidden" :name="`ai_relations[${index}][rationale]`" :value="relation.rationale">
-            </div>
-        </template>
     </div>
 </section>

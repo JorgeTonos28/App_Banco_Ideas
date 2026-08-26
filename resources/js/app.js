@@ -1,8 +1,10 @@
 import Alpine from 'alpinejs';
 import registerIdeaAiAssistant from './idea-ai-assistant';
+import registerIdeaRelationEditor from './idea-relation-editor';
 
 window.Alpine = Alpine;
 registerIdeaAiAssistant(Alpine);
+registerIdeaRelationEditor(Alpine);
 
 // Global Search Component
 Alpine.data('globalSearch', () => ({

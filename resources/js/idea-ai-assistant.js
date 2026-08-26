@@ -111,7 +111,6 @@ export default function registerIdeaAiAssistant(Alpine) {
                 });
                 this.resetAppliedSections();
                 this.relationSuggestions = [];
-                this.confirmedRelations = [];
                 this.state = 'review';
             } catch (error) {
                 this.fail(error);
@@ -208,10 +207,16 @@ export default function registerIdeaAiAssistant(Alpine) {
         },
 
         toggleRelation(relation) {
-            const key = `${relation.target_idea_id}:${relation.type}`;
-            const index = this.confirmedRelations.findIndex((item) => `${item.target_idea_id}:${item.type}` === key);
-            if (index >= 0) this.confirmedRelations.splice(index, 1);
-            else this.confirmedRelations.push(relation);
+            window.dispatchEvent(new CustomEvent('ai-relation-toggle-request', {
+                detail: {
+                    relation,
+                    include: !this.relationIsConfirmed(relation),
+                },
+            }));
+        },
+
+        syncConfirmedRelations(relations) {
+            this.confirmedRelations = relations || [];
         },
 
         relationIsConfirmed(relation) {
