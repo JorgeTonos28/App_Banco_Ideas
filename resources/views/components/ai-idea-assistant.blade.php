@@ -50,36 +50,39 @@
             <div x-show="suggestion" class="space-y-4">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div><h3 class="font-headline text-sm font-bold">Sugerencias para revisión</h3><p class="text-[11px] text-on-surface-variant">Aplica sólo lo que represente correctamente tu intención.</p></div>
-                    <button type="button" @click="applyAll" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">Aplicar contenido y organización</button>
+                    <button type="button" @click="applyAll"
+                            class="rounded-xl px-4 py-2 text-xs font-bold transition-colors"
+                            :class="allContentApplied ? 'bg-emerald-100 text-emerald-800' : 'bg-primary text-white'"
+                            x-text="allContentApplied ? 'Contenido y organización aplicados' : 'Aplicar contenido y organización'"></button>
                 </div>
 
                 <div class="grid gap-3 md:grid-cols-2">
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4">
-                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Título</h4><button type="button" @click="applyText('title')" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Título</h4><button type="button" @click="applyText('title')" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('title') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('title') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <p class="mt-2 text-sm font-semibold" x-text="suggestion?.title"></p>
                     </article>
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4">
-                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Problema u oportunidad</h4><button type="button" @click="applyText('problem_opportunity')" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Problema u oportunidad</h4><button type="button" @click="applyText('problem_opportunity')" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('problem_opportunity') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('problem_opportunity') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <p class="mt-2 text-xs leading-relaxed" x-text="suggestion?.problem_opportunity || 'La IA indica que falta información.'"></p>
                     </article>
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 md:col-span-2">
-                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Descripción</h4><button type="button" @click="applyText('description')" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-bold uppercase text-outline">Descripción</h4><button type="button" @click="applyText('description')" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('description') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('description') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <p class="mt-2 whitespace-pre-line text-xs leading-relaxed" x-text="suggestion?.description"></p>
                     </article>
                 </div>
 
                 <div class="grid gap-3 lg:grid-cols-3">
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4">
-                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Clasificación</h4><button type="button" @click="applyClassification" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Clasificación</h4><button type="button" @click="applyClassification" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('classification') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('classification') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <p class="mt-2 text-xs">Categoría principal: <strong x-text="suggestion?.primary_category_name || 'Sin confianza suficiente'"></strong></p>
                         <p class="mt-1 text-[11px] text-on-surface-variant" x-text="`${suggestion?.classifications?.length || 0} dimensiones sugeridas`"></p>
                     </article>
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4">
-                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Etiquetas</h4><button type="button" @click="applyTags" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Etiquetas</h4><button type="button" @click="applyTags" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('tags') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('tags') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <div class="mt-2 flex flex-wrap gap-1.5"><template x-for="tag in suggestion?.tags || []" :key="`${tag.name}:${tag.existing_tag_id}`"><span class="rounded-lg bg-primary-fixed px-2 py-1 text-[11px] font-semibold text-primary" x-text="`#${tag.name}`"></span></template></div>
                     </article>
                     <article class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4">
-                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Idea madre</h4><button type="button" @click="applyParent" class="text-xs font-bold text-primary">Aplicar</button></div>
+                        <div class="flex items-center justify-between"><h4 class="text-xs font-bold uppercase text-outline">Idea madre</h4><button type="button" @click="applyParent" class="rounded-lg px-2 py-1 text-xs font-bold transition-colors" :class="isApplied('parent') ? 'bg-emerald-100 text-emerald-800' : 'text-primary'" x-text="isApplied('parent') ? 'Aplicado' : 'Aplicar'"></button></div>
                         <p class="mt-2 text-xs font-semibold" x-text="suggestion?.parent_suggestion?.idea_title || 'Mantener como idea independiente'"></p>
                         <p class="mt-1 text-[11px] leading-relaxed text-on-surface-variant" x-text="suggestion?.parent_suggestion?.rationale"></p>
                     </article>

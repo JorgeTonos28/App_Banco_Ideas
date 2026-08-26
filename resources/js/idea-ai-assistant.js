@@ -6,6 +6,14 @@ export default function registerIdeaAiAssistant(Alpine) {
         suggestion: null,
         relationSuggestions: [],
         confirmedRelations: [],
+        appliedSections: {
+            title: false,
+            description: false,
+            problem_opportunity: false,
+            classification: false,
+            tags: false,
+            parent: false,
+        },
         mediaRecorder: null,
         mediaStream: null,
         audioChunks: [],
@@ -18,6 +26,10 @@ export default function registerIdeaAiAssistant(Alpine) {
 
         get canRecord() {
             return Boolean(navigator.mediaDevices?.getUserMedia && window.MediaRecorder);
+        },
+
+        get allContentApplied() {
+            return Object.values(this.appliedSections).every(Boolean);
         },
 
         async startRecording() {
@@ -97,6 +109,9 @@ export default function registerIdeaAiAssistant(Alpine) {
                     problem_opportunity: document.querySelector('#problem_opportunity')?.value || '',
                     current_idea_id: options.currentIdeaId,
                 });
+                this.resetAppliedSections();
+                this.relationSuggestions = [];
+                this.confirmedRelations = [];
                 this.state = 'review';
             } catch (error) {
                 this.fail(error);
@@ -130,14 +145,17 @@ export default function registerIdeaAiAssistant(Alpine) {
             input.value = value;
             input.dispatchEvent(new Event('input', { bubbles: true }));
             input.dispatchEvent(new Event('change', { bubbles: true }));
+            this.markApplied(field);
         },
 
         applyClassification() {
             const categoryId = this.suggestion?.primary_category_id;
             if (categoryId) {
                 const category = document.querySelector('#category_id');
-                category.value = String(categoryId);
-                category.dispatchEvent(new Event('change', { bubbles: true }));
+                if (category) {
+                    category.value = String(categoryId);
+                    category.dispatchEvent(new Event('change', { bubbles: true }));
+                }
             }
 
             (this.suggestion?.classifications || []).forEach((selection) => {
@@ -147,11 +165,14 @@ export default function registerIdeaAiAssistant(Alpine) {
                     input.dispatchEvent(new Event('change', { bubbles: true }));
                 });
             });
+
+            this.markApplied('classification');
         },
 
         applyTags() {
             const names = (this.suggestion?.tags || []).map((tag) => tag.name);
             window.dispatchEvent(new CustomEvent('ai-tags-suggested', { detail: { names } }));
+            this.markApplied('tags');
         },
 
         applyParent() {
@@ -160,6 +181,7 @@ export default function registerIdeaAiAssistant(Alpine) {
             window.dispatchEvent(new CustomEvent('ai-parent-suggested', {
                 detail: { id: parent.idea_id || '', title: parent.idea_title || 'Sin idea madre' }
             }));
+            this.markApplied('parent');
         },
 
         applyAll() {
@@ -167,6 +189,22 @@ export default function registerIdeaAiAssistant(Alpine) {
             this.applyClassification();
             this.applyTags();
             this.applyParent();
+        },
+
+        resetAppliedSections() {
+            Object.keys(this.appliedSections).forEach((section) => {
+                this.appliedSections[section] = false;
+            });
+        },
+
+        markApplied(section) {
+            if (Object.prototype.hasOwnProperty.call(this.appliedSections, section)) {
+                this.appliedSections[section] = true;
+            }
+        },
+
+        isApplied(section) {
+            return Boolean(this.appliedSections[section]);
         },
 
         toggleRelation(relation) {

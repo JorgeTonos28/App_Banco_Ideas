@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="max-w-3xl mx-auto space-y-6"
-     @ai-tags-suggested.window="$event.detail.names.forEach(name => { if (!tagsList.includes(name)) tagsList.push(name) })"
+     @ai-tags-suggested.window="tagsList = [...new Set($event.detail.names)]"
      x-data="{ 
         tagsList: {{ json_encode(array_values(old('tags', []))) }}, 
         tagInput: '',
