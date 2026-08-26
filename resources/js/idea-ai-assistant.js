@@ -6,14 +6,18 @@ export default function registerIdeaAiAssistant(Alpine) {
         suggestion: null,
         relationSuggestions: [],
         confirmedRelations: [],
-        appliedSections: {
-            title: false,
-            description: false,
-            problem_opportunity: false,
-            classification: false,
-            tags: false,
-            parent: false,
+        originalValues: null,
+        sectionDecisions: {
+            title: 'pending',
+            description: 'pending',
+            problem_opportunity: 'pending',
+            classification: 'pending',
+            tags: 'pending',
+            parent: 'pending',
         },
+        relationAnalysisComplete: false,
+        relationsJustReady: false,
+        relationsReadyTimer: null,
         mediaRecorder: null,
         mediaStream: null,
         audioChunks: [],
@@ -29,7 +33,11 @@ export default function registerIdeaAiAssistant(Alpine) {
         },
 
         get allContentApplied() {
-            return Object.values(this.appliedSections).every(Boolean);
+            return Object.values(this.sectionDecisions).every((decision) => decision === 'applied');
+        },
+
+        get allContentDecided() {
+            return Object.values(this.sectionDecisions).every((decision) => decision !== 'pending');
         },
 
         async startRecording() {
@@ -99,18 +107,22 @@ export default function registerIdeaAiAssistant(Alpine) {
 
         async analyze() {
             this.error = '';
+            const originalValues = this.captureCurrentValues();
             this.state = 'analyzing';
 
             try {
                 this.suggestion = await this.request(options.organizeUrl, {
                     transcript: this.transcript,
-                    title: document.querySelector('#title')?.value || '',
-                    description: document.querySelector('#description')?.value || '',
-                    problem_opportunity: document.querySelector('#problem_opportunity')?.value || '',
+                    title: originalValues.title,
+                    description: originalValues.description,
+                    problem_opportunity: originalValues.problem_opportunity,
                     current_idea_id: options.currentIdeaId,
                 });
-                this.resetAppliedSections();
+                this.originalValues = originalValues;
+                this.resetSectionDecisions();
                 this.relationSuggestions = [];
+                this.relationAnalysisComplete = false;
+                this.relationsJustReady = false;
                 this.state = 'review';
             } catch (error) {
                 this.fail(error);
@@ -119,6 +131,9 @@ export default function registerIdeaAiAssistant(Alpine) {
 
         async suggestRelations() {
             this.error = '';
+            this.relationSuggestions = [];
+            this.relationAnalysisComplete = false;
+            this.relationsJustReady = false;
             this.state = 'relations';
 
             try {
@@ -130,7 +145,10 @@ export default function registerIdeaAiAssistant(Alpine) {
                     current_idea_id: options.currentIdeaId,
                 });
                 this.relationSuggestions = data.relations || [];
+                this.relationAnalysisComplete = true;
+                this.relationsJustReady = true;
                 this.state = 'review';
+                this.revealRelationSuggestions();
             } catch (error) {
                 this.fail(error);
             }
@@ -176,9 +194,8 @@ export default function registerIdeaAiAssistant(Alpine) {
 
         applyParent() {
             const parent = this.suggestion?.parent_suggestion;
-            if (!parent) return;
             window.dispatchEvent(new CustomEvent('ai-parent-suggested', {
-                detail: { id: parent.idea_id || '', title: parent.idea_title || 'Sin idea madre' }
+                detail: { id: parent?.idea_id || '', title: parent?.idea_title || 'Sin idea madre' }
             }));
             this.markApplied('parent');
         },
@@ -190,20 +207,114 @@ export default function registerIdeaAiAssistant(Alpine) {
             this.applyParent();
         },
 
-        resetAppliedSections() {
-            Object.keys(this.appliedSections).forEach((section) => {
-                this.appliedSections[section] = false;
+        captureCurrentValues() {
+            const classifications = {};
+            document.querySelectorAll('input[name^="classifications["]').forEach((input) => {
+                if (!classifications[input.name]) classifications[input.name] = [];
+                if (input.checked) classifications[input.name].push(String(input.value));
+            });
+
+            const parentInput = document.querySelector('#parent_idea_id');
+
+            return {
+                title: document.querySelector('#title')?.value || '',
+                description: document.querySelector('#description')?.value || '',
+                problem_opportunity: document.querySelector('#problem_opportunity')?.value || '',
+                category_id: document.querySelector('#category_id')?.value || '',
+                classifications,
+                tags: Array.from(document.querySelectorAll('input[name="tags[]"]')).map((input) => input.value),
+                parent: {
+                    id: parentInput?.value || '',
+                    title: parentInput?.dataset?.selectedTitle || 'Sin idea madre',
+                },
+            };
+        },
+
+        keepOriginal(section) {
+            if (!this.originalValues) return;
+
+            if (['title', 'description', 'problem_opportunity'].includes(section)) {
+                this.restoreText(section);
+            } else if (section === 'classification') {
+                this.restoreClassification();
+            } else if (section === 'tags') {
+                window.dispatchEvent(new CustomEvent('ai-tags-suggested', {
+                    detail: { names: [...this.originalValues.tags] },
+                }));
+            } else if (section === 'parent') {
+                window.dispatchEvent(new CustomEvent('ai-parent-suggested', {
+                    detail: { ...this.originalValues.parent },
+                }));
+            } else {
+                return;
+            }
+
+            this.markDecision(section, 'original');
+        },
+
+        restoreText(field) {
+            const input = document.querySelector(`#${field}`);
+            if (!input) return;
+            input.value = this.originalValues[field] || '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+
+        restoreClassification() {
+            const category = document.querySelector('#category_id');
+            if (category) {
+                category.value = this.originalValues.category_id || '';
+                category.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            document.querySelectorAll('input[name^="classifications["]').forEach((input) => {
+                const selectedValues = this.originalValues.classifications[input.name] || [];
+                input.checked = selectedValues.includes(String(input.value));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        },
+
+        resetSectionDecisions() {
+            Object.keys(this.sectionDecisions).forEach((section) => {
+                this.sectionDecisions[section] = 'pending';
             });
         },
 
         markApplied(section) {
-            if (Object.prototype.hasOwnProperty.call(this.appliedSections, section)) {
-                this.appliedSections[section] = true;
+            this.markDecision(section, 'applied');
+        },
+
+        markDecision(section, decision) {
+            if (Object.prototype.hasOwnProperty.call(this.sectionDecisions, section)) {
+                this.sectionDecisions[section] = decision;
             }
         },
 
         isApplied(section) {
-            return Boolean(this.appliedSections[section]);
+            return this.sectionDecisions[section] === 'applied';
+        },
+
+        isOriginal(section) {
+            return this.sectionDecisions[section] === 'original';
+        },
+
+        revealRelationSuggestions() {
+            const reveal = () => {
+                document.querySelector('#ai-relation-results')?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start',
+                });
+            };
+
+            if (typeof this.$nextTick === 'function') this.$nextTick(reveal);
+            else reveal();
+
+            if (typeof window.clearTimeout === 'function') window.clearTimeout(this.relationsReadyTimer);
+            if (typeof window.setTimeout === 'function') {
+                this.relationsReadyTimer = window.setTimeout(() => {
+                    this.relationsJustReady = false;
+                }, 1800);
+            }
         },
 
         toggleRelation(relation) {

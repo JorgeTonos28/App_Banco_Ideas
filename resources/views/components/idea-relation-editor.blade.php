@@ -89,7 +89,7 @@
                             </div>
                             <p class="mt-0.5 text-[10px] text-outline" x-text="relation.target_author"></p>
                         </div>
-                        <button type="button" @click="removeRelation(index)" class="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold text-error hover:bg-error-container/50">
+                        <button type="button" @click="removeRelation(index)" class="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-bold text-error hover:bg-error-container/50">
                             <span class="material-symbols-outlined text-sm" aria-hidden="true">delete</span>
                             Quitar
                         </button>
@@ -145,7 +145,7 @@
             </div>
 
             <div class="mt-3 flex justify-end">
-                <button type="button" @click="addManualRelation" class="inline-flex items-center gap-1.5 rounded-xl bg-tertiary px-4 py-2.5 text-xs font-bold text-white">
+                <button type="button" @click="addManualRelation" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-tertiary px-4 py-2.5 text-xs font-bold text-white">
                     <span class="material-symbols-outlined text-base" aria-hidden="true">add_link</span>
                     Incorporar relación
                 </button>
