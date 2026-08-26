@@ -20,7 +20,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea conserva su audiencia propia aunque su madre sea pública, nunca supera el acceso efectivo de sus ancestros y sólo llega a la comunidad general mediante su propia aprobación editorial.
 - **Comunidades organizacionales jerárquicas**: Regionales o sedes, direcciones funcionales y departamentos forman un árbol navegable. Las ideas internas declaran audiencias exactas o con descendientes, mientras la comunidad general de INFOTEP continúa reservada para publicaciones aprobadas editorialmente.
-- **Grafo de relaciones semánticas con auditoría humana**: Propietarios y administradores pueden crear, justificar, editar y eliminar conexiones como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. La ficha identifica quién registró y revisó cada conexión; una edición entre autores vuelve a requerir confirmación.
+- **Grafo de relaciones semánticas con auditoría humana**: La creación y edición de ideas incluyen un editor para incorporar sugerencias de IA, añadir conexiones manuales, ajustar su tipo o justificación y quitar relaciones existentes antes de guardar. Admite dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. La ficha queda como vista de consulta y espacio de aprobación; identifica quién registró y revisó cada conexión, y una edición entre autores vuelve a requerir confirmación.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Guía contextual de clasificación**: Los formularios de creación y edición incluyen una ayuda desplegable que diferencia categoría, dimensiones y etiquetas, recomienda entre 4 y 7 etiquetas y muestra ejemplos de términos útiles o duplicados que deben evitarse.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
@@ -36,7 +36,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - 💡 **Asistente Visual Interactivo**: Notifica al usuario en el formulario y en el explorador modal cuando existen etiquetas similares con conteo de uso en el sistema, permitiendo seleccionarlas con un solo clic o confirmar el término nuevo.
 - **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
 - **Línea de tiempo por flujo**: Historial separado para trabajo privado, revisión editorial y ciclo comunitario, con actor y observaciones.
-- **Captura por voz con revisión humana**: El formulario graba hasta cinco minutos en formatos compatibles, transcribe el archivo temporal y permite editar el texto antes de organizar la idea. La IA propone título, descripción, problema u oportunidad, clasificación multidimensional, etiquetas, idea madre y relaciones semánticas; cada resultado se incorpora manualmente y sólo se guarda al enviar el formulario.
+- **Captura por voz con revisión humana**: El formulario graba hasta cinco minutos en formatos compatibles, transcribe el archivo temporal y permite editar el texto antes de organizar la idea. La IA propone título, descripción, problema u oportunidad, clasificación multidimensional, etiquetas, idea madre y relaciones semánticas; cada acción cambia visualmente a `Aplicado`, las etiquetas sugeridas reemplazan la selección previa y las relaciones incorporadas pasan al editor del formulario. Nada se guarda hasta enviar la idea.
 - **Contexto privado por autor**: Las recomendaciones de madre y relaciones sólo reciben una proyección acotada de las ideas no archivadas del usuario autenticado. La taxonomía activa y el catálogo controlado de etiquetas se envían como allowlists; IDs ajenos o inactivos se rechazan nuevamente en Laravel.
 
 ### 2. Descubrimiento y Colaboración
@@ -259,6 +259,7 @@ Este comando reactiva la categoría 12, convierte la idea 17 en raíz complement
 composer install
 npm ci
 npm run build
+npm run test:js
 php artisan test
 ```
 

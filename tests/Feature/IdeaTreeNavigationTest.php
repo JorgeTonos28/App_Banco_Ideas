@@ -114,6 +114,7 @@ class IdeaTreeNavigationTest extends TestCase
         $this->actingAs($author)
             ->get(route('ideas.edit', $root))
             ->assertOk()
-            ->assertDontSee($child->title);
+            ->assertViewHas('parentCandidates', fn ($candidates) => ! $candidates->contains('id', $child->id))
+            ->assertViewHas('relationCandidates', fn ($candidates) => $candidates->contains('id', $child->id));
     }
 }
