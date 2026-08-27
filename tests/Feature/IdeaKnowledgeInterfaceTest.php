@@ -70,8 +70,8 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->get(route('ideas.show', $idea->slug))
             ->assertOk()
             ->assertSee('Relaciones semánticas')
-            ->assertSee('Gestionar relaciones')
-            ->assertSee('Editar relación')
+            ->assertDontSee('Gestionar relaciones')
+            ->assertDontSee('Editar relación')
             ->assertSee('Registrada por '.$this->author->name)
             ->assertSee('Trazabilidad de microideas')
             ->assertDontSee('Estructura madre e hijas')
@@ -82,6 +82,13 @@ class IdeaKnowledgeInterfaceTest extends TestCase
             ->assertSee('Solicitar revisión editorial')
             ->assertSee('Trabajo privado')
             ->assertDontSee('¿Qué te parece esta idea?');
+
+        $this->actingAs($this->author)
+            ->get(route('ideas.edit', $idea))
+            ->assertOk()
+            ->assertSee('Relaciones semánticas')
+            ->assertSee('Añadir conexión manual')
+            ->assertSee($related->title);
     }
 
     public function test_tree_view_is_not_limited_to_first_card_page(): void

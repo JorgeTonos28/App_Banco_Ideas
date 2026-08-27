@@ -17,6 +17,7 @@ use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaClassificationService;
 use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
+use App\Services\IdeaRelationFormService;
 use App\Services\IdeaTreeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -144,8 +145,11 @@ class IdeaController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request, IdeaCommunityService $communityService): View
-    {
+    public function create(
+        Request $request,
+        IdeaCommunityService $communityService,
+        GlobalIdeaSearchService $ideaSearch
+    ): View {
         $categories = Category::where('is_active', true)
             ->whereHas('dimension', fn ($query) => $query->where('is_primary', true)->where('is_active', true))
             ->orderBy('sort_order')
@@ -162,6 +166,14 @@ class IdeaController extends Controller
             ? $request->integer('parent')
             : null;
         $communityUnits = $communityService->availableUnitsFor($request->user());
+        $relationCandidates = $ideaSearch->accessibleCandidates($request->user(), 0)
+            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true));
+
+        if (! $request->user()->isAdmin()) {
+            $relationCandidates = $relationCandidates
+                ->where('user_id', $request->user()->id)
+                ->values();
+        }
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -188,6 +200,7 @@ class IdeaController extends Controller
             'parentCandidates',
             'selectedParentId',
             'communityUnits',
+            'relationCandidates',
             'allTags',
             'popularTags',
             'tags'
@@ -201,7 +214,8 @@ class IdeaController extends Controller
         StoreIdeaRequest $request,
         IdeaClassificationService $classificationService,
         IdeaHierarchyService $hierarchyService,
-        IdeaCommunityService $communityService
+        IdeaCommunityService $communityService,
+        IdeaRelationFormService $relationFormService
     ): RedirectResponse {
         DB::beginTransaction();
         try {
@@ -260,6 +274,14 @@ class IdeaController extends Controller
                     }
                 }
                 $idea->tags()->sync(array_values(array_unique($tagIds)));
+            }
+
+            if ($request->boolean('idea_relations_present') || $request->has('idea_relations')) {
+                $relationFormService->sync(
+                    $idea,
+                    $request->user(),
+                    $request->input('idea_relations', []),
+                );
             }
 
             // Handle Attachments
@@ -328,8 +350,7 @@ class IdeaController extends Controller
      */
     public function show(
         string $slug,
-        IdeaTreeService $treeService,
-        GlobalIdeaSearchService $ideaSearch
+        IdeaTreeService $treeService
     ): View {
         $idea = Idea::with([
             'user',
@@ -393,13 +414,7 @@ class IdeaController extends Controller
             ->take(3)
             ->get();
 
-        $canOrganize = $viewer?->can('organize', $idea) ?? false;
-        $relationCandidates = collect();
         $pendingRelationReviews = collect();
-
-        if ($canOrganize) {
-            $relationCandidates = $ideaSearch->accessibleCandidates($viewer, $idea->id);
-        }
 
         if ($viewer) {
             $pendingRelationReviews = $idea->incomingRelations()
@@ -441,8 +456,6 @@ class IdeaController extends Controller
         return view('ideas.show', compact(
             'idea',
             'relatedIdeas',
-            'canOrganize',
-            'relationCandidates',
             'pendingRelationReviews',
             'traceIdeas',
             'traceRoot',
@@ -457,7 +470,8 @@ class IdeaController extends Controller
         Idea $idea,
         IdeaClassificationService $classificationService,
         IdeaCommunityService $communityService,
-        IdeaHierarchyService $hierarchyService
+        IdeaHierarchyService $hierarchyService,
+        GlobalIdeaSearchService $ideaSearch
     ): View {
         $this->authorize('update', $idea);
 
@@ -477,6 +491,19 @@ class IdeaController extends Controller
         $selectedCommunityShare = $idea->communityUnits()->first();
         $selectedCommunityUnitId = $selectedCommunityShare?->id;
         $selectedCommunityIncludesDescendants = (bool) $selectedCommunityShare?->pivot?->include_descendants;
+        $relationCandidates = $ideaSearch->accessibleCandidates(auth()->user(), $idea->id)
+            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true));
+
+        if (! auth()->user()->isAdmin() && ! $idea->isPublished()) {
+            $relationCandidates = $relationCandidates
+                ->where('user_id', auth()->id())
+                ->values();
+        }
+
+        $existingRelations = $idea->outgoingRelations()
+            ->with(['targetIdea.user', 'createdBy', 'reviewedBy'])
+            ->orderBy('created_at')
+            ->get();
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -508,6 +535,8 @@ class IdeaController extends Controller
             'communityUnits',
             'selectedCommunityUnitId',
             'selectedCommunityIncludesDescendants',
+            'relationCandidates',
+            'existingRelations',
             'allTags',
             'popularTags',
             'tags',
@@ -524,7 +553,8 @@ class IdeaController extends Controller
         Idea $idea,
         IdeaClassificationService $classificationService,
         IdeaHierarchyService $hierarchyService,
-        IdeaCommunityService $communityService
+        IdeaCommunityService $communityService,
+        IdeaRelationFormService $relationFormService
     ): RedirectResponse {
         $this->authorize('update', $idea);
 
@@ -609,6 +639,14 @@ class IdeaController extends Controller
                 $idea->tags()->sync(array_values(array_unique($tagIds)));
             } else {
                 $idea->tags()->detach();
+            }
+
+            if ($request->boolean('idea_relations_present') || $request->has('idea_relations')) {
+                $relationFormService->sync(
+                    $idea,
+                    $request->user(),
+                    $request->input('idea_relations', []),
+                );
             }
 
             // Delete requested attachments

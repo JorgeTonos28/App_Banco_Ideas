@@ -5,6 +5,7 @@ namespace App\Http\Requests\Idea;
 use App\Http\Requests\Concerns\ValidatesIdeaAudience;
 use App\Http\Requests\Concerns\ValidatesIdeaClassifications;
 use App\Http\Requests\Concerns\ValidatesIdeaParent;
+use App\Http\Requests\Concerns\ValidatesIdeaRelations;
 use App\Models\Idea;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,7 @@ class StoreIdeaRequest extends FormRequest
     use ValidatesIdeaAudience;
     use ValidatesIdeaClassifications;
     use ValidatesIdeaParent;
+    use ValidatesIdeaRelations;
 
     public function authorize(): bool
     {
@@ -23,7 +25,7 @@ class StoreIdeaRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        return array_merge([
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['required', 'string', 'min:20', 'max:10000'],
             'problem_opportunity' => ['nullable', 'string', 'max:5000'],
@@ -41,7 +43,7 @@ class StoreIdeaRequest extends FormRequest
             'workspace_status' => ['nullable', Rule::in(Idea::WORKSPACE_STATUSES)],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'], // 10MB max
-        ];
+        ], $this->ideaRelationRules());
     }
 
     public function after(): array
@@ -65,6 +67,7 @@ class StoreIdeaRequest extends FormRequest
             fn (Validator $validator) => $this->validateIdeaAudience($validator),
             fn (Validator $validator) => $this->validateIdeaClassifications($validator),
             fn (Validator $validator) => $this->validateIdeaParent($validator),
+            fn (Validator $validator) => $this->validateIdeaRelations($validator),
         ];
     }
 

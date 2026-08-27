@@ -20,7 +20,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea conserva su audiencia propia aunque su madre sea pública, nunca supera el acceso efectivo de sus ancestros y sólo llega a la comunidad general mediante su propia aprobación editorial.
 - **Comunidades organizacionales jerárquicas**: Regionales o sedes, direcciones funcionales y departamentos forman un árbol navegable. Las ideas internas declaran audiencias exactas o con descendientes, mientras la comunidad general de INFOTEP continúa reservada para publicaciones aprobadas editorialmente.
-- **Grafo de relaciones semánticas con auditoría humana**: Propietarios y administradores pueden crear, justificar, editar y eliminar conexiones como dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. La ficha identifica quién registró y revisó cada conexión; una edición entre autores vuelve a requerir confirmación.
+- **Grafo de relaciones semánticas con auditoría humana**: La creación y edición de ideas incluyen un editor para incorporar sugerencias de IA, añadir conexiones manuales, ajustar su tipo o justificación y quitar relaciones existentes antes de guardar. Admite dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. La ficha queda como vista de consulta y espacio de aprobación; identifica quién registró y revisó cada conexión, y una edición entre autores vuelve a requerir confirmación.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Guía contextual de clasificación**: Los formularios de creación y edición incluyen una ayuda desplegable que diferencia categoría, dimensiones y etiquetas, recomienda entre 4 y 7 etiquetas y muestra ejemplos de términos útiles o duplicados que deben evitarse.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
@@ -36,6 +36,8 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - 💡 **Asistente Visual Interactivo**: Notifica al usuario en el formulario y en el explorador modal cuando existen etiquetas similares con conteo de uso en el sistema, permitiendo seleccionarlas con un solo clic o confirmar el término nuevo.
 - **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
 - **Línea de tiempo por flujo**: Historial separado para trabajo privado, revisión editorial y ciclo comunitario, con actor y observaciones.
+- **Captura por voz con revisión humana**: El formulario graba hasta cinco minutos en formatos compatibles, transcribe el archivo temporal y permite editar el texto antes de organizar la idea. La IA propone título, descripción, problema u oportunidad, clasificación multidimensional, etiquetas, idea madre y relaciones semánticas. En cada sección la persona puede elegir `Aplicar` o `Mantener original`; esta última opción restaura el valor existente justo antes del análisis, incluso después de haber aplicado una sugerencia. Las etiquetas aplicadas reemplazan la selección previa y el análisis de relaciones confirma cuando está `Listo`, desplaza la vista hacia los resultados y permite incorporarlos al editor del formulario. Nada se guarda hasta enviar la idea.
+- **Contexto privado por autor**: Las recomendaciones de madre y relaciones sólo reciben una proyección acotada de las ideas no archivadas del usuario autenticado. La taxonomía activa y el catálogo controlado de etiquetas se envían como allowlists; IDs ajenos o inactivos se rechazan nuevamente en Laravel.
 
 ### 2. Descubrimiento y Colaboración
 - **Búsqueda respetuosa del contexto**: La búsqueda global ignora espacios y acentos, consulta contenido, clasificación, etiquetas y autor, e incluye ideas propias privadas, publicaciones generales, perfiles visibles y comunidades internas autorizadas; la Policy de cada idea continúa siendo la autoridad final para evitar fugas entre audiencias.
@@ -103,7 +105,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 ## 🚀 Instalación y Despliegue Local
 
 ### Requisitos Previos
-- PHP >= 8.2 con extensiones habilitadas (`pdo_sqlite`, `mbstring`, `openssl`, `fileinfo`, `gd` o `imagick`).
+- PHP >= 8.3 con extensiones habilitadas (`pdo_sqlite`, `mbstring`, `openssl`, `fileinfo`, `gd` o `imagick`).
 - Composer >= 2.x
 - Node.js >= 18.x & npm
 
@@ -188,6 +190,8 @@ El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovate
 
 En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
 
+Después de migrar, un administrador configura la clave cifrada, modelos y funciones desde **Administración → Inteligencia artificial**. `OPENAI_API_KEY` funciona como fallback de despliegue, pero la interfaz administrativa es la opción recomendada. La prueba de conexión consulta únicamente el modelo de transcripción configurado y no envía contenido de ideas.
+
 ### Migración de la taxonomía en producción
 
 `php artisan migrate --force` crea automáticamente la dimensión principal **Área de innovación**, asigna las categorías existentes a esa dimensión y migra cada `ideas.category_id` a la tabla multidimensional `idea_category`. No es necesario modificar previamente los registros actuales.
@@ -208,6 +212,58 @@ Las dimensiones y términos adicionales pueden gestionarse desde **Administraci�
 - Cada idea debería usar entre 4 y 7 etiquetas concretas, combinando ecosistema, capacidades, tecnología o método y, cuando aporte, audiencia o resultado.
 - Las etiquetas deben escribirse como sustantivos breves, preferiblemente de 2 a 4 palabras, con una forma canónica y las siglas en mayúsculas.
 - Antes de crear una etiqueta se deben revisar coincidencias y términos similares. Estados, visibilidad, publicación y jerarquía no deben duplicarse como categorías o etiquetas.
+
+---
+
+## 🤖 Asistente de captura y organización con IA
+
+La Fase 0 del asistente de captura por voz y organización de ideas está documentada en [`docs/ai`](docs/ai/README.md). Incluye el playbook de clasificación, recomendaciones de taxonomía, el informe de inconsistencias y scripts reproducibles para validar exportaciones, el Gold Standard y los casos de evaluación.
+
+El Gold Standard y los casos derivados de producción se almacenan exclusivamente en `storage/app/private/ai-audit/`, una ruta excluida de Git. No deben publicarse ni moverse a una carpeta versionada sin revisión institucional de privacidad.
+
+```bash
+node scripts/ai/audit-planning-context.mjs /ruta/ai-planning-context.json
+node scripts/ai/validate-ai-audit-artifacts.mjs /ruta/ai-planning-context.json storage/app/private/ai-audit/AI_GOLD_STANDARD_V1.json storage/app/private/ai-audit/AI_EVAL_CASES_V1.json
+```
+
+El primer vertical está implementado con una abstracción de proveedores y adaptadores OpenAI:
+
+- `gpt-transcribe` para archivos de audio completos;
+- `gpt-5.6-luna` con razonamiento `low` para organización y relaciones;
+- escalamiento determinista a `gpt-5.6-terra` con razonamiento `medium` cuando la confianza no supera el umbral configurado o la primera salida no pasa la validación semántica;
+- Responses API con JSON Schema estricto y `store: false`;
+- claves cifradas mediante `APP_KEY`, URLs de proveedor no editables y modelos limitados por configuración versionada;
+- telemetría de modelo, versión de prompt, latencia, unidades, éxito y escalamiento, sin audio, transcripción, prompt ni contenido generado.
+
+El audio permanece en el archivo temporal administrado por PHP durante la solicitud y no se copia a ningún disco de Laravel. Los endpoints usan CSRF, autenticación, FormRequests, límite de 10 MB y throttling independiente.
+
+### Aplicar las decisiones de datos aprobadas
+
+El comando siguiente verifica los IDs, títulos y autoría esperados y muestra una vista previa sin escribir:
+
+```bash
+php artisan ideas:apply-ai-audit-decisions
+```
+
+Después de revisar la salida contra la base correcta, la aplicación explícita e idempotente se realiza con:
+
+```bash
+php artisan ideas:apply-ai-audit-decisions --apply
+```
+
+Este comando reactiva la categoría 12, convierte la idea 17 en raíz complementaria de la idea 10, conserva la idea 20 bajo la idea 10 y archiva los registros de prueba 30 y 31. No debe ejecutarse en producción sin respaldo y verificación administrativa previa.
+
+### Verificación local
+
+```bash
+composer install
+npm ci
+npm run build
+npm run test:js
+php artisan test
+```
+
+El `composer.lock` está resuelto para PHP 8.3 y mantiene Symfony 7.4; evita regenerarlo con una plataforma PHP distinta sin comprobar compatibilidad.
 
 ---
 
@@ -233,8 +289,9 @@ Las dimensiones y términos adicionales pueden gestionarse desde **Administraci�
    - Control de auto-voto: Un creador no puede calificar su propia propuesta.
 3. **Validación y Sanitización**: Uso estricto de `FormRequest` con validación de tipo, longitud, formato, pertenencia taxonómica, ciclos jerárquicos y acceso a ideas relacionadas.
 4. **Subida Segura de Archivos**: Validación de tipos MIME permitidos (`pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,zip`), límite de 10 MB y almacenamiento con nombres hash únicos.
-5. **Rate Limiting**: Throttling en login (`6/min`), solicitudes editoriales (`5/min`), organización y relaciones (`30/min`), votación (`30/min`) y comentarios (`15/min`).
+5. **Rate Limiting**: Throttling en login (`6/min`), solicitudes editoriales (`5/min`), organización y relaciones manuales (`30/min`), transcripción de IA (`10/min`), análisis de IA (`20/min`), votación (`30/min`) y comentarios (`15/min`).
 6. **Protección contra SQL Injection**: Consultas exclusivamente a través de Eloquent ORM con sentencias preparadas.
+7. **Controles de IA**: Audio máximo de 10 MB, credenciales cifradas, proveedores/modelos en allowlists, aislamiento por propietario, prompts que tratan el texto como dato no confiable, salidas estructuradas validadas de nuevo en servidor y ausencia de mutaciones hasta la confirmación y guardado del formulario.
 
 ---
 

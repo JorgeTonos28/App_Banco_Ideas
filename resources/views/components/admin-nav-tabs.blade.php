@@ -40,4 +40,10 @@
         <span class="material-symbols-outlined text-lg" style="{{ request()->routeIs('admin.tags.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">sell</span>
         <span>Etiquetas</span>
     </a>
+
+    <a href="{{ route('admin.ai.index') }}"
+       class="px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-2 {{ request()->routeIs('admin.ai.*') ? 'border-primary text-primary font-bold' : 'border-transparent text-on-surface-variant hover:text-on-surface hover:border-surface-container-high' }}">
+        <span class="material-symbols-outlined text-lg">psychology</span>
+        <span>Inteligencia artificial</span>
+    </a>
 </div>

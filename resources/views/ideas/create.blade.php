@@ -3,7 +3,8 @@
 @section('title', 'Compartir una Idea - INNOVATEP')
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6" 
+<div class="max-w-3xl mx-auto space-y-6"
+     @ai-tags-suggested.window="tagsList = [...new Set($event.detail.names)]"
      x-data="{ 
         tagsList: {{ json_encode(array_values(old('tags', []))) }}, 
         tagInput: '',
@@ -358,6 +359,8 @@
         <form action="{{ route('ideas.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
             @csrf
 
+            <x-ai-idea-assistant />
+
             <!-- Title -->
             <div>
                 <label for="title" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
@@ -649,6 +652,8 @@
                     </div>
                 </div>
             </div>
+
+            <x-idea-relation-editor :candidates="$relationCandidates" />
 
             <!-- Attachments Upload Area -->
             <div>

@@ -187,9 +187,8 @@
         @endif
     </div>
 
-    @if($idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $canOrganize || $pendingRelationReviews->isNotEmpty())
-    <section id="relaciones-semanticas" class="overflow-hidden rounded-3xl border border-surface-container-high/80 bg-surface-container-lowest shadow-xs"
-             x-data="{ manageRelations: false }">
+    @if($idea->outgoingRelations->isNotEmpty() || $idea->incomingRelations->isNotEmpty() || $pendingRelationReviews->isNotEmpty())
+    <section id="relaciones-semanticas" class="overflow-hidden rounded-3xl border border-surface-container-high/80 bg-surface-container-lowest shadow-xs">
         <div class="flex flex-col gap-3 border-b border-surface-container-high/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div>
                 <h2 class="flex items-center gap-2 font-headline text-lg font-bold text-on-surface">
@@ -198,19 +197,11 @@
                 </h2>
                 <p class="mt-1 text-xs text-on-surface-variant">Conexiones conceptuales distintas de la jerarquía madre–hija, con autoría y revisión auditables.</p>
             </div>
-            @if($canOrganize)
-            <button type="button" @click="manageRelations = !manageRelations"
-                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary-fixed px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white"
-                    :aria-expanded="manageRelations.toString()">
-                <span class="material-symbols-outlined text-base" aria-hidden="true">edit_note</span>
-                Gestionar relaciones
-            </button>
-            @endif
         </div>
 
         <div class="max-h-80 space-y-3 overflow-y-auto p-5 sm:p-6">
             @forelse($idea->outgoingRelations as $relation)
-                <article x-data="{ editing: false }" class="rounded-2xl border border-surface-container-high bg-surface-container-low/60 p-4">
+                <article class="rounded-2xl border border-surface-container-high bg-surface-container-low/60 p-4">
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
@@ -224,46 +215,7 @@
                                 @if($relation->reviewedBy) · Revisada por {{ $relation->reviewedBy->name }}@endif
                             </p>
                         </div>
-                        <div class="flex shrink-0 items-center gap-1">
-                            @can('update', $relation)
-                            <button type="button" @click="editing = !editing" class="rounded-lg p-1.5 text-outline hover:bg-primary-fixed hover:text-primary" title="Editar relación">
-                                <span class="material-symbols-outlined text-base" aria-hidden="true">edit</span>
-                            </button>
-                            @endcan
-                            @can('delete', $relation)
-                            <form action="{{ route('ideas.relations.destroy', $relation) }}" method="POST" onsubmit="return confirm('¿Eliminar esta relación semántica?');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="rounded-lg p-1.5 text-outline hover:bg-error-container/40 hover:text-error" title="Eliminar relación"><span class="material-symbols-outlined text-base" aria-hidden="true">delete</span></button>
-                            </form>
-                            @endcan
-                        </div>
                     </div>
-
-                    @can('update', $relation)
-                    <form x-show="editing" action="{{ route('ideas.relations.details.update', $relation) }}" method="POST" class="mt-4 space-y-3 border-t border-surface-container-high pt-4">
-                        @csrf
-                        @method('PATCH')
-                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div>
-                                <label class="mb-1.5 block text-xs font-bold text-on-surface">Tipo de relación</label>
-                                <select name="type" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
-                                    @foreach(\App\Models\IdeaRelation::TYPES as $type)
-                                        <option value="{{ $type }}" {{ $relation->type === $type ? 'selected' : '' }}>{{ (new \App\Models\IdeaRelation(['type' => $type]))->type_label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="mb-1.5 block text-xs font-bold text-on-surface">Justificación</label>
-                                <input type="text" name="rationale" value="{{ $relation->rationale }}" maxlength="1000" class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-2">
-                            <button type="button" @click="editing = false" class="px-3 py-2 text-xs font-bold text-outline">Cancelar</button>
-                            <button type="submit" class="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white">Guardar relación</button>
-                        </div>
-                    </form>
-                    @endcan
                 </article>
             @empty
                 @if($idea->incomingRelations->isEmpty())
@@ -280,42 +232,6 @@
                 </article>
             @endforeach
         </div>
-
-        @if($canOrganize)
-        <div x-show="manageRelations" class="border-t border-surface-container-high bg-surface-container-low/55 p-5 sm:p-6">
-            <form action="{{ route('ideas.relations.store', $idea) }}" method="POST" class="space-y-3">
-                @csrf
-                <div>
-                    <span class="text-[10px] font-mono-tech font-bold uppercase text-primary">Nueva conexión manual</span>
-                    <p class="mt-1 text-xs text-on-surface-variant">Las conexiones con ideas de otro autor quedarán pendientes de su confirmación.</p>
-                </div>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                        <label class="mb-1.5 block text-xs font-bold text-on-surface">Tipo de relación</label>
-                        <select name="type" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
-                            @foreach(\App\Models\IdeaRelation::TYPES as $type)
-                                <option value="{{ $type }}">{{ (new \App\Models\IdeaRelation(['type' => $type]))->type_label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1.5 block text-xs font-bold text-on-surface">Idea conectada</label>
-                        <select name="target_idea_id" required class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs">
-                            <option value="">Selecciona una idea accesible</option>
-                            @foreach($relationCandidates as $candidate)
-                                <option value="{{ $candidate->id }}">{{ $candidate->title }} · {{ $candidate->user->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-bold text-on-surface">Justificación de la conexión</label>
-                    <textarea name="rationale" rows="2" maxlength="1000" placeholder="Explica por qué existe esta relación" class="w-full resize-none rounded-xl border border-surface-container-high bg-surface-container-lowest p-3 text-xs"></textarea>
-                </div>
-                <button type="submit" class="rounded-xl bg-tertiary px-4 py-2.5 text-xs font-bold text-white">Crear relación semántica</button>
-            </form>
-        </div>
-        @endif
 
         @if($pendingRelationReviews->isNotEmpty())
         <div class="space-y-3 border-t border-secondary/20 bg-secondary-container/10 p-5 sm:p-6">

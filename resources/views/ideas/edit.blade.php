@@ -3,7 +3,8 @@
 @section('title', 'Editar Idea - INNOVATEP')
 
 @section('content')
-<div class="max-w-3xl mx-auto space-y-6" 
+<div class="max-w-3xl mx-auto space-y-6"
+     @ai-tags-suggested.window="tagsList = [...new Set($event.detail.names)]"
      x-data="{ 
         tagsList: {{ json_encode(array_values(old('tags', $selectedTags ?? []))) }}, 
         tagInput: '',
@@ -359,6 +360,10 @@
             @csrf
             @method('PUT')
 
+            @if($idea->user_id === auth()->id())
+                <x-ai-idea-assistant :current-idea-id="$idea->id" />
+            @endif
+
             <!-- Title -->
             <div>
                 <label for="title" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
@@ -667,6 +672,8 @@
                     </div>
                 </div>
             </div>
+
+            <x-idea-relation-editor :candidates="$relationCandidates" :relations="$existingRelations" />
 
             <!-- Existing Attachments & Deletion -->
             @if($idea->attachments->isNotEmpty())

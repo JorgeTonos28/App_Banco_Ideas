@@ -19,7 +19,7 @@
         @js($independentLabel)
     )"
     @keydown.escape.window="if (open) { open = false; query = ''; }">
-    <input type="hidden" name="parent_idea_id" id="{{ $inputId }}" :value="selectedId">
+    <input type="hidden" name="parent_idea_id" id="{{ $inputId }}" :value="selectedId" :data-selected-title="selectedTitle">
 
     <button type="button" @click="open = true; $nextTick(() => $refs.parentSearch?.focus())"
             class="flex w-full items-center justify-between gap-3 rounded-2xl border border-surface-container-high bg-surface-container-low px-4 py-3 text-left text-sm text-on-surface hover:border-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/20"
