@@ -207,6 +207,17 @@ export default function registerIdeaAiAssistant(Alpine) {
             this.applyParent();
         },
 
+        moveToTask() {
+            const task = this.suggestion?.task_suggestion || {};
+            window.sessionStorage.setItem('innovationTaskDraft', JSON.stringify({
+                title: task.title || this.suggestion?.title || '',
+                description: task.description || this.suggestion?.description || '',
+                target_idea_id: task.target_idea_id || null,
+                parent_task_id: task.parent_task_id || null,
+            }));
+            window.location.assign(options.taskCreateUrl);
+        },
+
         captureCurrentValues() {
             const classifications = {};
             document.querySelectorAll('input[name^="classifications["]').forEach((input) => {

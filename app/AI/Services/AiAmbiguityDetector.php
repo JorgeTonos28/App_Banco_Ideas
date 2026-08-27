@@ -10,6 +10,11 @@ class AiAmbiguityDetector
             return true;
         }
 
+        if (($result['capture_classification']['kind'] ?? 'uncertain') === 'uncertain'
+            || ($result['capture_classification']['confidence'] ?? 0) < $threshold) {
+            return true;
+        }
+
         $parent = $result['parent_suggestion'] ?? [];
 
         return ($parent['idea_id'] ?? null) !== null

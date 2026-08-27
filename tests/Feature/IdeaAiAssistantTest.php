@@ -86,9 +86,19 @@ class IdeaAiAssistantTest extends TestCase
             'title' => 'CONTENIDO PRIVADO DE OTRO USUARIO',
             'workspace_status' => 'capturada',
         ]);
+        Idea::factory()->for($other)->create([
+            'category_id' => $category->id,
+            'title' => 'CONTENIDO PUBLICO DE OTRO USUARIO',
+            'workspace_status' => 'capturada',
+            'visibility' => 'public',
+            'publication_status' => 'published',
+            'community_display' => 'standalone',
+        ]);
         $this->enableOpenAi($user);
 
         $modelOutput = [
+            'capture_classification' => ['kind' => 'idea', 'confidence' => 0.94, 'rationale' => 'Propone una solución con valor independiente que puede originar varias acciones.'],
+            'task_suggestion' => ['title' => null, 'description' => null, 'target_idea_id' => null, 'parent_task_id' => null, 'confidence' => 0.2, 'rationale' => 'No corresponde convertirla en una acción aislada.'],
             'title' => 'Reutilizar materiales sobrantes entre talleres',
             'description' => 'Crear un catálogo interno para registrar materiales sobrantes y permitir que otros talleres los soliciten antes de comprar nuevos insumos.',
             'problem_opportunity' => 'Los talleres desechan materiales aprovechables mientras otros necesitan comprar insumos equivalentes.',
@@ -129,6 +139,7 @@ class IdeaAiAssistantTest extends TestCase
                 && $request['text']['format']['strict'] === true
                 && $request['text']['format']['type'] === 'json_schema'
                 && str_contains($context, $candidate->title)
+                && str_contains($context, 'CONTENIDO PUBLICO DE OTRO USUARIO')
                 && ! str_contains($context, 'CONTENIDO PRIVADO DE OTRO USUARIO');
         });
 
@@ -168,10 +179,52 @@ class IdeaAiAssistantTest extends TestCase
                 'confidence' => 0.9,
                 '_meta' => [
                     'escalated' => false,
-                    'prompt_version' => 'idea-relations-v1',
+                    'prompt_version' => 'idea-relations-v2',
                 ],
             ],
         ]);
+    }
+
+    public function test_organization_can_classify_a_capture_as_a_task_without_creating_it(): void
+    {
+        [$user, $category, $tag, $candidate] = $this->ideaContext();
+        $this->enableOpenAi($user);
+        $modelOutput = [
+            'capture_classification' => ['kind' => 'task', 'confidence' => 0.96, 'rationale' => 'Describe una acción ejecutable con un resultado verificable.'],
+            'task_suggestion' => [
+                'title' => 'Preparar inventario inicial de materiales',
+                'description' => 'Registrar los materiales sobrantes disponibles para iniciar el intercambio.',
+                'target_idea_id' => $candidate->id,
+                'parent_task_id' => null,
+                'confidence' => 0.94,
+                'rationale' => 'La acción contribuye directamente a la idea de intercambio de materiales.',
+            ],
+            'title' => 'Preparar inventario inicial de materiales',
+            'description' => 'Registrar los materiales sobrantes disponibles para iniciar el intercambio entre talleres.',
+            'problem_opportunity' => null,
+            'primary_category_id' => $category->id,
+            'classifications' => [['dimension_id' => $category->category_dimension_id, 'category_ids' => [$category->id]]],
+            'tags' => [['name' => $tag->name, 'existing_tag_id' => $tag->id, 'action' => 'reuse_existing', 'confidence' => 0.9]],
+            'parent_suggestion' => ['idea_id' => null, 'confidence' => 0.9, 'rationale' => 'No debe registrarse como idea hija.'],
+            'missing_information' => [],
+            'confidence' => 0.93,
+        ];
+        Http::fake([
+            'https://api.openai.com/v1/responses' => Http::response([
+                'status' => 'completed',
+                'output' => [['content' => [['type' => 'output_text', 'text' => json_encode($modelOutput)]]]],
+                'usage' => ['input_tokens' => 200, 'output_tokens' => 100],
+            ]),
+        ]);
+
+        $this->actingAs($user)->postJson(route('api.ai.ideas.organize'), [
+            'transcript' => 'Haz el inventario inicial de sobrantes para la idea de intercambio.',
+        ])->assertOk()
+            ->assertJsonPath('data.capture_classification.kind', 'task')
+            ->assertJsonPath('data.task_suggestion.target_idea_id', $candidate->id)
+            ->assertJsonPath('data.task_suggestion.target_idea_title', $candidate->title);
+
+        $this->assertDatabaseCount('tasks', 0);
     }
 
     public function test_relation_suggestions_do_not_mutate_the_graph_until_the_form_is_saved(): void
@@ -242,6 +295,8 @@ class IdeaAiAssistantTest extends TestCase
         [$user, $category, $tag] = $this->ideaContext();
         $this->enableOpenAi($user);
         $baseOutput = [
+            'capture_classification' => ['kind' => 'idea', 'confidence' => 0.9, 'rationale' => 'La captura plantea una solución reutilizable con valor propio.'],
+            'task_suggestion' => ['title' => null, 'description' => null, 'target_idea_id' => null, 'parent_task_id' => null, 'confidence' => 0.2, 'rationale' => 'No se identifica como una acción aislada.'],
             'title' => 'Crear un inventario reutilizable de materiales',
             'description' => 'Crear un inventario interno para registrar materiales disponibles y facilitar su reutilización entre talleres antes de comprar nuevos insumos.',
             'problem_opportunity' => 'Los sobrantes aprovechables no son visibles para otros talleres.',

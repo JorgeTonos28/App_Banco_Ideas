@@ -21,9 +21,9 @@ class IdeaRelationService
 
         if (! $actor->isAdmin()
             && $source->user_id !== $target->user_id
-            && (! $source->isPublished() || ! $target->isPublished())) {
+            && ! $target->user->can('view', $source)) {
             throw ValidationException::withMessages([
-                'target_idea_id' => 'Las relaciones entre autores solo pueden proponerse entre ideas publicadas.',
+                'target_idea_id' => 'La relación no puede proponerse porque el otro autor no tiene acceso a la idea de origen.',
             ]);
         }
 

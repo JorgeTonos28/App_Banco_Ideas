@@ -12,6 +12,15 @@ class AiResponseValidator
     public function organization(array $output, array $context): array
     {
         $validator = Validator::make($output, [
+            'capture_classification.kind' => ['required', Rule::in(['idea', 'task', 'uncertain'])],
+            'capture_classification.confidence' => ['required', 'numeric', 'between:0,1'],
+            'capture_classification.rationale' => ['required', 'string', 'max:1000'],
+            'task_suggestion.title' => ['nullable', 'string', 'max:255'],
+            'task_suggestion.description' => ['nullable', 'string', 'max:5000'],
+            'task_suggestion.target_idea_id' => ['nullable', 'integer', Rule::in($context['allowed_task_idea_ids'])],
+            'task_suggestion.parent_task_id' => ['nullable', 'integer', Rule::in($context['allowed_task_ids'])],
+            'task_suggestion.confidence' => ['required', 'numeric', 'between:0,1'],
+            'task_suggestion.rationale' => ['required', 'string', 'max:1000'],
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['required', 'string', 'min:20', 'max:10000'],
             'problem_opportunity' => ['nullable', 'string', 'max:5000'],
@@ -85,6 +94,20 @@ class AiResponseValidator
                     $validator->errors()->add("tags.{$index}.existing_tag_id", 'Una etiqueta nueva no puede declarar un ID existente.');
                 }
             }
+
+            if (($output['capture_classification']['kind'] ?? null) === 'task'
+                && mb_strlen(trim((string) ($output['task_suggestion']['title'] ?? ''))) < 3) {
+                $validator->errors()->add('task_suggestion.title', 'Una captura clasificada como tarea necesita un título ejecutable.');
+            }
+
+            $parentTaskId = $output['task_suggestion']['parent_task_id'] ?? null;
+            $targetIdeaId = $output['task_suggestion']['target_idea_id'] ?? null;
+            if ($parentTaskId) {
+                $task = collect($context['task_candidates'])->firstWhere('id', $parentTaskId);
+                if ($targetIdeaId && ($task['idea_id'] ?? null) !== $targetIdeaId) {
+                    $validator->errors()->add('task_suggestion.parent_task_id', 'La tarea superior no pertenece a la idea destino.');
+                }
+            }
         });
 
         $validated = $validator->validate();
@@ -94,6 +117,7 @@ class AiResponseValidator
             ->flatMap(fn (array $dimension) => $dimension['categories'])
             ->keyBy('id');
         $ideasById = collect($context['idea_candidates'])->keyBy('id');
+        $tasksById = collect($context['task_candidates'])->keyBy('id');
 
         foreach ($validated['tags'] as $tag) {
             $name = $tag['existing_tag_id']
@@ -114,6 +138,21 @@ class AiResponseValidator
         }
 
         return [
+            'capture_classification' => [
+                'kind' => $validated['capture_classification']['kind'],
+                'confidence' => round((float) $validated['capture_classification']['confidence'], 2),
+                'rationale' => Str::limit(Str::squish(strip_tags($validated['capture_classification']['rationale'])), 1000, ''),
+            ],
+            'task_suggestion' => [
+                'title' => filled($validated['task_suggestion']['title'] ?? null) ? Str::squish(strip_tags($validated['task_suggestion']['title'])) : null,
+                'description' => filled($validated['task_suggestion']['description'] ?? null) ? trim(strip_tags($validated['task_suggestion']['description'])) : null,
+                'target_idea_id' => $validated['task_suggestion']['target_idea_id'],
+                'target_idea_title' => $validated['task_suggestion']['target_idea_id'] ? $ideasById->get($validated['task_suggestion']['target_idea_id'])['title'] : null,
+                'parent_task_id' => $validated['task_suggestion']['parent_task_id'],
+                'parent_task_title' => $validated['task_suggestion']['parent_task_id'] ? $tasksById->get($validated['task_suggestion']['parent_task_id'])['title'] : null,
+                'confidence' => round((float) $validated['task_suggestion']['confidence'], 2),
+                'rationale' => Str::limit(Str::squish(strip_tags($validated['task_suggestion']['rationale'])), 1000, ''),
+            ],
             'title' => Str::squish(strip_tags($validated['title'])),
             'description' => trim(strip_tags($validated['description'])),
             'problem_opportunity' => filled($validated['problem_opportunity'] ?? null) ? trim(strip_tags($validated['problem_opportunity'])) : null,

@@ -15,6 +15,7 @@ use App\Http\Controllers\ForcePasswordChangeController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IdeaAiController;
 use App\Http\Controllers\IdeaController;
+use App\Http\Controllers\IdeaExportController;
 use App\Http\Controllers\IdeaHierarchyController;
 use App\Http\Controllers\IdeaPublicationController;
 use App\Http\Controllers\IdeaRelationController;
@@ -24,6 +25,10 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\TaskAttachmentController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskReminderController;
+use App\Http\Controllers\TaskVolunteerController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
@@ -65,6 +70,21 @@ Route::middleware('auth')->group(function () {
     // Root landing module: Mis Ideas
     Route::get('/mis-ideas', [MyIdeasController::class, 'index'])->name('my-ideas.index');
 
+    // Innovation Center: Tasks
+    Route::get('/tareas', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/tareas/nueva', [TaskController::class, 'create'])->name('tasks.create');
+    Route::post('/tareas', [TaskController::class, 'store'])->name('tasks.store')->middleware('throttle:20,1');
+    Route::get('/tareas/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::put('/tareas/{task}', [TaskController::class, 'update'])->name('tasks.update')->middleware('throttle:30,1');
+    Route::patch('/tareas/{task}/estado', [TaskController::class, 'updateStatus'])->name('tasks.status.update')->middleware('throttle:60,1');
+    Route::delete('/tareas/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy')->middleware('throttle:20,1');
+    Route::post('/tareas/{task}/archivos', [TaskAttachmentController::class, 'store'])->name('tasks.attachments.store')->middleware('throttle:20,1');
+    Route::get('/archivos-tarea/{taskAttachment}', [TaskAttachmentController::class, 'download'])->name('tasks.attachments.download')->middleware('throttle:60,1');
+    Route::delete('/archivos-tarea/{taskAttachment}', [TaskAttachmentController::class, 'destroy'])->name('tasks.attachments.destroy')->middleware('throttle:30,1');
+    Route::post('/tareas/{task}/voluntarios', [TaskVolunteerController::class, 'store'])->name('tasks.volunteers.store')->middleware('throttle:10,1');
+    Route::patch('/tareas/{task}/voluntarios/{taskVolunteer}', [TaskVolunteerController::class, 'update'])->name('tasks.volunteers.update')->middleware('throttle:20,1');
+    Route::get('/api/task-reminders/browser', [TaskReminderController::class, 'browser'])->name('api.tasks.reminders.browser')->middleware('throttle:30,1');
+
     // Community / Innovation Feed
     Route::get('/comunidad', [HomeController::class, 'index'])->name('community');
 
@@ -86,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/ideas/{idea}/editar', [IdeaController::class, 'edit'])->name('ideas.edit');
     Route::put('/ideas/{idea}', [IdeaController::class, 'update'])->name('ideas.update');
     Route::delete('/ideas/{idea}', [IdeaController::class, 'destroy'])->name('ideas.destroy');
+    Route::get('/ideas/{idea}/exportar', IdeaExportController::class)->name('ideas.export')->middleware('throttle:20,1');
     Route::put('/ideas/{idea}/jerarquia', [IdeaHierarchyController::class, 'update'])
         ->name('ideas.hierarchy.update')
         ->middleware('throttle:30,1');

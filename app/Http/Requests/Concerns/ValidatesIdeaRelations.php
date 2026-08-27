@@ -77,17 +77,21 @@ trait ValidatesIdeaRelations
             }
 
             $target = Idea::find($targetId);
-            if (! $target || ! $user->can('view', $target) || in_array($target->workspace_status, ['archivada', 'descartada'], true)) {
+            if (! $target || ! $user->can('view', $target)
+                || in_array($target->workspace_status, ['archivada', 'descartada'], true)
+                || in_array($target->status, ['archivada', 'descartada'], true)) {
                 $validator->errors()->add("idea_relations.{$index}.target_idea_id", 'La idea conectada no está disponible.');
 
                 continue;
             }
 
-            $sourceAllowsCrossAuthor = $user->isAdmin() || ($currentIdea?->isPublished() ?? false);
-            if ($target->user_id !== $user->id && ! $sourceAllowsCrossAuthor) {
+            if ($target->user_id !== $user->id
+                && $currentIdea
+                && ! $user->isAdmin()
+                && ! $target->user->can('view', $currentIdea)) {
                 $validator->errors()->add(
                     "idea_relations.{$index}.target_idea_id",
-                    'Las ideas privadas sólo pueden conectarse con otras ideas del mismo autor.'
+                    'El otro autor no tiene acceso a la idea de origen; ajusta su audiencia antes de proponer la relación.'
                 );
             }
         }

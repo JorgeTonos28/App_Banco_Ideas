@@ -496,6 +496,11 @@
                 @error('parent_idea_id')<p class="mt-1 text-xs text-error">{{ $message }}</p>@enderror
             </div>
 
+            <label class="flex items-start gap-3 rounded-2xl border border-tertiary/20 bg-tertiary-fixed/20 p-4">
+                <input type="checkbox" name="allow_task_collaboration" value="1" @checked(old('allow_task_collaboration')) class="mt-0.5 rounded border-outline text-tertiary focus:ring-tertiary">
+                <span><strong class="block text-xs text-on-surface">Permitir colaboración en las tareas de esta idea</strong><span class="mt-1 block text-[11px] text-on-surface-variant">Podrás publicar tareas concretas para que otras personas soliciten colaborar. Tú aprobarás quién queda responsable.</span></span>
+            </label>
+
             <x-idea-classification-fields :dimensions="$categoryDimensions" />
 
             <!-- Tags Input with Chips, In-place Editing, Real-time Similarity Detection & Modal Explorer -->

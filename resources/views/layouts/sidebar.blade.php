@@ -6,7 +6,7 @@
         </div>
         <div>
             <span class="font-headline text-xl font-bold tracking-tight text-primary block leading-none">INNOVATEP</span>
-            <span class="text-[11px] font-mono-tech uppercase text-outline tracking-wider font-semibold">Ideas • INFOTEP</span>
+            <span class="text-[11px] font-mono-tech uppercase text-outline tracking-wider font-semibold">Centro de Innovación</span>
         </div>
     </div>
 
@@ -16,7 +16,13 @@
         <a href="{{ route('my-ideas.index') }}" 
            class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
             <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">folder_special</span>
-            <span>Mis Ideas</span>
+            <span>Banco de Ideas</span>
+        </a>
+
+        <a href="{{ route('tasks.index') }}"
+           class="flex items-center px-4 py-3 rounded-xl transition-all gap-3.5 text-sm font-medium {{ request()->routeIs('tasks.*') ? 'bg-primary text-white shadow-sm font-semibold' : 'text-on-surface-variant hover:bg-surface-container-low hover:text-primary' }}">
+            <span class="material-symbols-outlined text-xl" style="{{ request()->routeIs('tasks.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">checklist</span>
+            <span>Tareas</span>
         </a>
 
         <!-- 2. Comunidad (Segundo Módulo / Feed de Innovación) -->

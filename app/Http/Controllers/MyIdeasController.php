@@ -53,14 +53,26 @@ class MyIdeasController extends Controller
                 ->latest(),
         };
 
-        $treeIdeasQuery = clone $ideasQuery;
+        $treeIdeasQuery = match ($activeTab) {
+            'internas' => $user->ideas()
+                ->where('publication_status', '!=', 'published')
+                ->where('visibility', 'private')
+                ->where('access_scope', 'organization'),
+            'publicadas' => $user->ideas()->published(),
+            default => $activeTab === 'privadas'
+                ? $user->ideas()
+                    ->where('publication_status', '!=', 'published')
+                    ->where('visibility', 'private')
+                    ->whereIn('access_scope', ['only_me', 'profile'])
+                : clone $ideasQuery,
+        };
         $ideas = $ideasQuery->with(['category', 'tags'])->paginate(8)->withQueryString();
 
         $treeIdeas = null;
         $treeRoots = collect();
         $treeByParent = collect();
         $treeSearchTerms = collect();
-        $viewMode = $request->input('vista', $activeTab === 'guardadas' ? 'cards' : 'tree');
+        $viewMode = $request->input('vista', in_array($activeTab, ['guardadas', 'implementadas', 'archivadas'], true) ? 'cards' : 'tree');
 
         if ($viewMode === 'tree' && $activeTab !== 'guardadas') {
             $treeIdeas = $treeIdeasQuery

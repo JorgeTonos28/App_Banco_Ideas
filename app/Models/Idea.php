@@ -32,6 +32,8 @@ class Idea extends Model
         'archivada',
     ];
 
+    public const TERMINAL_WORKSPACE_STATUSES = ['completada', 'archivada', 'descartada'];
+
     public const COMMUNITY_STATUSES = [
         'nueva',
         'en_revision',
@@ -100,6 +102,7 @@ class Idea extends Model
         'admin_observations',
         'next_action',
         'follow_up_date',
+        'allow_task_collaboration',
         'views_count',
         'votes_count',
         'average_rating',
@@ -116,6 +119,7 @@ class Idea extends Model
             'views_count' => 'integer',
             'innovation_score' => 'integer',
             'follow_up_date' => 'date',
+            'allow_task_collaboration' => 'boolean',
             'implemented_at' => 'datetime',
             'publication_requested_at' => 'datetime',
             'publication_reviewed_at' => 'datetime',
@@ -233,6 +237,11 @@ class Idea extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(IdeaAttachment::class);
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class)->orderBy('due_at')->orderBy('title');
     }
 
     public function ratings(): HasMany
