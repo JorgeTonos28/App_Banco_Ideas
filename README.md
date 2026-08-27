@@ -199,6 +199,21 @@ El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovate
 
 En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
 
+Cada despliegue que cambie Blade o JavaScript debe publicar el código y los assets como una sola versión. En esta instalación, Laravel vive fuera del Document Root, por lo que un `npm run build` convencional escribe en el `public/build` privado y **no actualiza por sí solo** el `/banco/build` servido por Apache. Compila directamente sobre el directorio público con:
+
+```bash
+cd /home/innovatep/Portal_Apps/banco
+git pull --ff-only
+npm ci
+RAYON_NUM_THREADS=1 VITE_BUILD_OUT_DIR=/home/innovatep/apps.innovatep.com/banco/build npm run build
+php artisan migrate --force
+php artisan optimize:clear
+php artisan config:cache
+php artisan view:cache
+```
+
+`VITE_BUILD_OUT_DIR` sólo acepta un directorio terminado en `/build` y Vite no elimina previamente su contenido. El build verifica además que el bundle publicado contenga el contrato frontend vigente; si esa comprobación falla, no debe darse el despliegue por terminado. Esta sincronización evita mezclar vistas nuevas con un bundle anterior, situación que se manifiesta como errores Alpine del tipo `ideaTreeNode is not defined`, `rootNodeVisible is not defined` o `taskBrowserReminders is not defined`.
+
 Los recordatorios de tareas requieren el scheduler. Configura una tarea cron por minuto (ajusta la ruta privada):
 
 ```cron
