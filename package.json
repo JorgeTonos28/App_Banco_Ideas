@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "vite build && node scripts/verify-built-assets.js",
         "dev": "vite",
         "test:js": "node --test tests/JavaScript/*.test.js"
     },
