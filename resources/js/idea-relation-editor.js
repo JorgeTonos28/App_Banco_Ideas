@@ -7,6 +7,9 @@ export default function registerIdeaRelationEditor(Alpine) {
         draftRationale: '',
         error: '',
         nextClientId: 1,
+        pickerOpen: false,
+        pickerTab: 'mine',
+        candidateQuery: '',
 
         init() {
             this.relations = (options.initialRelations || []).map((relation) => this.normalizeRelation(relation));
@@ -31,6 +34,28 @@ export default function registerIdeaRelationEditor(Alpine) {
 
         candidateFor(id) {
             return this.candidates.find((candidate) => String(candidate.id) === String(id));
+        },
+
+        selectedCandidateLabel() {
+            const candidate = this.candidateFor(this.draftTargetId);
+            return candidate ? `${candidate.title} · ${candidate.author}` : 'Elegir una idea';
+        },
+
+        selectCandidate(id) {
+            this.draftTargetId = String(id);
+            this.pickerOpen = false;
+            this.candidateQuery = '';
+            this.error = '';
+        },
+
+        normalizedCandidateQuery() {
+            return (this.candidateQuery || '').toString().toLowerCase().normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+        },
+
+        candidateMatches(branchTerms) {
+            const query = this.normalizedCandidateQuery();
+            return query === '' || (branchTerms || '').includes(query);
         },
 
         relationKey(relation) {

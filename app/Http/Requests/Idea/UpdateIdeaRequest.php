@@ -43,6 +43,7 @@ class UpdateIdeaRequest extends FormRequest
             'organizational_unit_id' => ['nullable', 'integer', 'exists:regionals,id'],
             'include_descendants' => ['nullable', 'boolean'],
             'workspace_status' => ['nullable', Rule::in(Idea::WORKSPACE_STATUSES)],
+            'allow_task_collaboration' => ['nullable', 'boolean'],
             'attachments' => ['nullable', 'array', 'max:5'],
             'attachments.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,ppt,pptx,zip', 'max:10240'],
             'delete_attachments' => ['nullable', 'array'],

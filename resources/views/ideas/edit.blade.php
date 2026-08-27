@@ -499,13 +499,19 @@
                 <label for="workspace_status" class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">
                     Estado de trabajo privado
                 </label>
-                <select id="workspace_status" name="workspace_status" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <select id="workspace_status" name="workspace_status" x-data x-on:change="if (['completada','archivada','descartada'].includes($event.target.value)) { window.confirm('Este estado también se aplicará a todas las ideas hijas y quedará registrado en su historial. ¿Deseas continuar?') || ($event.target.value = @js($idea->workspace_status)); }" class="w-full bg-surface-container-low text-on-surface text-sm rounded-2xl p-3.5 border border-surface-container-high focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     @foreach(['capturada' => 'Capturada', 'en_clarificacion' => 'En clarificación', 'lista_para_actuar' => 'Lista para actuar', 'en_ejecucion' => 'En ejecución', 'completada' => 'Completada', 'en_pausa' => 'En pausa', 'descartada' => 'Descartada', 'archivada' => 'Archivada'] as $value => $label)
                         <option value="{{ $value }}" {{ old('workspace_status', $idea->workspace_status) === $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
+                <p class="mt-1.5 text-[11px] text-on-surface-variant">Los estados Completada, Archivada y Descartada se propagan a toda la rama para mantener una navegación coherente.</p>
             </div>
             @endunless
+
+            <label class="flex items-start gap-3 rounded-2xl border border-tertiary/20 bg-tertiary-fixed/20 p-4">
+                <input type="checkbox" name="allow_task_collaboration" value="1" @checked(old('allow_task_collaboration', $idea->allow_task_collaboration)) class="mt-0.5 rounded border-outline text-tertiary focus:ring-tertiary">
+                <span><strong class="block text-xs text-on-surface">Permitir colaboración en las tareas de esta idea</strong><span class="mt-1 block text-[11px] text-on-surface-variant">Las tareas que marques como abiertas podrán recibir solicitudes de la comunidad; conservarás la aprobación final.</span></span>
+            </label>
 
             <div>
                 <label class="block text-xs font-bold text-on-surface uppercase tracking-wider font-mono-tech mb-2">

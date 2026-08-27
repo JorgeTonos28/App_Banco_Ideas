@@ -5,6 +5,7 @@
         transcribeUrl: @js(route('api.ai.ideas.transcribe')),
         organizeUrl: @js(route('api.ai.ideas.organize')),
         relationsUrl: @js(route('api.ai.ideas.relations')),
+        taskCreateUrl: @js(route('tasks.create')),
         currentIdeaId: @js($currentIdeaId)
     })"
     @semantic-relations-changed.window="syncConfirmedRelations($event.detail.relations)"
@@ -18,7 +19,7 @@
                 </div>
                 <div>
                     <h2 class="font-headline text-base font-bold text-on-surface">Captura asistida por IA</h2>
-                    <p class="mt-1 max-w-2xl text-xs leading-relaxed text-on-surface-variant">Graba o escribe la idea. Podrás aplicar cada sugerencia o conservar lo que ya habías escrito; nada se guarda hasta enviar el formulario.</p>
+                    <p class="mt-1 max-w-2xl text-xs leading-relaxed text-on-surface-variant">Graba o escribe lo que tienes en mente. La IA distinguirá si parece una idea o una tarea; nada se guarda ni se mueve sin tu confirmación.</p>
                 </div>
             </div>
 
@@ -55,6 +56,18 @@
                             class="cursor-pointer rounded-xl px-4 py-2 text-xs font-bold transition-colors"
                             :class="allContentApplied ? 'bg-emerald-100 text-emerald-800' : (allContentDecided ? 'bg-primary-fixed text-primary' : 'bg-primary text-white')"
                             x-text="allContentApplied ? 'Contenido y organización aplicados' : (allContentDecided ? 'Revisión completada' : 'Aplicar contenido y organización')"></button>
+                </div>
+
+                <div x-show="suggestion?.capture_classification" class="rounded-2xl border p-4"
+                     :class="suggestion?.capture_classification?.kind === 'task' ? 'border-tertiary/30 bg-tertiary-fixed/25' : (suggestion?.capture_classification?.kind === 'idea' ? 'border-primary/25 bg-primary-fixed/30' : 'border-amber-300 bg-amber-50')">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 text-xs font-bold"><span class="material-symbols-outlined text-lg" x-text="suggestion?.capture_classification?.kind === 'task' ? 'checklist' : (suggestion?.capture_classification?.kind === 'idea' ? 'lightbulb' : 'help')"></span><span x-text="suggestion?.capture_classification?.kind === 'task' ? 'Esto parece una tarea' : (suggestion?.capture_classification?.kind === 'idea' ? 'Esto parece una idea' : 'Necesita tu criterio')"></span><span class="text-[10px] font-mono-tech text-outline" x-text="`${Math.round((suggestion?.capture_classification?.confidence || 0) * 100)}%`"></span></div>
+                            <p class="mt-1 text-xs leading-relaxed text-on-surface-variant" x-text="suggestion?.capture_classification?.rationale"></p>
+                            <p x-show="suggestion?.capture_classification?.kind === 'task' && (suggestion?.task_suggestion?.target_idea_title || suggestion?.task_suggestion?.parent_task_title)" class="mt-2 text-[11px] font-semibold text-tertiary"><span x-show="suggestion?.task_suggestion?.target_idea_title" x-text="`Idea sugerida: ${suggestion?.task_suggestion?.target_idea_title}`"></span><span x-show="suggestion?.task_suggestion?.parent_task_title" x-text="` · Subtarea de: ${suggestion?.task_suggestion?.parent_task_title}`"></span></p>
+                        </div>
+                        <button x-show="suggestion?.capture_classification?.kind === 'task'" type="button" @click="moveToTask" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-tertiary px-4 py-2.5 text-xs font-bold text-white"><span class="material-symbols-outlined text-base">arrow_outward</span>Revisar como tarea</button>
+                    </div>
                 </div>
 
                 <div class="grid gap-3 md:grid-cols-2">
@@ -131,7 +144,7 @@
                 </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/15 bg-primary-fixed/25 p-4">
-                    <p class="text-xs text-on-surface-variant">Después de aplicar o ajustar el contenido, busca relaciones semánticas con tus otras ideas.</p>
+                    <p class="text-xs text-on-surface-variant">Después de aplicar o ajustar el contenido, busca relaciones semánticas entre todas las ideas a las que tienes acceso.</p>
                     <button type="button" @click="suggestRelations" :disabled="isBusy"
                             class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50"
                             :class="relationAnalysisComplete ? 'border-emerald-300 bg-emerald-100 text-emerald-800' : 'border-primary/30 bg-surface-container-lowest text-primary'">

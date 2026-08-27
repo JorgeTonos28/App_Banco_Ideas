@@ -92,7 +92,10 @@
 
     <!-- Ideas List -->
     @if($viewMode === 'tree' && $activeTab !== 'guardadas' && $treeRoots->isNotEmpty())
-    <div class="space-y-4" x-data="ideaTree(@js($treeSearchTerms->values()->all()))">
+    <div class="space-y-4" x-data="ideaTree(@js($treeSearchTerms->values()->all()), @js('my-ideas-'.$activeTab))">
+        <div class="flex justify-end">
+            <button type="button" @click="rootFilterOpen = true" class="inline-flex items-center gap-2 rounded-xl border border-surface-container-high bg-surface-container-lowest px-3 py-2 text-xs font-bold text-on-surface-variant hover:border-primary/35 hover:text-primary"><span class="material-symbols-outlined text-base">filter_alt</span>Estados en primer nivel</button>
+        </div>
         <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline" aria-hidden="true">search</span>
             <input type="search" x-model.debounce.60ms="query" placeholder="Buscar dentro de este árbol sin importar espacios..." class="w-full rounded-xl border border-surface-container-high bg-surface-container-lowest py-3 pl-10 pr-10 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
@@ -103,9 +106,13 @@
 
         <div class="space-y-4">
             @foreach($treeRoots as $rootIdea)
-                <x-idea-tree-node :node="$rootIdea" :tree-by-parent="$treeByParent" :search-terms="$treeSearchTerms" />
+                <div x-show="rootNodeVisible(@js($rootIdea->workspace_status))">
+                    <x-idea-tree-node :node="$rootIdea" :tree-by-parent="$treeByParent" :search-terms="$treeSearchTerms" />
+                </div>
             @endforeach
         </div>
+
+        <div x-show="rootFilterOpen" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Estados visibles en primer nivel"><div class="fixed inset-0 bg-on-surface/45 backdrop-blur-xs" @click="rootFilterOpen=false"></div><div class="relative z-10 w-full max-w-md rounded-3xl border border-surface-container-high bg-surface-container-lowest p-6 shadow-2xl"><div class="flex items-start justify-between"><div><h3 class="font-headline text-lg font-bold">Ideas visibles en primer nivel</h3><p class="mt-1 text-xs text-on-surface-variant">Por defecto se ocultan las ramas cerradas.</p></div><button type="button" @click="rootFilterOpen=false"><span class="material-symbols-outlined text-outline">close</span></button></div><div class="mt-5 space-y-3">@foreach(['completada'=>['Completadas','border-emerald-500'],'archivada'=>['Archivadas','border-amber-500'],'descartada'=>['Descartadas','border-error']] as $status=>[$label,$border])<label class="flex items-center justify-between rounded-2xl border-l-4 {{ $border }} bg-surface-container-low p-3 text-xs font-bold"><span>{{ $label }}</span><input type="checkbox" x-model="rootVisibility.{{ $status }}" @change="saveRootVisibility()" class="rounded border-outline text-primary"></label>@endforeach</div><button type="button" @click="rootFilterOpen=false" class="mt-5 w-full rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white">Aplicar</button></div></div>
 
         <div x-show="!hasMatches()" class="rounded-2xl border border-dashed border-surface-container-high bg-surface-container-lowest p-8 text-center">
             <span class="material-symbols-outlined text-3xl text-outline" aria-hidden="true">search_off</span>

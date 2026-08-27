@@ -112,6 +112,21 @@ class User extends Authenticatable
         return $this->hasMany(Idea::class, 'assigned_to_user_id');
     }
 
+    public function createdTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'created_by_user_id');
+    }
+
+    public function assignedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to_user_id');
+    }
+
+    public function taskVolunteerRequests(): HasMany
+    {
+        return $this->hasMany(TaskVolunteer::class);
+    }
+
     public function ratings(): HasMany
     {
         return $this->hasMany(IdeaRating::class);

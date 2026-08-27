@@ -29,10 +29,13 @@ class IdeaTreeNavigationTest extends TestCase
         $this->actingAs($author)
             ->get(route('ideas.create', ['parent' => $ownIdea->id]))
             ->assertOk()
+            ->assertViewHas('parentCandidates', fn ($candidates) => $candidates->contains('id', $ownIdea->id)
+                && ! $candidates->contains('id', $publicIdea->id))
+            ->assertViewHas('relationCandidates', fn ($candidates) => $candidates->contains('id', $publicIdea->id))
             ->assertSee('Elegir idea madre')
             ->assertSee('Buscar sin importar espacios')
             ->assertSee($ownIdea->title)
-            ->assertDontSee($publicIdea->title);
+            ->assertSee($publicIdea->title);
     }
 
     public function test_my_ideas_tree_is_collapsed_searchable_and_offers_add_child_actions(): void
@@ -52,7 +55,7 @@ class IdeaTreeNavigationTest extends TestCase
             ->get(route('my-ideas.index', ['vista' => 'tree']))
             ->assertOk()
             ->assertSee('Buscar dentro de este árbol sin importar espacios')
-            ->assertSee('expanded: false', false)
+            ->assertSee('ideaTreeNode', false)
             ->assertSee(route('ideas.create', ['parent' => $root->id]), false)
             ->assertSee($child->title);
     }

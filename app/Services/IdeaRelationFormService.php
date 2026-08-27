@@ -32,7 +32,7 @@ class IdeaRelationFormService
             $relation->delete();
         }
 
-        foreach ($relations as $relationData) {
+        foreach ($relations as $index => $relationData) {
             $existingId = isset($relationData['id']) ? (int) $relationData['id'] : null;
             $targetId = (int) $relationData['target_idea_id'];
             $type = (string) $relationData['type'];
@@ -59,7 +59,14 @@ class IdeaRelationFormService
                 ]);
             }
 
-            $this->relationService->create($source, $target, $actor, $type, $rationale);
+            try {
+                $this->relationService->create($source, $target, $actor, $type, $rationale);
+            } catch (ValidationException $exception) {
+                throw ValidationException::withMessages([
+                    "idea_relations.{$index}.target_idea_id" => collect($exception->errors())->flatten()->first()
+                        ?: 'La relación propuesta no está disponible.',
+                ]);
+            }
         }
     }
 }

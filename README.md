@@ -1,7 +1,7 @@
-# INNOVATEP Ideas 💡
-### Banco Institucional de Ideas e Innovación para INFOTEP
+# INNOVATEP · Centro de Innovación 💡
+### Ideas, tareas y colaboración institucional para INFOTEP
 
-**INNOVATEP Ideas** es una plataforma web moderna y colaborativa diseñada para capturar, descubrir, valorar y seguir la evolución de propuestas de innovación generadas por los colaboradores del **Instituto Nacional de Formación Técnico Profesional (INFOTEP)** de la República Dominicana.
+**INNOVATEP** evoluciona hacia un Centro de Innovación modular. El **Banco de Ideas** permite capturar, descubrir, valorar y seguir propuestas; el módulo de **Tareas** convierte esas propuestas —o necesidades sueltas— en acciones ejecutables y colaborativas.
 
 La plataforma fomenta una cultura participativa bajo el principio:
 > **“Capturar una idea debe ser más fácil que olvidarla.”**
@@ -20,7 +20,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
 - **Exposición por idea madre**: Sólo la raíz de una jerarquía genera una tarjeta tanto en el perfil como en Comunidad. Las microideas se recorren mediante la trazabilidad multinivel dentro de la madre y no compiten como publicaciones independientes.
 - **Jerarquías multinivel auditadas y privadas por defecto**: El backend evita ciclos, registra cada cambio de madre y protege las raíces que representan descendientes publicados. Una microidea conserva su audiencia propia aunque su madre sea pública, nunca supera el acceso efectivo de sus ancestros y sólo llega a la comunidad general mediante su propia aprobación editorial.
 - **Comunidades organizacionales jerárquicas**: Regionales o sedes, direcciones funcionales y departamentos forman un árbol navegable. Las ideas internas declaran audiencias exactas o con descendientes, mientras la comunidad general de INFOTEP continúa reservada para publicaciones aprobadas editorialmente.
-- **Grafo de relaciones semánticas con auditoría humana**: La creación y edición de ideas incluyen un editor para incorporar sugerencias de IA, añadir conexiones manuales, ajustar su tipo o justificación y quitar relaciones existentes antes de guardar. Admite dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. La ficha queda como vista de consulta y espacio de aprobación; identifica quién registró y revisó cada conexión, y una edición entre autores vuelve a requerir confirmación.
+- **Grafo de relaciones semánticas con auditoría humana**: La creación y edición incluyen un selector jerárquico con pestañas `Mis ideas` e `Ideas de otros`, agrupadas por autor. El editor incorpora sugerencias de IA, permite ajustar tipo o justificación y quitar relaciones antes de guardar. Admite dependencias, habilitadoras, complementarias, derivadas, evoluciones, duplicados, sustituciones o relaciones generales. Sólo aparecen ideas autorizadas por `IdeaPolicy`; una conexión entre autores queda pendiente y requiere confirmación del propietario destino.
 - **Taxonomía multidimensional**: Además de la categoría temática principal, el administrador define dimensiones de selección única o múltiple, obligatorias u opcionales, planas o jerárquicas. La migración conserva `category_id` y crea las asociaciones multidimensionales sin perder compatibilidad.
 - **Guía contextual de clasificación**: Los formularios de creación y edición incluyen una ayuda desplegable que diferencia categoría, dimensiones y etiquetas, recomienda entre 4 y 7 etiquetas y muestra ejemplos de términos útiles o duplicados que deben evitarse.
 - **Explorador Modal de Etiquetas (Tag Explorer)**: Catálogo visual e interactivo para examinar todas las etiquetas registradas en el sistema, organizadas en 4 pestañas:
@@ -36,26 +36,35 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - 💡 **Asistente Visual Interactivo**: Notifica al usuario en el formulario y en el explorador modal cuando existen etiquetas similares con conteo de uso en el sistema, permitiendo seleccionarlas con un solo clic o confirmar el término nuevo.
 - **Buscador en Tiempo Real y Creación Rápida**: Filtrado instantáneo de etiquetas y opción de registrar nuevos términos con un solo clic.
 - **Línea de tiempo por flujo**: Historial separado para trabajo privado, revisión editorial y ciclo comunitario, con actor y observaciones.
-- **Captura por voz con revisión humana**: El formulario graba hasta cinco minutos en formatos compatibles, transcribe el archivo temporal y permite editar el texto antes de organizar la idea. La IA propone título, descripción, problema u oportunidad, clasificación multidimensional, etiquetas, idea madre y relaciones semánticas. En cada sección la persona puede elegir `Aplicar` o `Mantener original`; esta última opción restaura el valor existente justo antes del análisis, incluso después de haber aplicado una sugerencia. Las etiquetas aplicadas reemplazan la selección previa y el análisis de relaciones confirma cuando está `Listo`, desplaza la vista hacia los resultados y permite incorporarlos al editor del formulario. Nada se guarda hasta enviar la idea.
-- **Contexto privado por autor**: Las recomendaciones de madre y relaciones sólo reciben una proyección acotada de las ideas no archivadas del usuario autenticado. La taxonomía activa y el catálogo controlado de etiquetas se envían como allowlists; IDs ajenos o inactivos se rechazan nuevamente en Laravel.
+- **Captura por voz con revisión humana**: El formulario graba hasta cinco minutos, transcribe el archivo temporal y permite editarlo antes del análisis. La IA distingue `idea`, `task` o `uncertain`: una idea plantea una oportunidad o solución con valor propio; una tarea es una acción ejecutable con condición clara de terminado. Si parece tarea, propone una idea o tarea superior permitida y ofrece trasladar el borrador al módulo de Tareas. La persona confirma el destino; nada se crea, relaciona ni mueve automáticamente.
+- **Contexto autorizado para IA**: Las madres candidatas siguen limitadas a ideas válidas del autor. Las relaciones semánticas pueden considerar ideas de otros usuarios, pero exclusivamente dentro del conjunto visible según Policies. Archivadas y descartadas se excluyen de madres y relaciones. La taxonomía, etiquetas, ideas y tareas se envían como allowlists; cualquier ID ajeno al contexto se rechaza nuevamente en Laravel.
 
-### 2. Descubrimiento y Colaboración
+### 2. Módulo de Tareas
+- **Tareas sueltas o vinculadas a ideas**: Cada tarea puede existir de forma independiente o contribuir a una idea. Una tarea puede contener subtareas en tantos niveles como sean necesarios.
+- **Ejecución tipo To Do**: Estados `Pendiente`, `En progreso`, `Completada` y `Cancelada`, prioridad, responsable, fecha y hora de vencimiento, vistas de hoy, próximas, sin fecha, colaborativas y completadas.
+- **Recordatorios por correo o navegador**: Los recordatorios se guardan por canal. El programador de Laravel procesa los vencidos cada minuto; el canal navegador muestra avisos nativos mientras INNOVATEP está abierto y tiene permiso.
+- **Adjuntos protegidos**: Cada tarea o subtarea admite hasta cinco archivos por envío y 10 MB por archivo. Se almacenan en el disco privado con nombres UUID y sólo se descargan mediante una ruta autorizada.
+- **Colaboración comunitaria controlada**: El autor de una idea decide si permite colaboración. Las tareas abiertas reciben solicitudes; el responsable acepta o rechaza y una aprobación asigna la tarea a la persona voluntaria.
+
+### 3. Descubrimiento y Colaboración
 - **Búsqueda respetuosa del contexto**: La búsqueda global ignora espacios y acentos, consulta contenido, clasificación, etiquetas y autor, e incluye ideas propias privadas, publicaciones generales, perfiles visibles y comunidades internas autorizadas; la Policy de cada idea continúa siendo la autoridad final para evitar fugas entre audiencias.
 - **Explorador con Filtros Multifactor**: “Explorar Ideas” filtra automáticamente mientras se escribe, abre por defecto en `Todas las ideas` y permite ordenar explícitamente por más votadas, recientes, en tendencia, mejor valoradas, más comentadas o implementadas. También añade filtros por dimensiones, categorías, etiquetas, estados, autor, área o departamento.
-- **Navegación estructural**: “Mis Ideas”, la trazabilidad de cada ficha y el selector de idea madre usan árboles cerrados al iniciar. Cada nivel se abre bajo demanda y el buscador ignora espacios, consulta título, descripción, problema, categoría y etiquetas, y conserva las ramas que contienen coincidencias.
+- **Navegación estructural y estados ocultables**: “Mis Ideas”, la trazabilidad de cada ficha y el selector de madre usan árboles multinivel. Completadas, archivadas y descartadas quedan ocultas por defecto; cada idea madre tiene un filtro propio para mostrarlas. Al mostrarse usan borde verde, amarillo o rojo. Las preferencias se recuerdan localmente por rama.
+- **Cierre coherente de ramas**: Al cambiar una madre a `Completada`, `Archivada` o `Descartada`, el estado privado se propaga transaccionalmente a sus descendientes y cada nodo registra el cambio heredado en su historial.
+- **Exportación jerárquica**: La ficha de cualquier idea madre exporta su árbol visible. Los títulos son obligatorios y se pueden añadir descripciones, problemas u oportunidades, etiquetas, categorías y relaciones semánticas, como documento compatible con Word o JSON.
 - **Creación contextual de microideas**: Los nodos propios y la ficha de una idea muestran una acción para agregar una hija. La madre se asigna o cambia únicamente desde el formulario de creación o edición, cuyo selector jerárquico sólo contiene ideas del usuario y excluye descendientes inválidos.
 - **Valoración preliminar y comunitaria (1 a 5 estrellas)**: Una idea madre visible en el perfil puede recibir votos antes de publicarse, con actualización inmediata del promedio y sin autovoto. Las microideas nunca reciben votos independientes.
 - **Continuidad de las valoraciones**: Los votos preliminares se conservan al publicar la idea, pero no activan Innovation Score ni participación en rankings antes de la aprobación editorial.
 - **Conversación y Retroalimentación**: Hilos de comentarios anidados con respuestas y sistema de "Me gusta".
 - **Guardar en Favoritas**: Marcadores personales para seguimiento rápido.
 
-### 3. Innovation Score & Leaderboard
+### 4. Innovation Score & Leaderboard
 - **Algoritmo de Innovation Score (0-100)**: Fórmula ponderada que combina promedio de estrellas, volumen de votos, interacción comunitaria (vistas y comentarios) y vigencia temporal. Sólo se activa para ideas madre aprobadas en Comunidad.
 - **Podio Top 3**: Reconocimiento visual con medallas de oro (🥇), plata (🥈) y bronce (🥉).
 - **Ranking Dinámico**: Filtros por periodos (*Esta semana*, *Este mes*, *Este año*, *Histórico*) y áreas.
 
-### 4. Gestión Personal, Seguridad y 2FA
-- **Mis Ideas (Módulo Inicial)**: Espacio principal de trabajo donde cada colaborador gestiona por separado su espacio personal, comunidades internas, borradores, árboles de microideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
+### 5. Gestión Personal, Seguridad y 2FA
+- **Banco de Ideas**: Módulo donde cada colaborador gestiona su espacio personal, comunidades internas, borradores, árboles de microideas, solicitudes editoriales, publicaciones, implementaciones y favoritas.
 - **Comunidades por nivel**: Al entrar en Comunidad, cada colaborador llega a su unidad más específica y puede subir hacia dirección, regional/sede y comunidad general, o bajar a niveles dependientes cuando corresponda. Cada nivel tiene búsqueda automática limitada a su propio contexto; las comunidades internas muestran sólo ideas madre habilitadas para su audiencia y la comunidad general mantiene exclusivamente publicaciones aprobadas.
 - **Edición de Perfil y Ajustador de Imagen Canvas**: Indicadores de dimensiones recomendadas (**400 × 400 px, 1:1**) con herramienta interactiva en Canvas para zoom, desplazamiento (pan/drag), rotación y encuadre antes de guardar.
 - **Cambio de Contraseña Segura**: Formulario dedicado en `/mi-perfil/seguridad` con verificación en tiempo real de políticas de robustez (mínimo 8 caracteres, mayúsculas, minúsculas y números).
@@ -66,7 +75,7 @@ La plataforma fomenta una cultura participativa bajo el principio:
   - **Códigos de Recuperación**: El desafío de acceso permite utilizar códigos de emergencia generados al activar 2FA.
 - **Onboarding e Invitaciones**: Activación de cuenta por correo con verificación y establecimiento personalizado de contraseña.
 
-### 5. Panel Administrativo (Panel de Innovación)
+### 6. Panel Administrativo (Panel de Innovación)
 - **Dashboard Estadístico**: Métricas de ideas recibidas, en revisión, tasa de implementación, distribución por categoría y departamentos más activos.
 - **Gestión Editorial y de Ciclo de Vida**: La administración comienza con una lista del primer nivel de ideas madre y permite avanzar o retroceder un nivel por vez, con una acción separada para abrir cada ficha. La búsqueda filtra automáticamente el nivel actual; el panel lateral permite decidir publicaciones sin alterar la jerarquía, asignar responsables, fijar prioridad, registrar observaciones y programar seguimiento.
 - **Control Integral de Usuarios y Onboarding**:
@@ -190,6 +199,12 @@ El `.htaccess` de la raíz del subdominio puede redirigir `https://apps.innovate
 
 En producción utiliza `php artisan migrate --force`; no ejecutes `migrate:fresh --seed`, porque el seeder contiene cuentas de demostración.
 
+Los recordatorios de tareas requieren el scheduler. Configura una tarea cron por minuto (ajusta la ruta privada):
+
+```cron
+* * * * * cd /home/innovatep/Portal_Apps/banco && php artisan schedule:run >> /dev/null 2>&1
+```
+
 Después de migrar, un administrador configura la clave cifrada, modelos y funciones desde **Administración → Inteligencia artificial**. `OPENAI_API_KEY` funciona como fallback de despliegue, pero la interfaz administrativa es la opción recomendada. La prueba de conexión consulta únicamente el modelo de transcripción configurado y no envía contenido de ideas.
 
 ### Migración de la taxonomía en producción
@@ -203,6 +218,8 @@ La migración de reversión editorial agrega `ideas.pre_publication_access_scope
 La migración de comunidades organizacionales amplía `regionals` con `parent_id` y `type`, agrega la unidad organizacional más específica a usuarios e invitaciones, y crea `idea_community_shares`. Los usuarios existentes conservan su regional como unidad inicial. Cada audiencia interna registra si aplica sólo a la unidad seleccionada o también a sus descendientes.
 
 Las dimensiones y términos adicionales pueden gestionarse desde **Administración → Categorías**. La reorganización inicial de las ideas existentes mediante comandos de Tinker debe prepararse después de revisar el inventario real de producción, para que jerarquías, dimensiones, relaciones y etiquetas se apliquen con identificadores correctos y de forma idempotente.
+
+La migración del Centro de Innovación crea `tasks`, `task_attachments`, `task_reminders`, `task_volunteers` y `task_status_histories`, además de `ideas.allow_task_collaboration`. No transforma ideas existentes ni abre colaboración automáticamente.
 
 ### Reglas recomendadas de clasificación
 
@@ -285,13 +302,14 @@ El `composer.lock` está resuelto para PHP 8.3 y mantiene Symfony 7.4; evita reg
 2. **Políticas de Autorización (Policies & Gates)**:
    - `IdeaPolicy`: Restringe visualización, edición, eliminación, organización, publicación y votación según autoría, rol, acceso efectivo, ancestros y estado. Las microideas no son votables.
    - `IdeaRelationPolicy`: Sólo el autor objetivo o un administrador puede confirmar relaciones propuestas entre autores; sólo el origen o un administrador puede eliminarlas.
+   - `TaskPolicy`: Separa lectura, edición, cambio de estado, adjuntos, voluntariado y aprobación. Una tarea abierta nunca evita la Policy de su idea vinculada.
    - `AdminMiddleware`: Protección estricta en todas las rutas administrativas `/admin/*`.
    - Control de auto-voto: Un creador no puede calificar su propia propuesta.
 3. **Validación y Sanitización**: Uso estricto de `FormRequest` con validación de tipo, longitud, formato, pertenencia taxonómica, ciclos jerárquicos y acceso a ideas relacionadas.
-4. **Subida Segura de Archivos**: Validación de tipos MIME permitidos (`pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx,zip`), límite de 10 MB y almacenamiento con nombres hash únicos.
+4. **Subida Segura de Archivos**: Validación de tipos MIME permitidos, límite de 10 MB y nombres aleatorios. Los adjuntos de tareas usan almacenamiento privado y descarga autorizada con `X-Content-Type-Options: nosniff`.
 5. **Rate Limiting**: Throttling en login (`6/min`), solicitudes editoriales (`5/min`), organización y relaciones manuales (`30/min`), transcripción de IA (`10/min`), análisis de IA (`20/min`), votación (`30/min`) y comentarios (`15/min`).
 6. **Protección contra SQL Injection**: Consultas exclusivamente a través de Eloquent ORM con sentencias preparadas.
-7. **Controles de IA**: Audio máximo de 10 MB, credenciales cifradas, proveedores/modelos en allowlists, aislamiento por propietario, prompts que tratan el texto como dato no confiable, salidas estructuradas validadas de nuevo en servidor y ausencia de mutaciones hasta la confirmación y guardado del formulario.
+7. **Controles de IA**: Audio máximo de 10 MB, credenciales cifradas, proveedores/modelos en allowlists, contexto limitado por Policies, prompts que tratan el texto como dato no confiable, salidas estructuradas validadas de nuevo en servidor y ausencia de mutaciones hasta la confirmación humana.
 
 ---
 

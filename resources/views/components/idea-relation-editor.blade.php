@@ -11,7 +11,16 @@
         'id' => (string) $candidate->id,
         'title' => $candidate->title,
         'author' => $candidate->user?->name ?? 'Autor no disponible',
+        'author_id' => (string) $candidate->user_id,
+        'is_own' => $candidate->user_id === auth()->id(),
     ])->values();
+    $ownCandidateTree = app(\App\Services\IdeaTreeService::class)->prepare($candidates->where('user_id', auth()->id())->values());
+    $otherCandidateGroups = $candidates->where('user_id', '!=', auth()->id())->groupBy('user_id')->map(function ($ideas) {
+        return [
+            'user' => $ideas->first()->user,
+            'tree' => app(\App\Services\IdeaTreeService::class)->prepare($ideas->values()),
+        ];
+    });
     $storedRelations = collect($relations ?? [])->map(fn (\App\Models\IdeaRelation $relation) => [
         'id' => $relation->id,
         'target_idea_id' => (string) $relation->target_idea_id,
@@ -122,12 +131,7 @@
             <div class="grid gap-3 sm:grid-cols-2">
                 <div>
                     <label class="mb-1.5 block text-[11px] font-bold text-on-surface">Idea conectada</label>
-                    <select x-model="draftTargetId" class="w-full rounded-xl border border-surface-container-high bg-surface-container-low p-3 text-xs">
-                        <option value="">Selecciona una idea</option>
-                        @foreach($candidateOptions as $candidate)
-                            <option value="{{ $candidate['id'] }}">{{ $candidate['title'] }} · {{ $candidate['author'] }}</option>
-                        @endforeach
-                    </select>
+                    <button type="button" @click="pickerOpen=true; $nextTick(() => $refs.relationSearch?.focus())" class="flex w-full items-center justify-between gap-3 rounded-xl border border-surface-container-high bg-surface-container-low p-3 text-left text-xs"><span class="truncate font-semibold" x-text="selectedCandidateLabel()"></span><span class="material-symbols-outlined text-base text-tertiary">open_in_new</span></button>
                 </div>
                 <div>
                     <label class="mb-1.5 block text-[11px] font-bold text-on-surface">Tipo de relación</label>
@@ -149,6 +153,17 @@
                     <span class="material-symbols-outlined text-base" aria-hidden="true">add_link</span>
                     Incorporar relación
                 </button>
+            </div>
+        </div>
+
+        <div x-show="pickerOpen" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Elegir idea relacionada">
+            <div class="fixed inset-0 bg-on-surface/45 backdrop-blur-xs" @click="pickerOpen=false; candidateQuery='' "></div>
+            <div class="relative z-10 flex max-h-[88dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-surface-container-high bg-surface-container-lowest shadow-2xl">
+                <div class="border-b border-surface-container-high p-5"><div class="flex items-start justify-between gap-4"><div><h3 class="font-headline text-lg font-bold">Elegir idea relacionada</h3><p class="mt-1 text-xs text-on-surface-variant">Explora tus árboles o las ideas accesibles de otros colaboradores. Las conexiones entre autores requieren confirmación.</p></div><button type="button" @click="pickerOpen=false; candidateQuery=''" class="text-outline"><span class="material-symbols-outlined">close</span></button></div><div class="relative mt-4"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-outline">search</span><input x-ref="relationSearch" x-model.debounce.60ms="candidateQuery" type="search" placeholder="Buscar por título, descripción, categoría o etiqueta..." class="w-full rounded-xl border border-surface-container-high bg-surface-container-low py-3 pl-10 pr-3 text-sm"></div><div class="mt-4 flex gap-2"><button type="button" @click="pickerTab='mine'" :class="pickerTab==='mine' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'" class="rounded-xl px-4 py-2 text-xs font-bold">Mis ideas</button><button type="button" @click="pickerTab='others'" :class="pickerTab==='others' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'" class="rounded-xl px-4 py-2 text-xs font-bold">Ideas de otros</button></div></div>
+                <div class="min-h-0 flex-1 overflow-y-auto p-5">
+                    <div x-show="pickerTab==='mine'" class="space-y-3">@forelse($ownCandidateTree['roots'] as $root)<x-idea-relation-picker-node :node="$root" :tree-by-parent="$ownCandidateTree['byParent']" :search-terms="$ownCandidateTree['searchTerms']" />@empty<p class="rounded-2xl border border-dashed border-surface-container-high p-8 text-center text-xs text-outline">No hay ideas propias disponibles.</p>@endforelse</div>
+                    <div x-show="pickerTab==='others'" class="space-y-4">@forelse($otherCandidateGroups as $group)<section x-data="{ authorOpen: false }" class="rounded-2xl border border-surface-container-high bg-surface-container-low p-3"><button type="button" @click="authorOpen=!authorOpen" class="flex w-full items-center justify-between gap-3 text-left"><span><strong class="block text-xs">{{ $group['user']?->name ?: 'Autor no disponible' }}</strong><span class="text-[10px] text-outline">{{ $group['tree']['roots']->count() }} ideas madre visibles</span></span><span class="material-symbols-outlined text-primary" x-text="authorOpen ? 'expand_less' : 'expand_more'"></span></button><div x-show="authorOpen || normalizedCandidateQuery() !== ''" class="mt-3 space-y-3">@foreach($group['tree']['roots'] as $root)<x-idea-relation-picker-node :node="$root" :tree-by-parent="$group['tree']['byParent']" :search-terms="$group['tree']['searchTerms']" />@endforeach</div></section>@empty<p class="rounded-2xl border border-dashed border-surface-container-high p-8 text-center text-xs text-outline">No hay ideas accesibles de otros colaboradores.</p>@endforelse</div>
+                </div>
             </div>
         </div>
     </div>

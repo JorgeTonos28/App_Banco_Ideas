@@ -12,12 +12,14 @@ use App\Models\IdeaFavorite;
 use App\Models\IdeaRating;
 use App\Models\IdeaStatusHistory;
 use App\Models\Tag;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\GlobalIdeaSearchService;
 use App\Services\IdeaClassificationService;
 use App\Services\IdeaCommunityService;
 use App\Services\IdeaHierarchyService;
 use App\Services\IdeaRelationFormService;
+use App\Services\IdeaStatusCascadeService;
 use App\Services\IdeaTreeService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
@@ -159,6 +161,7 @@ class IdeaController extends Controller
         $parentCandidates = Idea::query()
             ->where('user_id', auth()->id())
             ->whereNotIn('workspace_status', ['archivada', 'descartada'])
+            ->whereNotIn('status', ['archivada', 'descartada'])
             ->orderBy('title')
             ->with(['category', 'tags'])
             ->get();
@@ -167,13 +170,8 @@ class IdeaController extends Controller
             : null;
         $communityUnits = $communityService->availableUnitsFor($request->user());
         $relationCandidates = $ideaSearch->accessibleCandidates($request->user(), 0)
-            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true));
-
-        if (! $request->user()->isAdmin()) {
-            $relationCandidates = $relationCandidates
-                ->where('user_id', $request->user()->id)
-                ->values();
-        }
+            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true)
+                || in_array($candidate->status, ['archivada', 'descartada'], true));
 
         $allTags = Tag::withCount('ideas')
             ->with(['ideas' => function ($q) {
@@ -230,6 +228,7 @@ class IdeaController extends Controller
                 'visibility' => $request->visibility,
                 'access_scope' => $request->input('access_scope', 'only_me'),
                 'workspace_status' => $request->input('workspace_status', 'capturada'),
+                'allow_task_collaboration' => $request->boolean('allow_task_collaboration'),
                 'publication_status' => 'not_submitted',
                 'community_display' => 'hidden',
                 'requested_community_display' => $request->filled('parent_idea_id')
@@ -362,6 +361,7 @@ class IdeaController extends Controller
             'parentIdea.user',
             'children.user',
             'children.category',
+            'tasks.assignee',
             'outgoingRelations.targetIdea.user',
             'outgoingRelations.createdBy',
             'outgoingRelations.reviewedBy',
@@ -380,6 +380,9 @@ class IdeaController extends Controller
         $viewer = auth()->user();
         $idea->setRelation('children', $idea->children
             ->filter(fn (Idea $child) => $viewer?->can('view', $child))
+            ->values());
+        $idea->setRelation('tasks', $idea->tasks
+            ->filter(fn (Task $task) => $viewer?->can('view', $task))
             ->values());
 
         if ($idea->parentIdea && ! $viewer?->can('view', $idea->parentIdea)) {
@@ -484,6 +487,8 @@ class IdeaController extends Controller
         $excludedParentIds = $hierarchyService->descendantIds($idea)->push($idea->id);
         $parentCandidates = auth()->user()->ideas()
             ->whereNotIn('id', $excludedParentIds)
+            ->whereNotIn('workspace_status', ['archivada', 'descartada'])
+            ->whereNotIn('status', ['archivada', 'descartada'])
             ->orderBy('title')
             ->with(['category', 'tags'])
             ->get();
@@ -492,13 +497,8 @@ class IdeaController extends Controller
         $selectedCommunityUnitId = $selectedCommunityShare?->id;
         $selectedCommunityIncludesDescendants = (bool) $selectedCommunityShare?->pivot?->include_descendants;
         $relationCandidates = $ideaSearch->accessibleCandidates(auth()->user(), $idea->id)
-            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true));
-
-        if (! auth()->user()->isAdmin() && ! $idea->isPublished()) {
-            $relationCandidates = $relationCandidates
-                ->where('user_id', auth()->id())
-                ->values();
-        }
+            ->reject(fn (Idea $candidate) => in_array($candidate->workspace_status, ['archivada', 'descartada'], true)
+                || in_array($candidate->status, ['archivada', 'descartada'], true));
 
         $existingRelations = $idea->outgoingRelations()
             ->with(['targetIdea.user', 'createdBy', 'reviewedBy'])
@@ -554,7 +554,8 @@ class IdeaController extends Controller
         IdeaClassificationService $classificationService,
         IdeaHierarchyService $hierarchyService,
         IdeaCommunityService $communityService,
-        IdeaRelationFormService $relationFormService
+        IdeaRelationFormService $relationFormService,
+        IdeaStatusCascadeService $statusCascadeService
     ): RedirectResponse {
         $this->authorize('update', $idea);
 
@@ -574,6 +575,7 @@ class IdeaController extends Controller
                 'visibility' => $idea->isPublished() ? 'public' : $request->visibility,
                 'access_scope' => $newAccessScope,
                 'workspace_status' => $idea->isPublished() ? $oldWorkspaceStatus : $newWorkspaceStatus,
+                'allow_task_collaboration' => $request->boolean('allow_task_collaboration'),
             ]);
 
             $classificationService->sync(
@@ -606,6 +608,8 @@ class IdeaController extends Controller
                     'new_status' => $newWorkspaceStatus,
                     'comment' => 'Estado de trabajo privado actualizado por el autor.',
                 ]);
+
+                $statusCascadeService->cascadeTerminalStatus($idea, $newWorkspaceStatus, $request->user());
             }
 
             if ($oldAccessScope !== $newAccessScope) {

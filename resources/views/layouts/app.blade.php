@@ -56,6 +56,10 @@
     <!-- Global Search Modal -->
     @include('components.global-search-modal')
 
+    @auth
+        <div class="hidden" x-data="taskBrowserReminders({ endpoint: @js(route('api.tasks.reminders.browser')) })"></div>
+    @endauth
+
     @stack('scripts')
 </body>
 </html>

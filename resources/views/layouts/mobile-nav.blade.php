@@ -2,7 +2,12 @@
     <!-- 1. Mis Ideas -->
     <a href="{{ route('my-ideas.index') }}" class="flex flex-col items-center gap-1 py-1 px-1.5 text-xs font-medium {{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' }}">
         <span class="material-symbols-outlined text-[22px]" style="{{ request()->routeIs('my-ideas.*') || request()->is('/') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">folder_special</span>
-        <span class="text-[10px]">Mis Ideas</span>
+        <span class="text-[10px]">Ideas</span>
+    </a>
+
+    <a href="{{ route('tasks.index') }}" class="flex flex-col items-center gap-1 py-1 px-1.5 text-xs font-medium {{ request()->routeIs('tasks.*') ? 'text-primary font-bold' : 'text-on-surface-variant hover:text-primary' }}">
+        <span class="material-symbols-outlined text-[22px]" style="{{ request()->routeIs('tasks.*') ? 'font-variation-settings: \'FILL\' 1;' : '' }}">checklist</span>
+        <span class="text-[10px]">Tareas</span>
     </a>
 
     <!-- 2. Comunidad -->

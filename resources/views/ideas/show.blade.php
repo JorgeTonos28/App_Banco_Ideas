@@ -52,6 +52,12 @@
                 <span class="material-symbols-outlined text-base">account_tree</span>
                 <span class="hidden lg:inline">Agregar hija</span>
             </a>
+            <a href="{{ route('tasks.create', ['idea' => $idea->id]) }}"
+               class="inline-flex items-center gap-1.5 rounded-xl bg-tertiary-fixed px-3 py-2 text-xs font-bold text-tertiary hover:bg-tertiary hover:text-white"
+               title="Crear una tarea para esta idea">
+                <span class="material-symbols-outlined text-base">add_task</span>
+                <span class="hidden lg:inline">Agregar tarea</span>
+            </a>
             @endif
             @endauth
 
@@ -60,6 +66,13 @@
                     title="Compartir idea">
                 <span class="material-symbols-outlined text-lg">share</span>
             </button>
+
+            @if($idea->children->isNotEmpty())
+            <div x-data="{ exportOpen: false, everything: false }">
+                <button type="button" @click="exportOpen=true" class="inline-flex items-center gap-1.5 rounded-xl border border-surface-container-high bg-surface-container-lowest px-3 py-2 text-xs font-bold text-on-surface-variant hover:border-primary/35 hover:text-primary" title="Exportar idea y subideas"><span class="material-symbols-outlined text-base">download</span><span class="hidden lg:inline">Exportar árbol</span></button>
+                <div x-show="exportOpen" style="display:none" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Exportar árbol de ideas"><div class="fixed inset-0 bg-on-surface/45 backdrop-blur-xs" @click="exportOpen=false"></div><form action="{{ route('ideas.export', $idea) }}" method="GET" class="relative z-10 w-full max-w-lg rounded-3xl border border-surface-container-high bg-surface-container-lowest p-6 shadow-2xl"><div class="flex items-start justify-between"><div><h2 class="font-headline text-lg font-bold">Exportar idea y descendientes</h2><p class="mt-1 text-xs text-on-surface-variant">Los títulos siempre se incluyen. El archivo sólo contendrá nodos y relaciones que puedes ver.</p></div><button type="button" @click="exportOpen=false" class="text-outline"><span class="material-symbols-outlined">close</span></button></div><label class="mt-5 flex items-center justify-between rounded-2xl bg-primary-fixed/30 p-3 text-xs font-bold"><span>Incluir todos los campos</span><input type="checkbox" name="all" value="1" x-model="everything" class="rounded border-outline text-primary"></label><fieldset :disabled="everything" class="mt-3 grid gap-2 sm:grid-cols-2 disabled:opacity-50">@foreach(['description'=>'Descripciones','problem_opportunity'=>'Problemas u oportunidades','tags'=>'Etiquetas','categories'=>'Categorías','relations'=>'Relaciones semánticas'] as $field=>$label)<label class="flex items-center gap-2 rounded-xl bg-surface-container-low p-3 text-xs"><input type="checkbox" name="fields[]" value="{{ $field }}" class="rounded border-outline text-primary">{{ $label }}</label>@endforeach</fieldset><div class="mt-5"><label class="mb-2 block text-xs font-bold">Formato</label><select name="format" class="w-full rounded-xl border border-surface-container-high bg-surface-container-low p-3 text-xs"><option value="doc">Documento compatible con Word (.doc)</option><option value="json">JSON técnico (.json)</option></select></div><div class="mt-5 flex justify-end gap-2"><button type="button" @click="exportOpen=false" class="rounded-xl px-4 py-2.5 text-xs font-bold text-outline">Cancelar</button><button class="rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white">Descargar</button></div></form></div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -256,6 +269,20 @@
     </section>
     @endif
 
+    @if($idea->tasks->isNotEmpty() || auth()->id() === $idea->user_id)
+    <section class="rounded-3xl border border-tertiary/20 bg-tertiary-fixed/15 p-6 shadow-xs">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div><h2 class="flex items-center gap-2 font-headline text-lg font-bold"><span class="material-symbols-outlined text-tertiary">checklist</span>Trabajo derivado de esta idea</h2><p class="mt-1 text-xs text-on-surface-variant">Acciones concretas para llevar la propuesta a resultado.</p></div>
+            @if(auth()->id() === $idea->user_id)<a href="{{ route('tasks.create', ['idea' => $idea->id]) }}" class="rounded-xl bg-tertiary px-4 py-2 text-xs font-bold text-white">Nueva tarea</a>@endif
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            @forelse($idea->tasks->whereNull('parent_task_id')->take(6) as $task)
+                <a href="{{ route('tasks.show', $task) }}" class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 hover:border-tertiary/35"><div class="flex items-center justify-between gap-2"><span class="text-[9px] font-mono-tech font-bold uppercase text-outline">{{ $task->status_label }}</span>@if($task->due_at)<span class="text-[9px] {{ $task->is_overdue ? 'text-error font-bold' : 'text-outline' }}">{{ $task->due_at->translatedFormat('d M') }}</span>@endif</div><p class="mt-2 line-clamp-2 text-xs font-bold text-on-surface">{{ $task->title }}</p><p class="mt-2 text-[10px] text-outline">{{ $task->assignee?->name ?: 'Sin responsable' }}</p></a>
+            @empty<p class="text-xs text-on-surface-variant">Aún no se han definido tareas para esta idea.</p>@endforelse
+        </div>
+    </section>
+    @endif
+
     @if($traceIdeas->count() > 1)
     <section class="bg-surface-container-lowest rounded-3xl border border-surface-container-high/80 shadow-xs p-5 sm:p-6 space-y-4"
              x-data="ideaTree(@js($traceTree['searchTerms']->values()->all()))">
@@ -268,7 +295,7 @@
                 <p class="text-xs text-on-surface-variant mt-1">Recorrido multinivel desde la idea raíz. Los nodos restringidos no se exponen.</p>
             </div>
             <span class="px-2.5 py-1 rounded-lg bg-tertiary/10 text-tertiary text-[10px] font-mono-tech font-bold">
-                {{ $traceIdeas->count() - 1 }} {{ $traceIdeas->count() === 2 ? 'microidea visible' : 'microideas visibles' }}
+                {{ $traceIdeas->count() - 1 }} {{ $traceIdeas->count() === 2 ? 'microidea en la rama' : 'microideas en la rama' }}
             </span>
         </div>
 
